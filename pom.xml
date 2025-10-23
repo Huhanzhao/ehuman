@@ -54,6 +54,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+
 <!--        <dependency>-->
 <!--            <groupId>dev.langchain4j</groupId>-->
 <!--            <artifactId>langchain4j-community-dashscope-spring-boot-starter</artifactId>-->
