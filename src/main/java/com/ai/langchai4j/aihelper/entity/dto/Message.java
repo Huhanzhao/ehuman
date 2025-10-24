@@ -5,4 +5,6 @@ import lombok.Data;
 @Data
 public class Message {
     private String userMessage;
+    private String memoryId;
+    // todo 后续添加url图片
 }
