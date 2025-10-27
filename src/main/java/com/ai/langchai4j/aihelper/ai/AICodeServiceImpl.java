@@ -52,7 +52,7 @@ public class AICodeServiceImpl implements AICodeService{
     }
 
     @Override
-    public ChatResponse chatWithMemoryMessages(List<ChatMessage> messageList) {
+    public String chatWithMemoryMessages(List<ChatMessage> messageList) {
         // 创建记忆，最多二十条消息的模式
         ChatMemory chatMemory = MessageWindowChatMemory.withMaxMessages(20);
         chatMemory.add(messageList);
@@ -68,12 +68,12 @@ public class AICodeServiceImpl implements AICodeService{
                 .chatMemory(chatMemory)
                         .chatModel(openAiChatModel)
                         .build();
-        ChatResponse chatResponse = myAIService.chatWithMessage(List.of(messageList.getLast()));
+        String chatResponse = myAIService.chatWithMessage(List.of(messageList.getLast()));
         return chatResponse;
     }
 
     @Override
-    public ChatResponse chatWithMemoryMessagesPersistence(List<ChatMessage> messageList) {
+    public String chatWithMemoryMessagesPersistence(List<ChatMessage> messageList) {
 
         MessageWindowChatMemory windowChatMemory = MessageWindowChatMemory
                 .builder()
@@ -85,7 +85,7 @@ public class AICodeServiceImpl implements AICodeService{
         MyAIService myAIService = AiServices.builder(MyAIService.class).chatModel(openAiChatModel)
                 .chatMemory(windowChatMemory).build();
 
-        ChatResponse chatResponse = myAIService.chatWithMessage(List.of(messageList.getLast()));
+        String chatResponse = myAIService.chatWithMessage(List.of(messageList.getLast()));
         return chatResponse;
     }
 

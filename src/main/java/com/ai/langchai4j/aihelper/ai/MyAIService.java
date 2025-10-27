@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface MyAIService {
     // 聊天对话 List<ChatMessage> -> ChatResponse  多条消息产生“记忆”
-    ChatResponse chatWithMessage(List<ChatMessage> message);
+    String chatWithMessage(List<ChatMessage> message);
+
+    String chatWithMessage(String message);
 }

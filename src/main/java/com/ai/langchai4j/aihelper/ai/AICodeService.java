@@ -22,10 +22,10 @@ public interface AICodeService {
 
     // 聊天与记忆
     // MessageWindowChatMemory 与 TokenWindowChatMemory
-    ChatResponse chatWithMemoryMessages(List<ChatMessage> messageList);
+    String chatWithMemoryMessages(List<ChatMessage> messageList);
 
     // 持久化聊天记录
-    ChatResponse chatWithMemoryMessagesPersistence(List<ChatMessage> messageList);
+    String chatWithMemoryMessagesPersistence(List<ChatMessage> messageList);
 
 
 }
