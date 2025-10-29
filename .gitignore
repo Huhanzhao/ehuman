@@ -36,8 +36,6 @@ build/
 ./mvnw
 **/.mvn/**
 **/.mvn
-**/test/**
-**/test
 .gitattributes
 **/mvnw.cmd
 **/mvnw

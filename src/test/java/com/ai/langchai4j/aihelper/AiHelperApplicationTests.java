@@ -1,0 +1,13 @@
+package com.ai.langchai4j.aihelper;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class AiHelperApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+
+}
