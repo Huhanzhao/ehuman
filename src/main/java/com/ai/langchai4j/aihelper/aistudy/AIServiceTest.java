@@ -1,4 +1,4 @@
-package com.ai.langchai4j.aihelper.ai;
+package com.ai.langchai4j.aihelper.aistudy;
 
 import dev.langchain4j.service.TokenStream;
 import reactor.core.publisher.Flux;

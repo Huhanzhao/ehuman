@@ -1,4 +1,4 @@
-package com.ai.langchai4j.aihelper.ai;
+package com.ai.langchai4j.aihelper.aistudy;
 
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.openai.OpenAiChatModel;

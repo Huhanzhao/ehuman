@@ -1,7 +1,6 @@
-package com.ai.langchai4j.aihelper.ai;
+package com.ai.langchai4j.aihelper.aistudy;
 
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.model.chat.response.ChatResponse;
 
 import java.util.List;
 

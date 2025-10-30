@@ -1,4 +1,4 @@
-package com.ai.langchai4j.aihelper.ai.tools;
+package com.ai.langchai4j.aihelper.aistudy.tools;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;

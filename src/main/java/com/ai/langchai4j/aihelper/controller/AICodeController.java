@@ -1,7 +1,7 @@
 package com.ai.langchai4j.aihelper.controller;
 
-import com.ai.langchai4j.aihelper.ai.AICodeService;
-import com.ai.langchai4j.aihelper.ai.AIServiceTest;
+import com.ai.langchai4j.aihelper.aistudy.AICodeService;
+import com.ai.langchai4j.aihelper.aistudy.AIServiceTest;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;

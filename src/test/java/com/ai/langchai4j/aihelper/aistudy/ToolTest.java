@@ -1,6 +1,6 @@
-package com.ai.langchai4j.aihelper.ai;
+package com.ai.langchai4j.aihelper.aistudy;
 
-import com.ai.langchai4j.aihelper.ai.tools.SearchWeather;
+import com.ai.langchai4j.aihelper.aistudy.tools.SearchWeather;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import org.junit.jupiter.api.Test;
