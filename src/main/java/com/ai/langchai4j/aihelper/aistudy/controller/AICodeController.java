@@ -1,4 +1,4 @@
-package com.ai.langchai4j.aihelper.controller;
+package com.ai.langchai4j.aihelper.aistudy.controller;
 
 import com.ai.langchai4j.aihelper.aistudy.AICodeService;
 import com.ai.langchai4j.aihelper.aistudy.AIServiceTest;
@@ -17,6 +17,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/aiCode")
+// 学习controller
 public class AICodeController {
 
     @Resource

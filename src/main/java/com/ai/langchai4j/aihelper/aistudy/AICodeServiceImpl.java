@@ -1,5 +1,6 @@
 package com.ai.langchai4j.aihelper.aistudy;
 
+import com.ai.langchai4j.aihelper.demand.PersistentChatMemoryStore;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.TextContent;
