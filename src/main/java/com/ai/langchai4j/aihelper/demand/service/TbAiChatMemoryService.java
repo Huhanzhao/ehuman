@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 * @description 针对表【tb_ai_chat_memory(ai聊天记忆表)】的数据库操作Service
 * @createDate 2025-11-03 22:19:57
 */
-@Service
 public interface TbAiChatMemoryService extends IService<TbAiChatMemory> {
 
 }

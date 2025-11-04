@@ -2,11 +2,11 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.ai.langchai4j.aihelper.demand.mapper.TbAiChatMemoryMapper">
+<mapper namespace="com.ai.langchai4j.aihelper.mapper.TbAiChatMemoryMapper">
 
     <resultMap id="BaseResultMap" type="com.ai.langchai4j.aihelper.demand.entity.TbAiChatMemory">
             <id property="id" column="id" />
-            <result property="userId" column="user_id" />
+            <result property="memoryId" column="memory_id" />
             <result property="message" column="message" />
             <result property="role" column="role" />
             <result property="createTime" column="create_time" />
