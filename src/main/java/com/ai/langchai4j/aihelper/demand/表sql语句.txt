@@ -1,0 +1,9 @@
+CREATE TABLE tb_ai_chat_memory (
+    id BIGINT  PRIMARY KEY COMMENT '主键id',
+		memory_Id VARCHAR(50) NOT NULL COMMENT '记忆id',
+		message TEXT NOT NULL COMMENT '聊天消息',
+		role VARCHAR(50) NOT NULL COMMENT '角色',
+		create_time DATETIME not null COMMENT '创建时间',
+		update_time DATETIME not null COMMENT '更新时间',
+		delete_flag bit not null COMMENT '删除标识'
+);

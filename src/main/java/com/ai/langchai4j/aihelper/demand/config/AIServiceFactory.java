@@ -18,6 +18,9 @@ public class AIServiceFactory {
     @Resource
     private OpenAiStreamingChatModel openAiStreamingChatModel;
 
+    @Resource
+    private PersistentChatMemoryStore persistentChatMemoryStore;
+
     @Bean
     public AIChatService getAIChatService(){
 
@@ -26,7 +29,7 @@ public class AIServiceFactory {
                 .chatMemoryProvider(id -> MessageWindowChatMemory.builder()
                         .id(id)
                         .maxMessages(20)
-                        .chatMemoryStore(new PersistentChatMemoryStore())
+                        .chatMemoryStore(persistentChatMemoryStore)
                         .build()) //聊天记忆 持久化按照id查询不同记忆
                 .streamingChatModel(openAiStreamingChatModel) // 流式聊天模型
 //                .contentRetriever() // 检索器

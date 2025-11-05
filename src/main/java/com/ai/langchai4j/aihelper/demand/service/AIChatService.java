@@ -5,6 +5,6 @@ import reactor.core.publisher.Flux;
 
 public interface AIChatService {
 
-    @SystemMessage("")
+    @SystemMessage("你是一个聊天助手")
     Flux<String> chatWithString(String message);
 }

@@ -3,7 +3,7 @@ package com.ai.langchai4j.aihelper.demand.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ai.langchai4j.aihelper.demand.entity.TbAiChatMemory;
 import com.ai.langchai4j.aihelper.demand.service.TbAiChatMemoryService;
-import com.ai.langchai4j.aihelper.mapper.TbAiChatMemoryMapper;
+import com.ai.langchai4j.aihelper.demand.mapper.TbAiChatMemoryMapper;
 import org.springframework.stereotype.Service;
 
 /**

@@ -1,4 +1,4 @@
-package com.ai.langchai4j.aihelper.mapper;
+package com.ai.langchai4j.aihelper.demand.mapper;
 
 import com.ai.langchai4j.aihelper.demand.entity.TbAiChatMemory;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
