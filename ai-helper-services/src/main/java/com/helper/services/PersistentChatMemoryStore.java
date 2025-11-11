@@ -1,8 +1,8 @@
 package com.helper.services;
 
-import com.ai.langchai4j.aihelper.demand.entity.TbAiChatMemory;
-import com.ai.langchai4j.aihelper.demand.service.TbAiChatMemoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.helper.services.entity.TbAiChatMemory;
+import com.helper.services.service.TbAiChatMemoryService;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageDeserializer;
 import dev.langchain4j.data.message.ChatMessageSerializer;

@@ -1,10 +1,13 @@
 package com.helper.services.controller;
 
 
-import com.ai.langchai4j.aihelper.demand.entity.dto.ChatRequest;
-import com.ai.langchai4j.aihelper.demand.service.AIChatService;
+import com.helper.services.entity.dto.ChatRequest;
+import com.helper.services.service.AIChatService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 @RequestMapping("/ai")

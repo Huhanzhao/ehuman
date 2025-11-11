@@ -1,7 +1,7 @@
 package com.helper.services.config;
 
 
-import com.ai.langchai4j.aihelper.demand.PersistentChatMemoryStore;
+import com.helper.services.PersistentChatMemoryStore;
 import com.helper.services.service.AIChatService;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;

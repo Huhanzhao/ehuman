@@ -1,5 +1,5 @@
 spring:
   application:
-    name: ai-helper
+    name: ai-service
   profiles:
     active: local
