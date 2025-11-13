@@ -1,8 +1,9 @@
 package com.helper.services.config;
 
 
-import com.helper.services.PersistentChatMemoryStore;
 import com.helper.services.service.AIChatService;
+import com.helper.services.tools.SearchOldMemoryTool;
+import com.helper.services.tools.SearchWebTool;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -13,18 +14,38 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AIServiceFactory {
 
-//    private OpenAiChatModel openAiChatModel;
-
     @Resource
     private OpenAiStreamingChatModel openAiStreamingChatModel;
 
     @Resource
     private PersistentChatMemoryStore persistentChatMemoryStore;
 
+    @Resource
+    private SearchWebTool searchWebTool;
+
+    @Resource
+    private SearchOldMemoryTool searchOldMemoryTool;
+
+    // 持久化记忆聊天服务
     @Bean
     public AIChatService getAIChatService(){
+        return AiServices.builder(AIChatService.class)
+                .chatMemoryProvider(id -> MessageWindowChatMemory.builder()
+                        .id(id)
+                        .maxMessages(20)
+                        .chatMemoryStore(persistentChatMemoryStore)
+                        .build()) //聊天记忆 持久化按照id查询不同记忆
+                .streamingChatModel(openAiStreamingChatModel) // 流式聊天模型
+                .tools(searchWebTool,searchOldMemoryTool) // 搜索工具
+                .build();
+    }
 
-        AIChatService aiChatService = AiServices.builder(AIChatService.class)
+
+    // rag服务
+    @Bean
+    public AIChatService getAIRagService(){
+
+        return AiServices.builder(AIChatService.class)
 //                .chatMemory(chatMemory) // 共享memory实例
                 .chatMemoryProvider(id -> MessageWindowChatMemory.builder()
                         .id(id)
@@ -32,10 +53,8 @@ public class AIServiceFactory {
                         .chatMemoryStore(persistentChatMemoryStore)
                         .build()) //聊天记忆 持久化按照id查询不同记忆
                 .streamingChatModel(openAiStreamingChatModel) // 流式聊天模型
-//                .contentRetriever() // 检索器
-                .tools() // 工具
-//                .toolProvider()
+//                .contentRetriever() // todo 检索器
+                .tools(searchWebTool,searchOldMemoryTool) // 搜索工具 //或者用 .toolProvider() 懒加载
                 .build();
-        return aiChatService;
     }
 }

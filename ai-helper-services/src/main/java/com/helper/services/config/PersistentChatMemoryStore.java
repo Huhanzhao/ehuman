@@ -1,4 +1,4 @@
-package com.helper.services;
+package com.helper.services.config;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemory;
