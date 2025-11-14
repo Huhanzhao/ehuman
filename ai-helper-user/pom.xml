@@ -6,8 +6,9 @@
         <groupId>com.ai.langchai4j</groupId>
         <artifactId>ai-helper</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
+    <packaging>jar</packaging>
 
     <groupId>com.helper</groupId>
     <artifactId>ai-helper-user</artifactId>

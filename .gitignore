@@ -32,7 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-**application-local.yml
+
 ./mvnw
 **/.mvn/**
 **/.mvn
