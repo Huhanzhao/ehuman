@@ -32,3 +32,6 @@ mybatis-plus:
 
 tavily:
   api-key: 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
+
+chroma:
+  memory-uuid: 1ef7ad24-08f7-4e96-baed-5b6848328164
