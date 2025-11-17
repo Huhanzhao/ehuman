@@ -1,0 +1,28 @@
+package com.helper.gateway.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
+
+@Configuration
+@EnableWebFluxSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        return http
+                // 禁用 CSRF（REST API 一般不需要）
+                .csrf(csrf -> csrf.disable())
+                // 配置路由权限  todo 详细配置
+                .authorizeExchange(exchanges -> exchanges  // 白名单 全局鉴权
+                        .pathMatchers("/public/**").permitAll()  // /public/** 路径下的接口允许所有访问，不需要登录或 token
+                        .anyExchange().authenticated()           // 除了 /public/** 以外的所有接口都必须认证
+                )
+                // 禁用默认登录方式
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(formLogin -> formLogin.disable())
+                .build();
+    }
+}

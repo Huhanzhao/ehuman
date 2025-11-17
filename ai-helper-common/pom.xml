@@ -41,7 +41,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 
 		<!--        swagger-->
@@ -70,6 +70,7 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<build>
