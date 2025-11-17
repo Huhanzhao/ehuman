@@ -13,6 +13,7 @@
     <modules>
         <module>ai-helper-user</module>
         <module>ai-helper-services</module>
+        <module>ai-helper-common</module>
     </modules>
 
     <parent>

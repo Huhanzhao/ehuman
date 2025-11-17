@@ -17,7 +17,11 @@
     <description>ai-helper-user</description>
 
     <dependencies>
-
+        <dependency>
+            <groupId>com.ai.langchai4j</groupId>
+            <artifactId>ai-helper-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
