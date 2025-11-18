@@ -3,23 +3,35 @@ package com.helper.gateway.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
 public class JwtUtils {
 
-    // 秘钥（建议用配置文件或环境变量管理） todo 使用固定密钥
-    private static final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private static final long EXPIRATION_MS = 24 * 60 * 60 * 1000; // 1天
+    // 秘钥
+    private static final String SECRET_KEY = "X8v!2hQ@kZ7r%pL4nB9wT6yG3sD1eF0u";
+    private static final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    private static final long EXPIRATION_MS = 30 * 60 * 1000; // 30分钟
+    private static final long REFRESH_EXPIRATION_MS = 24 * 60 * 60 * 1000 * 7; // 7天
 
-    // 生成 JWT
-    public static String generateToken(String userId) {
+    // 生成 身份验证token
+    public static String generateToken(String userId, String version) {
         return Jwts.builder()
                 .setSubject(userId)
+                .claim("version", version) // 自定义字段 version 用来实现顶号功能
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
+                .signWith(key)
+                .compact();
+    }
+
+    // 生成 身份刷新token
+    public static String generateRefreshToken(String userId) {
+        return Jwts.builder()
+                .setSubject(userId)
+                .setExpiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION_MS))
                 .signWith(key)
                 .compact();
     }
@@ -42,5 +54,15 @@ public class JwtUtils {
                 .parseClaimsJws(token)
                 .getBody();
         return claims.getSubject();
+    }
+
+    // 解析 JWT 获取 version
+    public static String getVersion(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("version", String.class);
     }
 }
