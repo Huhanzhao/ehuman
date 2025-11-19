@@ -18,8 +18,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ai.langchai4j</groupId>
-            <artifactId>ai-helper-common</artifactId>
+            <groupId>com.helper</groupId>
+            <artifactId>common-pom</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>

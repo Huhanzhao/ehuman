@@ -15,9 +15,9 @@ public class SecurityConfig {
         return http
                 // 禁用 CSRF（REST API 一般不需要）
                 .csrf(csrf -> csrf.disable())
-                // 配置路由权限  todo 详细配置
+                // 配置路由权限
                 .authorizeExchange(exchanges -> exchanges  // 白名单 全局鉴权
-                        .pathMatchers("/public/**").permitAll()  // /public/** 路径下的接口允许所有访问，不需要登录或 token
+                        .pathMatchers("/user/api/user/login").permitAll()  // 登录接口，不需要认证
                         .anyExchange().authenticated()           // 除了 /public/** 以外的所有接口都必须认证
                 )
                 // 禁用默认登录方式
