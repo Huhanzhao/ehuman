@@ -36,3 +36,14 @@ tavily:
 chroma:
   memory-uuid: 1ef7ad24-08f7-4e96-baed-5b6848328164
 
+springdoc:
+  api-docs:
+    enabled: true                  # 启用/禁用API文档的访问
+    path: /v3/api-docs            # 设置API文档的访问路径
+  swagger-ui:
+    path: /swagger-ui.html        # 设置Swagger UI的访问路径
+    disable-swagger-default-url: true
+    display-request-duration: true # 显示请求持续时间
+  packages-to-scan: com.helper.services.controller # 指定要扫描的包
+
+
