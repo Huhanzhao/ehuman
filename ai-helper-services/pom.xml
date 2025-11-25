@@ -3,12 +3,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.ai.langchai4j</groupId>
+        <groupId>com.helper</groupId>
         <artifactId>ai-helper</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
-    <groupId>com.helper</groupId>
     <artifactId>ai-helper-services</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ai-helper-services</name>
@@ -55,9 +54,23 @@
 
         <dependency>
             <groupId>com.helper</groupId>
-            <artifactId>common-pom</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <artifactId>ai-helper-common</artifactId>
         </dependency>
+
+        <!-- Swagger注解 -->
+<!--        <dependency>-->
+<!--            <groupId>io.swagger.core.v3</groupId>-->
+<!--            <artifactId>swagger-annotations</artifactId>-->
+<!--            <version>2.2.20</version>-->
+<!--        </dependency>-->
+
+        <!-- Swagger API文档 -->
+<!--        <dependency>-->
+<!--            <groupId>io.springfox</groupId>-->
+<!--            <artifactId>springfox-boot-starter</artifactId>-->
+<!--            <version>3.0.0</version>-->
+<!--        </dependency>-->
+
     </dependencies>
 
     <build>
@@ -65,6 +78,13 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

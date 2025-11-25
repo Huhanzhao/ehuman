@@ -3,3 +3,4 @@ spring:
     name: ai-service
   profiles:
     active: local
+
