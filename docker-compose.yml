@@ -1,0 +1,78 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: AI_SERVICE  # 自动创建一个数据库
+#      MYSQL_USER: demo
+#      MYSQL_PASSWORD: demo123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:7.0
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  chromadb:
+    image: chromadb/chroma:1.3.6.dev37  # 官方 Docker 镜像，版本可替换
+    container_name: chromadb
+    restart: always
+    ports:
+      - "8000:8000"    # HTTP API 默认端口
+      - "8001:8001"    # gRPC 端口（可选）
+    environment:
+      CHROMA_DB_IMPL: duckdb  # 使用内存+文件存储，也可以改为 'duckdb+parquet'
+      CHROMA_API: rest        # 通过 REST API 访问
+      CHROMA_SERVER_HOST: 0.0.0.0
+      CHROMA_SERVER_PORT: 8000
+    volumes:
+      - chroma_data:/chroma   # 持久化数据
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      retries: 5
+
+#  gateway:
+#    build:
+#      context: ./gateway
+#      dockerfile: Dockerfile
+#    container_name: gateway
+#    restart: always
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - mysql
+#      - redis
+#      - rabbitmq
+#
+  ai-helper-service:
+    build:
+      context: ./ai-helper-services
+      dockerfile: Dockerfile
+    container_name: ai-helper-services
+    restart: always
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+      - chromadb
+      - mysql
+
+volumes:
+  mysql_data:
+  redis_data:
+  chroma_data:
