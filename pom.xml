@@ -162,7 +162,13 @@
 
             <dependency>
                 <groupId>com.helper</groupId>
-                <artifactId>ai-helper-common</artifactId>
+                <artifactId>common-services-common</artifactId>
+                <version>${common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.helper</groupId>
+                <artifactId>common-auth</artifactId>
                 <version>${common.version}</version>
             </dependency>
 
@@ -175,12 +181,14 @@
                 <scope>import</scope>
             </dependency>
 
-            <!--security-->
-<!--            <dependency>-->
-<!--                <groupId>org.springframework.boot</groupId>-->
-<!--                <artifactId>spring-boot-starter-security</artifactId>-->
-<!--            </dependency>-->
-
+            <!-- Spring Cloud Alibaba 依赖管理 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>2022.0.0.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -193,8 +201,6 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-
-
 
         <plugins>
             <plugin>

@@ -1,4 +1,34 @@
 spring:
   application:
     name: ai-helper-user
+  datasource:
+    url: jdbc:mysql://192.168.1.101:3306/AI_SERVICE?useSSL=false&serverTimezone=UTC
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      port: 6379
+      host: 192.168.1.100
+      password:
+      database: 0
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: ai-helper
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        namespace: ai-helper
+        group: DEFAULT_GROUP
+        file-extension: yml
+server:
+  port: 8082
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+logging:
+  level:
+    com.baomidou.mybatisplus: debug
 

@@ -1,7 +1,10 @@
 package com.helper.user.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.helper.user.enums.UserRoleEnum;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
@@ -11,6 +14,8 @@ import java.util.Date;
  */
 @TableName(value ="TB_USERS")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TbUsers {
     /**
      * 主键id
@@ -21,7 +26,13 @@ public class TbUsers {
     /**
      * 用户id
      */
-    private Integer userId;
+    private String userId;
+
+
+    /**
+     * 用户password
+     */
+    private String password;
 
     /**
      * 用户EMAIL
@@ -31,7 +42,7 @@ public class TbUsers {
     /**
      * 用户角色 1：超级管理员 2：管理员 3：普通用户
      */
-    private Integer role;
+    private UserRoleEnum role;
 
     /**
      * 创建时间
@@ -58,7 +69,15 @@ public class TbUsers {
     /**
      * 删除标识
      */
+    @TableLogic
     private Boolean deleteFlag;
+
+    public TbUsers(String userId,String password,String email,UserRoleEnum role){
+        this.userId = userId;
+        this.password = password;
+        this.email = email;
+        this.role = role;
+    }
 
     @Override
     public boolean equals(Object that) {

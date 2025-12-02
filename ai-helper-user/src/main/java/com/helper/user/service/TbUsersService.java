@@ -1,7 +1,12 @@
 package com.helper.user.service;
 
-import com.helper.user.entity.TbUsers;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.helper.commonservicescommon.entity.Result;
+import com.helper.user.entity.TbUsers;
+import com.helper.user.entity.dto.LoginDto;
+import com.helper.user.entity.dto.RegisterDto;
+
+import java.util.Map;
 
 /**
 * @author issuser
@@ -10,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbUsersService extends IService<TbUsers> {
 
+    Result<Map<String, String>> login(LoginDto loginDto);
+
+    boolean register(RegisterDto registerDto);
 }

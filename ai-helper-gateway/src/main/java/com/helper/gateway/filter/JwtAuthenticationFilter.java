@@ -1,6 +1,6 @@
 package com.helper.gateway.filter;
 
-import com.helper.gateway.utils.JwtUtils;
+import com.helper.commonauth.utils.JwtUtils;
 import com.helper.gateway.utils.RedisServices;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

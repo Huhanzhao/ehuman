@@ -1,6 +1,6 @@
 package com.helper.services.service.impl;
 
-import com.helper.common.entity.BusinessException;
+import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.service.Upload;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

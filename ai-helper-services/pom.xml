@@ -54,7 +54,7 @@
 
         <dependency>
             <groupId>com.helper</groupId>
-            <artifactId>ai-helper-common</artifactId>
+            <artifactId>common-services-common</artifactId>
         </dependency>
 
         <!-- Swagger注解 -->

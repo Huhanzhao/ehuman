@@ -1,4 +1,4 @@
-package com.helper.gateway.utils;
+package com.helper.commonauth.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;

@@ -1,6 +1,36 @@
 spring:
   application:
     name: ai-helper-gateway
+  profiles:
+    active: dev
   data:
     redis:
       url: redis://localhost:6379
+  config:
+    import:
+      - optional:nacos:gateway.yml
+      - optional:nacos:gateway-${spring.profiles.active}.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.101:8848
+        namespace: ai-helper
+        group: DEFAULT_GROUP
+      config:
+        server-addr: 192.168.1.101:8848
+        namespace: ai-helper
+        group: DEFAULT_GROUP
+        file-extension: yml
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务路由
+        - id: xingwang-user
+          uri: lb://xingwang-user
+          predicates:
+            - Path=/user/**
+          filters:
+            - StripPrefix=1

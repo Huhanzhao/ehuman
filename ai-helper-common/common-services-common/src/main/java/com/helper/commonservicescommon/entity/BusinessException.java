@@ -1,4 +1,4 @@
-package com.helper.common.entity;
+package com.helper.commonservicescommon.entity;
 
 import lombok.Getter;
 @Getter
