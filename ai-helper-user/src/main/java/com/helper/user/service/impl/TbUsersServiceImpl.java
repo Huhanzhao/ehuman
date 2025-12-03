@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.helper.commonauth.utils.JwtUtils;
 import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.commonservicescommon.entity.Result;
+import com.helper.commonservicescommon.utils.RedisUtil;
 import com.helper.user.entity.TbUsers;
 import com.helper.user.entity.dto.LoginDto;
 import com.helper.user.entity.dto.RegisterDto;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
 * @author issuser
@@ -29,6 +31,9 @@ public class TbUsersServiceImpl extends ServiceImpl<TbUsersMapper, TbUsers>
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private RedisUtil redisUtil;
+
     @Override
     public Result<Map<String, String>> login(LoginDto loginDto) {
         String password = loginDto.getPassword();
@@ -40,7 +45,10 @@ public class TbUsersServiceImpl extends ServiceImpl<TbUsersMapper, TbUsers>
         String secretPassword = tbUsers.getPassword();
         boolean matches = passwordEncoder.matches(password, secretPassword);
         if (matches) {
-            String token = JwtUtils.generateToken(userId, tbUsers.getRole().toString());
+            String version = UUID.randomUUID().toString();
+            redisUtil.hSet("user:" + userId, "version",version);
+            redisUtil.expire("user:" + userId, 60 * 60 * 24 * 7);
+            String token = JwtUtils.generateToken(userId, version);
             String refreshToken = JwtUtils.generateRefreshToken(userId);
             return Result.success(Map.of("token", token, "refreshToken", refreshToken));
         }

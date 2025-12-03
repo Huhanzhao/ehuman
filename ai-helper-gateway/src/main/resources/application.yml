@@ -8,29 +8,53 @@ spring:
       url: redis://localhost:6379
   config:
     import:
-      - optional:nacos:gateway.yml
-      - optional:nacos:gateway-${spring.profiles.active}.yml
+      - optional:nacos:ai-helper-gateway.yml
+      - optional:nacos:ai-helper-gateway-${spring.profiles.active}.yml
   cloud:
     nacos:
       discovery:
-        server-addr: 192.168.1.101:8848
+        server-addr: localhost:8848
         namespace: ai-helper
         group: DEFAULT_GROUP
       config:
-        server-addr: 192.168.1.101:8848
+        server-addr: localhost:8848
         namespace: ai-helper
         group: DEFAULT_GROUP
         file-extension: yml
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      routes:
-        # 用户服务路由
-        - id: xingwang-user
-          uri: lb://xingwang-user
-          predicates:
-            - Path=/user/**
-          filters:
-            - StripPrefix=1
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            # 用户服务路由
+            - id: ai-helper-user
+              uri: lb://ai-helper-user
+              predicates:
+                - Path=/user/**
+              filters:
+                - StripPrefix=1
+            # ai服务路由
+            - id: ai-helper-services
+              uri: lb://ai-helper-services
+              predicates:
+                - Path=/services/**
+              filters:
+                - StripPrefix=1
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns: "*"
+                #            allowed-origins: "*"
+                allowed-methods: "*"
+                allowed-headers: "*"
+                allow-credentials: true
+knife4j:
+  gateway:
+    enabled: true
+    strategy: discover
+    discover:
+      enabled: true
+      version: OpenAPI3

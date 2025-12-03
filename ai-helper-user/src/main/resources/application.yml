@@ -1,15 +1,21 @@
 spring:
   application:
     name: ai-helper-user
+  profiles:
+    active: dev
+  config:
+    import:
+      - optional:nacos:ai-helper-user.yml
+      - optional:nacos:ai-helper-user-${spring.profiles.active}.yml
   datasource:
-    url: jdbc:mysql://192.168.1.101:3306/AI_SERVICE?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/AI_SERVICE?useSSL=false&serverTimezone=UTC
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
       port: 6379
-      host: 192.168.1.100
+      host: localhost
       password:
       database: 0
   cloud:

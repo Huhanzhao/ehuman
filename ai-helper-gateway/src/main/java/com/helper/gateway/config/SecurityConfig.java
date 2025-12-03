@@ -17,14 +17,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 // 配置路由权限
                 .authorizeExchange(exchanges -> exchanges  // 白名单 全局鉴权
-                        .pathMatchers(
-                                "/user/api/user/login",
-                                "/doc.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/webjars/**"
-                        ).permitAll()  // 登录接口，不需要认证
-                        .anyExchange().authenticated()           // 除了 /public/** 以外的所有接口都必须认证
+//                        .pathMatchers(
+//                                "/user/api/user/login",
+//                                "/doc.html",
+//                                "/swagger-ui/**",
+//                                "/v3/api-docs/**",
+//                                "/v3/api-docs",
+//                                "/*/v3/api-docs",
+//                                "/webjars/**"
+//                        ).permitAll()  // 不需要认证
+                        .anyExchange().permitAll()           // 除了 /public/** 以外的所有接口都必须认证
                 )
                 // 禁用默认登录方式
                 .httpBasic(httpBasic -> httpBasic.disable())

@@ -19,10 +19,10 @@ public class RedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        // value 序列化（JSON）推荐 Jackson2
-        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer();
-        template.setValueSerializer(serializer);
-        template.setHashValueSerializer(serializer);
+        // value 序列化（普通对象可以用 JSON）
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        // hash value 如果只是存字符串 version，推荐 String 序列化
+        template.setHashValueSerializer(new StringRedisSerializer());
 
         template.afterPropertiesSet();
         return template;
