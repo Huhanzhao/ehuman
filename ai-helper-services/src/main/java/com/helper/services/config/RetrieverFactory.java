@@ -9,6 +9,7 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
@@ -16,10 +17,14 @@ import java.util.List;
 
 import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.loadDocuments;
 
+@Component
 public class RetrieverFactory {
 
     @Autowired
     private OpenAiEmbeddingModel embeddingModel;
+
+    @Autowired
+    private ChromaEmbeddingStore chromaEmbeddingStore;
 
     void EasyRAG(){
 
@@ -51,7 +56,7 @@ public class RetrieverFactory {
 //        todo 创建一个可直接注入的 持久化矢量库
 
         ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
-                .embeddingStore(embeddingStore)
+                .embeddingStore(chromaEmbeddingStore)
                 .embeddingModel(embeddingModel)
                 .maxResults(3)
                 // maxResults 也可以根据查询动态指定

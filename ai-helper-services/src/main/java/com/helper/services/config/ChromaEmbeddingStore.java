@@ -2,8 +2,11 @@ package com.helper.services.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.helper.commonservicescommon.utils.ChromaUtils;
+import com.helper.commonservicescommon.utils.UserContext;
 import com.helper.services.entity.ChromaSearchResponse;
 import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
@@ -18,17 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class ChromaEmbeddingStore implements EmbeddingStore {
-
-    private final WebClient chromaWebClient;
+public class ChromaEmbeddingStore implements EmbeddingStore<TextSegment> {
 
     @Value("chroma.memory.uuid")
     private String chromaMemoryUuid;
-
-    public ChromaEmbeddingStore(WebClient.Builder webClientBuilder) {
-        // 指定 baseUrl
-        this.chromaWebClient = webClientBuilder.baseUrl("http://localhost:8000").build();
-    }
 
     @Override
     public String add(Embedding embedding) {
@@ -42,34 +38,30 @@ public class ChromaEmbeddingStore implements EmbeddingStore {
     }
 
     @Override
-    public String add(Embedding embedding, Object o) {
+    public String add(Embedding embedding, TextSegment textSegment) {
         return null;
     }
 
     @Override
-    public EmbeddingSearchResult search(EmbeddingSearchRequest embeddingSearchRequest) {
+    public EmbeddingSearchResult<TextSegment> search(EmbeddingSearchRequest embeddingSearchRequest) {
 
         // 获取查询向量
         Embedding queryEmbedding = embeddingSearchRequest.queryEmbedding();
         float[] queryVector = queryEmbedding.vector();
 
-        // 获取最小分数 转换成距离
-//        double minScore = embeddingSearchRequest.minScore();
-//        double distance = 1 - minScore;
+        // 用户上下文获取userId 根据userId 查询 记录的uuid
+        String userId = UserContext.getUserId();
 
-        // todo 用户上下文获取userId 根据userId 查询 记录的uuid
-        String userId = "admin";
-
+        // 检索条件 请求体
         Map<String,Object> bodyMap = new HashMap<>();
-//        bodyMap.put("ids", new String[]{"admin"}); // 数据的ids 添加数据的时候定义 // 可以用来区分同一个用户的不同会话 目前不区分会话
-        bodyMap.put("n_results",4); // 返回四条结果
+        bodyMap.put("n_results",embeddingSearchRequest.maxResults()); // 返回四条结果
         bodyMap.put("query_embeddings",new float[][]{queryVector});
         bodyMap.put("where",Map.of("userId",Map.of("$eq", userId)));  // 过滤元数据中的用户id
 
         String block =  chromaWebClient.post()
                 .uri("/api/v2/tenants/ai-helper/databases/memory/collections/" +
-                        chromaMemoryUuid +
-                        "/query")  // 集合的uuid 集合名查询chroma得到 可以用来区分用户
+                        chromaMemoryUuid + // 集合的uuid 集合名查询chroma得到 可以用来区分用户
+                        "/query")
                 .bodyValue(bodyMap)
                 .retrieve()
                 .bodyToMono(String.class)

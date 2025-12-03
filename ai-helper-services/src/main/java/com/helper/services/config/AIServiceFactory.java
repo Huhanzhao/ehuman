@@ -36,7 +36,7 @@ public class AIServiceFactory {
                         .chatMemoryStore(persistentChatMemoryStore)
                         .build()) //聊天记忆 持久化按照id查询不同记忆
                 .streamingChatModel(openAiStreamingChatModel) // 流式聊天模型
-                .tools(searchWebTool,searchOldMemoryTool) // 搜索工具
+                .tools(searchWebTool,searchOldMemoryTool) // 搜索引擎工具 旧记忆RAG检索
                 .build();
     }
 

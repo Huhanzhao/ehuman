@@ -1,13 +1,11 @@
 package com.helper.services.controller;
 
 
+import com.helper.commonservicescommon.utils.UserContext;
 import com.helper.services.entity.dto.ChatRequest;
 import com.helper.services.service.AIChatService;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 @RequestMapping("/ai")
@@ -30,8 +28,11 @@ public class AIController {
 
     // 简单对话
     @PostMapping(value = "/simpleChat", produces = "text/plain;charset=UTF-8")
-    public Flux<String> chatWithString(@RequestBody ChatRequest chatRequest){
-        return aiChatService.chatWithString("1111",chatRequest.getMessage());
+    public Flux<String> chatWithString(@RequestBody ChatRequest chatRequest ,
+                                       @RequestHeader("X-User-Id") String userId){
+        // 保存用户上下文
+        UserContext.setUserId(userId);
+        return aiChatService.chatWithString(userId,chatRequest.getMessage());
     }
 
     // RAG旧记忆 + RAG资料库 + 联网检索 + 图片生成
