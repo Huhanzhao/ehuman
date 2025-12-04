@@ -25,15 +25,20 @@ public class AIController {
         this.aiRagService = aiRagService;
     }
 
-    // 简单对话
+    // 简单对话 工具调用（web，旧记忆） todo 图片生成工具
     @PostMapping(value = "/simpleChat", produces = "text/plain;charset=UTF-8")
     public Flux<String> chatWithString(@RequestBody ChatRequest chatRequest ,
                                        @RequestHeader("X-User-Id") String userId){
         return aiChatService.chatWithString(userId,chatRequest.getMessage(),userId);
     }
 
-    // RAG旧记忆 + RAG资料库 + 联网检索 + 图片生成
+    // RAG旧记忆 + RAG资料库 + 联网检索
+    @PostMapping(value = "/ragChat", produces = "text/plain;charset=UTF-8")
+    public Flux<String> ragChatWithString(@RequestBody ChatRequest chatRequest ,
+                                       @RequestHeader("X-User-Id") String userId){
+        return aiRagService.chatWithString(userId,chatRequest.getMessage(),userId);
+    }
 
-    // 图片上传接口
+    // todo 管理模块 图片上传接口 资料库上传接口
 
 }

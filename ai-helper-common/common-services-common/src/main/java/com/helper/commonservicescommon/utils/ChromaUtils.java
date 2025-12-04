@@ -75,7 +75,7 @@ public class ChromaUtils {
         bodyMap.put("name", collectionName);
         bodyMap.put("metadata", metadata);
         bodyMap.put("schema", null);
-        bodyMap.put("get_or_create", true);
+        bodyMap.put("get_or_create", false);
         bodyMap.put("configuration", null);
 
         try {
@@ -92,7 +92,7 @@ public class ChromaUtils {
         }catch (Exception e){
             throw new BusinessException("集合创建失败");
         }
-        log.info("集合创建成功{}", databaseName);
+        log.info("集合创建成功{}", collectionName);
     }
 
     // 用名称查询集合的uuid  /api/v2/tenants/{tenant}/databases/{database}/collections/{collection_id}

@@ -65,7 +65,7 @@ public class ChromaEmbeddingStore implements EmbeddingStore<TextSegment> {
         List<String> documentsList = resp.getDocuments().getFirst();
         List<String> idsList = resp.getIds().getFirst();
         List<Map<String, Object>> metadataList = resp.getMetadatas().getFirst();
-        for (int i = 0; i < resp.getDocuments().size(); i++) {
+        for (int i = 0; i < resp.getDocuments().getFirst().size(); i++) {
             // 限制最小分数
             Double distance = distancesList.get(i);
             if (1 - distance > minScore) {

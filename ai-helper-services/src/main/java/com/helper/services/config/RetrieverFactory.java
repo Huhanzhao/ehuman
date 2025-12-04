@@ -9,6 +9,7 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.FileSystems;
@@ -26,9 +27,30 @@ public class RetrieverFactory {
     @Autowired
     private ChromaEmbeddingStore chromaEmbeddingStore;
 
+    @Bean
+    public ContentRetriever getContentRetriever(){
+        return EmbeddingStoreContentRetriever.builder()
+                .embeddingStore(chromaEmbeddingStore)
+                .embeddingModel(embeddingModel)
+                .maxResults(3)
+                // maxResults 也可以根据查询动态指定
+                // .dynamicMaxResults(query -> 3)
+                .minScore(0.75)
+                // minScore 也可以根据查询动态指定
+                // .dynamicMinScore(query -> 0.75)
+                // .filter(metadataKey("userId").isEqualTo("12345"))
+                // filter 也可以根据查询动态指定
+                // .dynamicFilter(query -> {
+                //      String userId = getUserId(query.metadata().chatMemoryId());
+                //      return metadataKey("userId").isEqualTo(userId);
+                //             }
+                //                )
+                .build();
+    }
+
     void EasyRAG(){
 
-        // todo 存到矢量库 逻辑
+        // todo 存到矢量库 逻辑  整理本文件代码
         // 创建过滤器
         PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:*资料.txt");
         // 获取文档
@@ -53,24 +75,5 @@ public class RetrieverFactory {
                 .build();
         ingestor.ingest(documents);
 
-//         创建一个可直接注入的 持久化矢量库  todo 待测试
-
-        ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
-                .embeddingStore(chromaEmbeddingStore)
-                .embeddingModel(embeddingModel)
-                .maxResults(3)
-                // maxResults 也可以根据查询动态指定
-//                .dynamicMaxResults(query -> 3)
-                .minScore(0.75)
-                // minScore 也可以根据查询动态指定
-//                .dynamicMinScore(query -> 0.75)
-//                .filter(metadataKey("userId").isEqualTo("12345"))
-                // filter 也可以根据查询动态指定
-//                .dynamicFilter(query -> {
-//                    String userId = getUserId(query.metadata().chatMemoryId());
-//                    return metadataKey("userId").isEqualTo(userId);
-//                }
-//                )
-                .build();
     }
 }
