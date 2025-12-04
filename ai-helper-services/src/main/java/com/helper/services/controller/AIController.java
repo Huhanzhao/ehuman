@@ -1,7 +1,6 @@
 package com.helper.services.controller;
 
 
-import com.helper.commonservicescommon.utils.UserContext;
 import com.helper.services.entity.dto.ChatRequest;
 import com.helper.services.service.AIChatService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,9 +29,7 @@ public class AIController {
     @PostMapping(value = "/simpleChat", produces = "text/plain;charset=UTF-8")
     public Flux<String> chatWithString(@RequestBody ChatRequest chatRequest ,
                                        @RequestHeader("X-User-Id") String userId){
-        // 保存用户上下文
-        UserContext.setUserId(userId);
-        return aiChatService.chatWithString(userId,chatRequest.getMessage());
+        return aiChatService.chatWithString(userId,chatRequest.getMessage(),userId);
     }
 
     // RAG旧记忆 + RAG资料库 + 联网检索 + 图片生成

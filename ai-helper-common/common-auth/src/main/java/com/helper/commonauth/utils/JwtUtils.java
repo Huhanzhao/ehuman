@@ -1,6 +1,7 @@
 package com.helper.commonauth.utils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -48,21 +49,29 @@ public class JwtUtils {
 
     // 解析 JWT 获取 userId
     public static String getUserId(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.getSubject();
+        }catch (ExpiredJwtException e){
+            return e.getClaims().getSubject();
+        }
     }
 
     // 解析 JWT 获取 version
     public static String getVersion(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.get("version", String.class);
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.get("version", String.class);
+        }catch (ExpiredJwtException e){
+            return e.getClaims().get("version", String.class);
+        }
     }
 }

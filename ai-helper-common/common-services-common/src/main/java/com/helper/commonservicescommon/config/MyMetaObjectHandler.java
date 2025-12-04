@@ -16,7 +16,7 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         String userId = UserContext.getUserId();
-        if (!userId.isEmpty()){
+        if (userId != null &&!userId.isEmpty()){
             this.setFieldValByName("createBy", userId, metaObject);
             this.setFieldValByName("updateBy", userId, metaObject);
         }
@@ -31,7 +31,7 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void updateFill(MetaObject metaObject) {
         String userId = UserContext.getUserId();
-        if (!userId.isEmpty()){
+        if (userId != null && !userId.isEmpty()){
             this.setFieldValByName("updateBy", userId, metaObject);
         }
         this.setFieldValByName("updateTime", new Date(), metaObject);

@@ -11,4 +11,7 @@ public class ChromaSearchResponse {
     public List<List<String>> documents;
     public List<List<Map<String, Object>>> metadatas;
     public List<List<Double>> distances;
+    public List<List<Float>> embeddings;
+    public List<String> include;
+    public List<String> uris;
 }

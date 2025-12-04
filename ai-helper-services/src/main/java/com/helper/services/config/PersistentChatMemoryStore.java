@@ -26,7 +26,8 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
                 List<TbAiChatMemory> tbAiChatMemoriesList =
                         tbAiChatMemoryService.list(Wrappers.<TbAiChatMemory>lambdaQuery()
                         .eq(TbAiChatMemory::getMemoryId, memoryId)
-                                .orderByAsc(TbAiChatMemory::getCreateTime));
+                                .orderByAsc(TbAiChatMemory::getCreateTime)
+                                .last("LIMIT 30"));
 
                 // 可以使用ChatMessageDeserializer.messageFromJson(String)和
                 // ChatMessageDeserializer.messagesFromJson(String)辅助方法

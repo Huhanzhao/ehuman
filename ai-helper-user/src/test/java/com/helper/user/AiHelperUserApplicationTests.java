@@ -47,8 +47,8 @@ class AiHelperUserApplicationTests {
 
     @Test
     void add() {
-        List<String> documents = List.of("小明是小红的哥哥");
-        List<List<Double>> embeddings = List.of(List.of(0.11));
+        List<String> documents = List.of("西瓜是红色的");
+        float[][] embeddings = new float[][]{new float[]{0.11f}};
         List<String> ids = List.of(UUID.randomUUID().toString());
         List<String> uris = List.of("1");
         ChromaDataMetaData chromaDataMetaData = new ChromaDataMetaData();
@@ -68,6 +68,36 @@ class AiHelperUserApplicationTests {
                 addChromaData("ai-helper", "ai-service",
                         "memory",addChromaDataBody);
         System.out.println(memory);
+    }
+    @Test
+    void query() {
+        String block = chromaUtils.
+                queryDataByVector("ai-helper", "ai-service",
+                        "memory",null,new float[][]{new float[]{0.1f}},5);
+        System.out.println(block);
+    }
+    @Test
+    void queryByMate() {
+        String block = chromaUtils.
+                queryDataByMate("ai-helper", "ai-service",
+                        "memory",Map.of("userId","admin"));
+        System.out.println(block);
+    }
+
+    @Test
+    void deleteDataByIdOrMeta() {
+        Boolean block = chromaUtils.
+                deleteDataByIdOrMeta("ai-helper", "ai-service",
+                        "memory",List.of("a4e06334-46c9-47b4-be25-89e12f01aec3"),null);
+        System.out.println(block);
+    }
+
+    @Test
+    void deleteCollection() {
+        Boolean block = chromaUtils.
+                deleteCollectionByConName("ai-helper", "ai-service",
+                        "memory");
+        System.out.println(block);
     }
 
 }

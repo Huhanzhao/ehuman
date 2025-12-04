@@ -53,7 +53,7 @@ public class RetrieverFactory {
                 .build();
         ingestor.ingest(documents);
 
-//        todo 创建一个可直接注入的 持久化矢量库
+//         创建一个可直接注入的 持久化矢量库  todo 待测试
 
         ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
                 .embeddingStore(chromaEmbeddingStore)
