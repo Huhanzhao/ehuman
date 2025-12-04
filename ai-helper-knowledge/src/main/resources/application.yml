@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/AI_SERVICE?useSSL=false&serverTimezone=UTC
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  application:
+    name: ai-helper-knowledge
+  profiles:
+    active: dev
+  config:
+    import:
+      - optional:nacos:ai-helper-knowledge.yml
+      - optional:nacos:ai-helper-knowledge-${spring.profiles.active}.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: ai-helper
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        namespace: ai-helper
+        group: DEFAULT_GROUP
+        file-extension: yml
+server:
+  port: 8083
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
