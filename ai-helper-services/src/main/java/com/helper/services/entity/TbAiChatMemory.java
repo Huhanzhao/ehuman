@@ -15,7 +15,7 @@ public class TbAiChatMemory {
     /**
      * 主键
      */
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @TableId(value = "ID", type = IdType.ASSIGN_ID)
     private Long id;
 
     /**

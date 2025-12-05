@@ -41,4 +41,7 @@ build/
 **/mvnw
 **/logs/**
 **/**.log
+**/.minio.sys/**
+minio_data
+minio_data/**
 

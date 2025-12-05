@@ -23,5 +23,6 @@
 	<modules>
 		<module>common-auth</module>
 		<module>common-services-common</module>
-	</modules>
+        <module>common-embedding</module>
+    </modules>
 </project>

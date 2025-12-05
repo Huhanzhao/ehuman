@@ -1,22 +1,12 @@
 package com.helper.services.config;
 
-import dev.langchain4j.data.document.Document;
-import dev.langchain4j.data.document.splitter.DocumentByParagraphSplitter;
-import dev.langchain4j.data.segment.TextSegment;
+import com.helper.config.ChromaEmbeddingStoreFactory;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
-import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
-import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
-
-import java.nio.file.FileSystems;
-import java.nio.file.PathMatcher;
-import java.util.List;
-
-import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.loadDocuments;
 
 @Component
 public class RetrieverFactory {
@@ -24,13 +14,10 @@ public class RetrieverFactory {
     @Autowired
     private OpenAiEmbeddingModel embeddingModel;
 
-    @Autowired
-    private ChromaEmbeddingStore chromaEmbeddingStore;
-
     @Bean
     public ContentRetriever getContentRetriever(){
         return EmbeddingStoreContentRetriever.builder()
-                .embeddingStore(chromaEmbeddingStore)
+                .embeddingStore(ChromaEmbeddingStoreFactory.getChromaEmbeddingStore("knowledge"))
                 .embeddingModel(embeddingModel)
                 .maxResults(3)
                 // maxResults 也可以根据查询动态指定
@@ -46,34 +33,5 @@ public class RetrieverFactory {
                 //             }
                 //                )
                 .build();
-    }
-
-    void EasyRAG(){
-
-        // todo 存到矢量库 逻辑  整理本文件代码
-        // 创建过滤器
-        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:*资料.txt");
-        // 获取文档
-        List<Document> documents = loadDocuments("D:\\project\\ideaworkspace\\ai-helper\\src\\main\\resources",pathMatcher);
-//        List<Document> documents = loadDocuments(toPath("documents/"), glob("*.txt"));
-
-        // 2️⃣ 使用文档分割器，把每个 Document 切成小块（每块500字符，重叠50）
-//        RecursiveDocumentSplitter splitter = new RecursiveDocumentSplitter(500, 50);
-        DocumentByParagraphSplitter documentByParagraphSplitter = new DocumentByParagraphSplitter(500, 50);
-        // 智能切割器
-//        DocumentSplitter splitter = DocumentSplitters.recursive(500, 50);
-
-
-
-        // 内存的矢量库
-        InMemoryEmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
-
-        EmbeddingStoreIngestor ingestor = EmbeddingStoreIngestor.builder()
-                .documentSplitter(documentByParagraphSplitter)
-                .embeddingModel(embeddingModel)
-                .embeddingStore(embeddingStore)
-                .build();
-        ingestor.ingest(documents);
-
     }
 }
