@@ -43,6 +43,13 @@ spring:
                 - Path=/services/**
               filters:
                 - StripPrefix=1
+            # 知识库服务路由
+            - id: ai-helper-knowledge
+              uri: lb://ai-helper-knowledge
+              predicates:
+                - Path=/knowledge/**
+              filters:
+                - StripPrefix=1
           globalcors:
             cors-configurations:
               '[/**]':

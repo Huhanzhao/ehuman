@@ -45,7 +45,14 @@ server:
   port: 8081
 mybatis-plus:
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
 tavily:
   api-key: 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
+
+logging:
+  level:
+    dev.langchain4j.http.client.log.LoggingHttpClient: WARN
+    dev.langchain4j: info
+    dev.langchain4j.memory: info
+    com.helper.services.config: info

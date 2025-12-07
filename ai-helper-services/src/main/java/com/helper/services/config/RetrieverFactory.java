@@ -22,7 +22,7 @@ public class RetrieverFactory {
                 .maxResults(3)
                 // maxResults 也可以根据查询动态指定
                 // .dynamicMaxResults(query -> 3)
-                .minScore(0.75)
+//                .minScore(0.75)
                 // minScore 也可以根据查询动态指定
                 // .dynamicMinScore(query -> 0.75)
                 // .filter(metadataKey("userId").isEqualTo("12345"))

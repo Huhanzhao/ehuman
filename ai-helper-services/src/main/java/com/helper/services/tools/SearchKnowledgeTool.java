@@ -21,7 +21,7 @@ public class SearchKnowledgeTool {
 
     @Tool("矢量知识库中搜索问题相关知识")
     public EmbeddingSearchResult<TextSegment> searchKnowledge(@V("用户提问的消息") String userMessage){
-        log.info("搜索知识库记录方法被调用了,用户提问：{}", userMessage);
+        log.warn("搜索知识库记录方法被调用了,用户提问：{}", userMessage);
         ChromaEmbeddingStore chromaEmbeddingStore =
                 ChromaEmbeddingStoreFactory.getChromaEmbeddingStore("knowledge");
 
@@ -33,7 +33,7 @@ public class SearchKnowledgeTool {
                 .build();
 
         EmbeddingSearchResult<TextSegment> search = chromaEmbeddingStore.search(embeddingRequest);
-        log.info("知识库搜索结果：{}", search);
+        log.warn("知识库搜索结果：{}", search);
         return search;
     }
 }

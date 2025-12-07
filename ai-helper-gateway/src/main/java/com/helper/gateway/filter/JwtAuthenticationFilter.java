@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter implements GlobalFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
         if (path.startsWith("/api/user/login") ||
+                path.startsWith("/api/user/register") ||
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/v3/api-docs")) {
             // 白名单直接放行

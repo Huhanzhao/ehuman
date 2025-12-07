@@ -7,14 +7,19 @@ import com.helper.services.tools.SearchOldMemoryTool;
 import com.helper.services.tools.SearchWebTool;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
+@Slf4j
 public class AIServiceFactory {
 
     @Resource
@@ -41,7 +46,7 @@ public class AIServiceFactory {
         return AiServices.builder(AIChatService.class)
                 .chatMemoryProvider(id -> MessageWindowChatMemory.builder()
                         .id(id)
-                        .maxMessages(20)
+                        .maxMessages(25)
                         .chatMemoryStore(persistentChatMemoryStore)
                         .build()) //聊天记忆 持久化按照id查询不同记忆
                 .streamingChatModel(openAiStreamingChatModel) // 流式聊天模型
@@ -58,11 +63,16 @@ public class AIServiceFactory {
 //                .chatMemory(chatMemory) // 共享memory实例
                 .chatMemoryProvider(id -> MessageWindowChatMemory.builder()
                         .id(id)
-                        .maxMessages(20)
+                        .maxMessages(25)
                         .chatMemoryStore(persistentChatMemoryStore)
                         .build()) //聊天记忆 持久化按照id查询不同记忆
                 .streamingChatModel(openAiStreamingChatModel) // 流式聊天模型
-                .contentRetriever(contentRetriever) // 检索器
+                .contentRetriever(query -> {
+                    log.info("【RAG 检索触发】查询内容：{}", query);
+                    List<Content> retrieve = contentRetriever.retrieve(query);
+                    log.info("【RAG 检索结果】共 {} 条", retrieve.size());
+                    return retrieve;
+                }) // 检索器
                 .tools(searchWebTool,searchOldMemoryTool) // 搜索工具 //或者用 todo .toolProvider() 懒加载  高级用法待探索
                 .build();
     }

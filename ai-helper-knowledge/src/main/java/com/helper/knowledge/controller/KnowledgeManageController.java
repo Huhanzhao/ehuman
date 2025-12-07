@@ -2,6 +2,9 @@ package com.helper.knowledge.controller;
 
 import com.helper.commonservicescommon.entity.Result;
 import com.helper.knowledge.service.KnowledgeService;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MinioClient;
+import io.minio.http.Method;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,9 @@ public class KnowledgeManageController {
 
     @Autowired
     private KnowledgeService knowledgeService;
+
+    @Autowired
+    private MinioClient minioClient;
 
     /**
      * 从minio中下载文件
@@ -38,5 +44,19 @@ public class KnowledgeManageController {
     @PostMapping(value = "/upload",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<String> upload(@RequestParam("file") MultipartFile file,@RequestHeader("X-User-Id") String userId) {
         return knowledgeService.upload(file, userId);
+    }
+
+    @GetMapping(value = "/imageTest")
+    public Result<String> getImage() throws Exception{
+        String url = minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .method(Method.GET)
+                        .bucket("ai-helper-knowledge")
+                        .object("Snipaste_2025-12-07_19-43-48.png")
+                        .expiry(60 * 60)  // 有效期 1 小时
+                        .build()
+        );
+
+        return Result.success(url);
     }
 }

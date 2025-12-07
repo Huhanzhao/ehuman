@@ -24,7 +24,7 @@ public class SearchOldMemoryTool {
 
     @Tool("矢量库中搜索问题相关历史聊天记录")
     public EmbeddingSearchResult<TextSegment> searchChatMessage(@V("用户提问的消息") String userMessage, @V("该参数是用户的 userId，需要传userId，不能传其他的")String userId){
-        log.info("搜索历史聊天记录方法被调用了,用户提问：{},用户记忆id：{}", userMessage,userId);
+        log.warn("搜索历史聊天记录方法被调用了,用户提问：{},用户记忆id：{}", userMessage,userId);
         ChromaEmbeddingStore chromaEmbeddingStore =
                 ChromaEmbeddingStoreFactory.getChromaEmbeddingStore("memory");
 
@@ -40,7 +40,7 @@ public class SearchOldMemoryTool {
                 .build();
 
         EmbeddingSearchResult<TextSegment> search = chromaEmbeddingStore.search(embeddingRequest);
-        log.info("知识库搜索结果：{}", search);
+        log.warn("知识库搜索结果：{}", search);
         return search;
     }
 }

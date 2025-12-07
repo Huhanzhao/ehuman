@@ -8,6 +8,6 @@ import reactor.core.publisher.Flux;
 
 public interface AIChatService {
 
-    @SystemMessage(fromResource = "aiChatPrompt.txt")
+    @SystemMessage(fromResource = "ragChatPrompt.txt")
     Flux<String> chatWithString(@MemoryId String memoryId, @UserMessage String message,@V("userId") String userId);
 }

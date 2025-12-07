@@ -34,6 +34,11 @@ public class TbAiChatMemory {
     private String role;
 
     /**
+     *  已向量化
+     */
+    private Boolean vectorized;
+
+    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)
