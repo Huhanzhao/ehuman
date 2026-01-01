@@ -45,3 +45,5 @@ build/
 minio_data
 minio_data/**
 
+/ai-helper-user/cache/account.secrets
+/ai-helper-user/cache/validator.bin

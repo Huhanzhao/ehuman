@@ -56,3 +56,13 @@ logging:
     dev.langchain4j: info
     dev.langchain4j.memory: info
     com.helper.services.config: info
+
+
+shiro:
+  ws:
+    server:
+      enable: true
+      url: "/ws"
+    access-token: huhanzhao
+  plugin-list:
+  # - com.bot.plugin.MainPlugin  # 已删除 MainPlugin，移除注册
