@@ -15,7 +15,7 @@ public class JwtUtils {
     // 秘钥
     private static final String SECRET_KEY = "X8v!2hQ@kZ7r%pL4nB9wT6yG3sD1eF0u";
     private static final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
-    private static final long EXPIRATION_MS = 30 * 60 * 1000; // 30分钟
+    private static final long EXPIRATION_MS = 1 * 60 * 1000; // 30分钟
     private static final long REFRESH_EXPIRATION_MS = 24 * 60 * 60 * 1000 * 7; // 7天
 
     // 生成 身份验证token
