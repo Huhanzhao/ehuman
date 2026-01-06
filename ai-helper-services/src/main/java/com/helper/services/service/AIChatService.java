@@ -10,4 +10,7 @@ public interface AIChatService {
 
     @SystemMessage(fromResource = "ragChatPrompt.txt")
     Flux<String> chatWithString(@MemoryId String memoryId, @UserMessage String message,@V("userId") String userId);
+
+    @SystemMessage(fromResource = "ragChatPrompt.txt")
+    String simbleChat(@MemoryId String memoryId, @UserMessage String message,@V("userId") String userId);
 }

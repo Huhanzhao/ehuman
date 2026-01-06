@@ -65,4 +65,5 @@ shiro:
       url: "/ws"
     access-token: huhanzhao
   plugin-list:
-  # - com.bot.plugin.MainPlugin  # 已删除 MainPlugin，移除注册
+   - com.helper.services.plugin.ExamplePlugin  # 已删除 MainPlugin，移除注册
+   - com.helper.services.plugin.BangumiPlugin  # 已删除 MainPlugin，移除注册
