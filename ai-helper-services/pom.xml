@@ -15,16 +15,24 @@
 
     <dependencies>
 
-
+<!--        openai-->
         <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-web-search-engine-tavily</artifactId>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
-        <!--        流式输出的第二种方式-->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>-->
+<!--            <version>1.0.0-M6</version>-->
+<!--        </dependency>-->
+
+        <!--graph-->
         <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-reactor</artifactId>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+            <version>1.1.0.0-RC2</version>
         </dependency>
 
         <dependency>
@@ -53,6 +61,7 @@
 
 
     </dependencies>
+
 
     <build>
         <plugins>

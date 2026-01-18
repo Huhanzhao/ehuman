@@ -3,7 +3,6 @@ package com.helper.knowledge.service;
 import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.commonservicescommon.entity.Result;
 import com.helper.commonservicescommon.utils.UserContext;
-import com.helper.config.ChromaEmbeddingStoreFactory;
 import com.helper.knowledge.entity.TbKnowledge;
 import com.helper.knowledge.utils.ReadFilesUtil;
 import dev.langchain4j.data.document.Document;

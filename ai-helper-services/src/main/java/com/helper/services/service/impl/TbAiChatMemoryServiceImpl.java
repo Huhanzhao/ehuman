@@ -1,7 +1,7 @@
 package com.helper.services.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.helper.services.entity.TbAiChatMemory;
+import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.mapper.TbAiChatMemoryMapper;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 * @createDate 2025-11-03 22:19:57
 */
 @Service
-public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper, TbAiChatMemory>
+public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper, TbAiChatMemoryDo>
     implements TbAiChatMemoryService {
 
 }

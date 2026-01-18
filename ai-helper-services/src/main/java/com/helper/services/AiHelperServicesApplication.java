@@ -5,7 +5,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = "com.helper")
+@SpringBootApplication(scanBasePackages = "com.helper",exclude = {org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration.class})
 @MapperScan(basePackages = "com.helper.services.mapper")
 @Slf4j
 public class AiHelperServicesApplication {

@@ -11,7 +11,7 @@ import java.util.Date;
  */
 @TableName(value ="TB_AI_CHAT_MEMORY")
 @Data
-public class TbAiChatMemory {
+public class TbAiChatMemoryDo {
     /**
      * 主键
      */
@@ -64,7 +64,7 @@ public class TbAiChatMemory {
         if (getClass() != that.getClass()) {
             return false;
         }
-        TbAiChatMemory other = (TbAiChatMemory) that;
+        TbAiChatMemoryDo other = (TbAiChatMemoryDo) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
             && (this.getMemoryId() == null ? other.getMemoryId() == null : this.getMemoryId().equals(other.getMemoryId()))
             && (this.getMessage() == null ? other.getMessage() == null : this.getMessage().equals(other.getMessage()))

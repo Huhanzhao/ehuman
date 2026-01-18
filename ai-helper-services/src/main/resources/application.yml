@@ -23,38 +23,39 @@ spring:
         namespace: ai-helper
         group: DEFAULT_GROUP
         file-extension: yml
-langchain4j:
-  open-ai:
-    image-model:
-      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
-      base-url: https://api.openai-proxy.org/v1
-      model-name: dall-e-3
-    chat-model:
-      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
-      model-name: gpt-4o-mini
-      base-url: https://api.openai-proxy.org/v1
-    embedding-model:
-      base-url: https://api.openai-proxy.org/v1
-      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
-      model-name: text-embedding-3-large
-    streaming-chat-model:
-      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
-      base-url: https://api.openai-proxy.org/v1
-      model-name: gpt-4o-mini
+  ai:
+    openai:
+      api-key: dsg
+
+#langchain4j:
+#  open-ai:
+#    image-model:
+#      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
+#      base-url: https://api.openai-proxy.org/v1
+#      model-name: dall-e-3
+#    chat-model:
+#      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
+#      model-name: gpt-4o-mini
+#      base-url: https://api.openai-proxy.org/v1
+#    embedding-model:
+#      base-url: https://api.openai-proxy.org/v1
+#      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
+#      model-name: text-embedding-3-large
+#    streaming-chat-model:
+#      api-key: sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo
+#      base-url: https://api.openai-proxy.org/v1
+#      model-name: gpt-4o-mini
 server:
   port: 8081
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
-tavily:
-  api-key: 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
+#tavily:
+#  api-key: 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
 
 logging:
   level:
-    dev.langchain4j.http.client.log.LoggingHttpClient: WARN
-    dev.langchain4j: info
-    dev.langchain4j.memory: info
     com.helper.services.config: info
 
 
