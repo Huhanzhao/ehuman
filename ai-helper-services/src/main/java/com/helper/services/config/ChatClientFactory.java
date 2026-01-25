@@ -32,7 +32,7 @@ public class ChatClientFactory {
 
         DeepSeekChatOptions deepSeekChatOptions = DeepSeekChatOptions.builder()
                 .model(ChatModelEnum.DEEP_SEEK_V3_2.getModelName())
-                .temperature(0.7)
+                .temperature(0.0)
                 .maxTokens(1024)
                 .build();
 
@@ -59,7 +59,9 @@ public class ChatClientFactory {
 
         OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
                 .model(ChatModelEnum.GPT_4O_MINI.getModelName())
-                .temperature(0.7)
+                .temperature(0.5)
+//                .topP(1.0) // 模型选词自由度
+                .presencePenalty(1.0) // 模型换词、换说法
                 .maxTokens(1024)
                 .build();
 

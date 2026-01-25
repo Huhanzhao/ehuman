@@ -2,6 +2,7 @@ package com.helper.services.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.util.Date;
 
@@ -11,6 +12,7 @@ import java.util.Date;
  */
 @TableName(value ="TB_AI_CHAT_MEMORY")
 @Data
+@Accessors(chain = true)
 public class TbAiChatMemoryDo {
     /**
      * 主键
@@ -21,7 +23,7 @@ public class TbAiChatMemoryDo {
     /**
      * 记忆id
      */
-    private String memoryId;
+    private Long memoryId;
 
     /**
      * 信息
@@ -32,11 +34,6 @@ public class TbAiChatMemoryDo {
      * 角色
      */
     private String role;
-
-    /**
-     *  已向量化
-     */
-    private Boolean vectorized;
 
     /**
      * 创建时间

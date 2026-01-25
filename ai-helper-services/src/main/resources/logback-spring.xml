@@ -38,5 +38,5 @@
     <!-- 指定包的日志级别 -->
     <logger name="com.helper" level="INFO"/>
     <logger name="org.springframework.web" level="INFO"/>
-    <logger name="org.mybatis" level="ERROR"/>
+    <logger name="org.mybatis" level="info"/>
 </configuration> 

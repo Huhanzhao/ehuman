@@ -4,22 +4,19 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.helper.services.config.ChatClientFactory;
-import com.helper.services.entity.ChatNode;
-import com.helper.services.entity.ChatNode2;
-import com.helper.services.entity.ChatNode3;
+import com.helper.services.node.SentimentAnalysisNode;
+import com.helper.services.node.UserGracesNode;
+import com.helper.services.node.MessageGenerateNode;
 import com.helper.services.enums.ChatModelEnum;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 
 @RestController
 @RequestMapping("/test")
@@ -29,48 +26,49 @@ public class TestController {
     ChatClientFactory chatClientFactory;
 
     @Autowired
-    ChatNode chatNode;
+    SentimentAnalysisNode sentimentAnalysisNode;
 
     @Autowired
-    ChatNode2 chatNode2;
+    UserGracesNode userGracesNode;
 
     @Autowired
-    ChatNode3 chatNode3;
+    MessageGenerateNode messageGenerateNode;
 
-    @GetMapping("/hello")
-    public String hello() {
+
+
+    @GetMapping("/hello/{userInput}")
+    public String hello(@PathVariable(name = "userInput") String userInput) {
         ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
         ChatClient dd = chatClientFactory.createChatClient(ChatModelEnum.DEEP_SEEK_V3_2);
 
         StateGraph stateGraph = new StateGraph(() -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-            keyStrategyMap.put("output", new AppendStrategy());
+            keyStrategyMap.put("output", new AppendStrategy());  // 追加策略
             return keyStrategyMap;
         });
 
         try {
-            stateGraph.addNode("node1",chatNode);
-            stateGraph.addNode("node2",chatNode2).addNode("node3",chatNode3)
-                    .addEdge(StateGraph.START, "node1")
-                    .addEdge("node1", "node2")
-                    .addConditionalEdges("node2", edge_async(ChatNode2::decideNextNode),
-                    Map.of("node1", "node1", "node3", "node3"))
-//                    .addEdge("node1", "node3")
-//                    .addConditionalEdges("node2", "",)
-                    .addEdge("node3",StateGraph.END );
+            stateGraph.addNode("sentimentAnalysisNode", sentimentAnalysisNode);
+            stateGraph.addNode("gracesNode", userGracesNode).addNode("messageGenerateNode", messageGenerateNode)
+                    .addEdge(StateGraph.START, "sentimentAnalysisNode")
+                    .addEdge("sentimentAnalysisNode", "gracesNode")
+//                    .addConditionalEdges("node2", edge_async(GracesNode::decideNextNode),
+//                    Map.of("aaa", "sentimentAnalysisNode", "bbb", "node3"))
+                    .addEdge("gracesNode", "messageGenerateNode")
+                    .addEdge("messageGenerateNode",StateGraph.END );
 
             CompiledGraph compiledGraph = stateGraph.compile();
 
-            RunnableConfig config = RunnableConfig.builder()
-                    .threadId("replace-strategy-demo")
-                    .build();
+//            RunnableConfig config = RunnableConfig.builder()
+//                    .threadId("replace-strategy-demo")
+//                    .build();
 
 
             // 执行
-            Map<String, Object> input = Map.of("input", 0);
+            Map<String, Object> input = Map.of("userInput", userInput);
             OverAllState overAllState = compiledGraph.invoke(input).get();
 
-            System.out.println("Final result: " + overAllState.value("output").orElse(""));
+            return ("Final result: " + overAllState.value("output").orElse(""));
         } catch (GraphStateException e) {
             throw new RuntimeException(e);
         }
@@ -81,6 +79,6 @@ public class TestController {
 ////        String bbb = dd.prompt(new Prompt("你是哪家公司的大模型")).call().content();
 //        System.out.println(aaaa);
 ////        System.out.println(bbb);
-        return "aaaa";
+//        return "aaaa";
     }
 }
