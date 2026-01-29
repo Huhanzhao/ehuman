@@ -2,6 +2,9 @@ package com.helper.services.service;
 
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.springframework.ai.chat.messages.Message;
+
+import java.util.List;
 
 /**
 * @author Lenovo
@@ -10,4 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbAiChatMemoryService extends IService<TbAiChatMemoryDo> {
 
+    List<Message> getMessageList(Long userId,Integer pageSize);
 }

@@ -54,20 +54,8 @@ public class QQBotPlugin extends BotPlugin {
     public void privateHandler(Bot bot , PrivateMessageEvent event, Matcher matcher){
 
         String userInput = event.getMessage();
-// 保存最新消息
+        // 保存最新消息
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("user").setMessage(userInput));
-
-
-        // 获取记忆
-        Page<TbAiChatMemoryDo> page = new Page<>(1, 20);
-        List<TbAiChatMemoryDo> memoryList = tbAiChatMemoryService.page(page,Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                .eq(TbAiChatMemoryDo::getMemoryId, event.getUserId())
-                .orderByDesc(TbAiChatMemoryDo::getCreateTime)
-        ).getRecords().reversed();
-        String messageMemory = MemoryCastUtils.memoryCastToString(memoryList);
-        List<Message> messageList = MemoryCastUtils.memoryCastToMessages(memoryList);
-
-
 
         StateGraph stateGraph = new StateGraph(
 //                () -> {
@@ -96,12 +84,10 @@ public class QQBotPlugin extends BotPlugin {
 //                    .threadId("replace-strategy-demo")
 //                    .build();
 
-            log.info("messageMemory:{}" , messageMemory);
             // 执行
-            Map<String, Object> input = Map.of("messageMemory", messageMemory,
+            Map<String, Object> input = Map.of(
                     "userInput", userInput,
-                    "userId", event.getUserId(),
-                    "messageList", messageList
+                    "userId", event.getUserId()
             );
             OverAllState overAllState = compiledGraph.invoke(input).get();
 

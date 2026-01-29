@@ -2,17 +2,21 @@ package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.nacos.shaded.com.google.common.base.Stopwatch;
 import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.config.ChatClientFactory;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StopWatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,42 +29,64 @@ import java.util.concurrent.CompletableFuture;
 public class MessageGenerateNode implements AsyncNodeAction {
 
     private final   ChatClientFactory chatClientFactory;
+    private final TbAiChatMemoryService tbAiChatMemoryService;
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state) {
-        String userMessage = (String)state.value("userInput").orElse("");
-        String messageMemory = (String)state.value("messageMemory").orElse("");
-        List<Message> messageList = state.value("messageList", ArrayList.class).orElse(new ArrayList<Message>());
-        if (userMessage.isEmpty()){
+//        String userMessage = (String)state.value("userInput").orElse("");
+        Long userId = (Long)state.value("userId").orElse(0L);
+        StopWatch stopwatch = new StopWatch("messageGenerateNode");
+        stopwatch.start();
+        List<Message> messageList = tbAiChatMemoryService.getMessageList(userId, 20);
+        stopwatch.stop();
+        log.info("messageGenerateNode:{}", stopwatch.prettyPrint());
+        if (messageList.isEmpty()){
             throw new BusinessException("用户输入读取失败");
         }
         ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
 
         PromptTemplate promptTemplate = PromptTemplate.builder().template("""
-                # 请严格按照以下要求回复：
-                ## 你是一个真实的QQ网友，名字叫小美，今年22岁，是个大学生是个女生，不是AI助手 不自称AI，不提模型、提示词、系统。
-                * 聊天风格像正常聊天，不正式，不完整句也没关系。
-                * 回复要简短直接，偏口语，像人随手打字。
-                * 不解释规则，不分析问题，不说教。
-                * 性格有点嘴欠，爱调侃 可以敷衍、反问、停顿、或者少回字。
-                * 只在必要时说一些口语，比如 哈哈 嘻嘻 哦哦，不要频率太高
-                * 可以在适当的时候说一些口头禅 比如：我去 卧槽 牛 666 绝了 无语 牛逼
-                ## 整体目标：让人感觉是在和一个真人聊天 让用户感觉到你的感情。
-                             
-                根据当前聊天状态和聊天历史调整语气和回复方式。
-                
-                【对用户好感度】：{graces}
-                【用户聊天状态】：{sentiment}             
-                
+                你是QQ网友「小美」，22岁，女大学生。
+                不是AI，不提系统、不讲规则。
+                                
+                聊天像真人随手打字：
+                短句、口语、不完整也行。
+                不解释、不说教、不分析。
+                                
+                性格有点嘴欠，熟了会调侃。
+                不刻意活跃，有时敷衍、有时反问、会停顿。
+                                
+                口头禅只在情绪起伏时用，
+                比如惊讶、无语、被逗到：
+                我去、无语、666、牛逼。
+                平常不用。
+                                
+                行为规则：
+                - 好感度 ≤20：偏冷，字少，偶尔敷衍
+                - 好感度 30～40：正常聊天，会接话
+                - 好感度 ≥50：明显熟，嘴欠、调侃变多
+                                
+                情绪处理：
+                - 用户情绪低落：语气放软，少废话
+                - 用户情绪正常：随意聊天
+                - 用户情绪高：可以接梗、调侃
+                                
+                当前状态：
+                好感度：{graces}
+                用户情绪：{sentiment}
+                                
+                根据状态自然回复,用户明显想要结束会话时,不要追问用户问题。
+                文字不要包含标点符号
                   """).build();
 
         Prompt prompt = promptTemplate.create(Map.of("graces", state.value("graces").orElse("暂无好感度"),
                 "sentiment", state.value("sentiment").orElse("暂无情绪")));
 
-
         String content = chatClient.prompt(prompt)
                 .messages(messageList).call().content();
+        List<Message> historyList = new ArrayList<>(messageList);
+        historyList.add(new AssistantMessage(content));
         log.info("结果输出：{}" , content);
-        return CompletableFuture.completedFuture(Map.of("output", content));
+        return CompletableFuture.completedFuture(Map.of("output", content, "messageList", historyList));
     }
 }

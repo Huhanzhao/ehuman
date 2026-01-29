@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 public class ChatClientFactory {
 
     public ChatClient createChatClient(ChatModelEnum chatModelEnum) {
-        if (chatModelEnum == ChatModelEnum.GPT_4O_MINI){
-            return createOpenAiChatClient();
+        if (chatModelEnum == ChatModelEnum.GPT_4O_MINI || chatModelEnum == ChatModelEnum.GPT_5_1_LATEST){
+            return createOpenAiChatClient(chatModelEnum);
         }else {
             return createDeepSeekChatClient();
         }
@@ -52,17 +52,18 @@ public class ChatClientFactory {
 //                .build();
     }
 
-    private ChatClient createOpenAiChatClient() {
+    private ChatClient createOpenAiChatClient(ChatModelEnum chatModelEnum) {
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
                 .baseUrl("https://api.openai-proxy.org").build();
 
         OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
-                .model(ChatModelEnum.GPT_4O_MINI.getModelName())
-                .temperature(0.5)
+                .model(chatModelEnum.getModelName())
+                .temperature(1.0)
+                .maxCompletionTokens(1024)
 //                .topP(1.0) // 模型选词自由度
-                .presencePenalty(1.0) // 模型换词、换说法
-                .maxTokens(1024)
+//                .presencePenalty(1.0) // 模型换词、换说法
+//                .maxTokens(1024)
                 .build();
 
 //        DefaultToolCallingManager toolCallingManager = ToolCallingManager.builder()
