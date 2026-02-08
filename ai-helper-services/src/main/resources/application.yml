@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/qq_bot?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/qq_bot?useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -24,6 +24,8 @@ spring:
         group: DEFAULT_GROUP
         file-extension: yml
   ai:
+    anthropic:
+      api-key: sdfs
     openai:
       api-key: dsg
 server:

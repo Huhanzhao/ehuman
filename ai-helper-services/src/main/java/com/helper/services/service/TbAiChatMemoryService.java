@@ -13,5 +13,5 @@ import java.util.List;
 */
 public interface TbAiChatMemoryService extends IService<TbAiChatMemoryDo> {
 
-    List<Message> getMessageList(Long userId,Integer pageSize);
+    List<TbAiChatMemoryDo> getMessageList(Long userId,Integer pageSize);
 }

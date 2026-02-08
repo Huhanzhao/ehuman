@@ -9,8 +9,10 @@ import lombok.Getter;
 public enum ChatModelEnum {
 
     DEEP_SEEK_V3_2("deepseek-chat"),
-    GPT_5_1_LATEST("gpt-5"),
+    GPT_5("gpt-5"),
+    CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
     GPT_4O_MINI("gpt-4o-mini");
+
 
     private final String modelName;
 }

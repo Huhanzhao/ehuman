@@ -21,7 +21,7 @@ public class MemoryCastUtils {
     }
 
     public static List<Message> memoryCastToMessages(List<TbAiChatMemoryDo> memoryDoList) {
-        List<Message> messages = memoryDoList.stream().map(memoryDo -> {
+        return memoryDoList.stream().map(memoryDo -> {
             Message message;
             if ("user".equals(memoryDo.getRole())) {
                 message =  new UserMessage(memoryDo.getMessage());
@@ -30,6 +30,5 @@ public class MemoryCastUtils {
             }
             return message;
         }).toList();
-        return messages;
     }
 }

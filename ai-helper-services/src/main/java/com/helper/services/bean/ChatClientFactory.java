@@ -1,8 +1,12 @@
-package com.helper.services.config;
+package com.helper.services.bean;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.helper.services.enums.ChatModelEnum;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
@@ -18,7 +22,8 @@ import org.springframework.stereotype.Component;
 public class ChatClientFactory {
 
     public ChatClient createChatClient(ChatModelEnum chatModelEnum) {
-        if (chatModelEnum == ChatModelEnum.GPT_4O_MINI || chatModelEnum == ChatModelEnum.GPT_5_1_LATEST){
+        if (chatModelEnum == ChatModelEnum.GPT_4O_MINI ||
+                chatModelEnum == ChatModelEnum.GPT_5){
             return createOpenAiChatClient(chatModelEnum);
         }else {
             return createDeepSeekChatClient();
@@ -71,6 +76,34 @@ public class ChatClientFactory {
 
         OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
                 .openAiApi(openAiApi)
+                .defaultOptions(openAiChatOptions)
+//                .toolCallingManager(toolCallingManager)
+                .build();
+        return ChatClient.create(openAiChatModel);
+//        return ChatClient.builder(openAiChatModel)
+//                .defaultSystem("你是一个对话机器人")
+//                .build();
+    }
+
+    private ChatClient createClaudeChatClient(ChatModelEnum chatModelEnum) {
+        AnthropicApi anthAiApi = AnthropicApi.builder()
+                .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
+                .baseUrl("https://api.openai-proxy.org").build();
+
+        AnthropicChatOptions openAiChatOptions = AnthropicChatOptions.builder()
+                .model(chatModelEnum.getModelName())
+                .temperature(1.0)
+                .maxTokens(1024)
+//                .topP(1.0) // 模型选词自由度
+//                .presencePenalty(1.0) // 模型换词、换说法
+//                .maxTokens(1024)
+                .build();
+
+//        DefaultToolCallingManager toolCallingManager = ToolCallingManager.builder()
+//                .build();
+
+        AnthropicChatModel openAiChatModel = AnthropicChatModel.builder()
+                .anthropicApi(anthAiApi)
                 .defaultOptions(openAiChatOptions)
 //                .toolCallingManager(toolCallingManager)
                 .build();

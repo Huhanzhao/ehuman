@@ -22,13 +22,12 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
     implements TbAiChatMemoryService {
 
     @Override
-    public List<Message> getMessageList(Long userId, Integer pageSize) {
+    public List<TbAiChatMemoryDo> getMessageList(Long userId, Integer pageSize) {
         Page<TbAiChatMemoryDo> page = new Page<>(1,pageSize);
-        List<TbAiChatMemoryDo> memoryList = this.page(page,Wrappers.<TbAiChatMemoryDo>lambdaQuery()
+        return this.page(page,Wrappers.<TbAiChatMemoryDo>lambdaQuery()
                 .eq(TbAiChatMemoryDo::getMemoryId, userId)
                 .orderByDesc(TbAiChatMemoryDo::getCreateTime)
         ).getRecords().reversed();
-        return MemoryCastUtils.memoryCastToMessages(memoryList);
     }
 }
 

@@ -2,8 +2,9 @@ package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.helper.commonservicescommon.entity.BusinessException;
-import com.helper.services.config.ChatClientFactory;
+import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.enums.ChatModelEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,15 +17,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-@Component
 @RequiredArgsConstructor
 @Slf4j
-public class MessageCheckNode implements AsyncNodeAction {
+@Component
+public class MessageCheckNode implements NodeAction {
 
     private final ChatClientFactory chatClientFactory;
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state) {
+    public Map<String, Object> apply(OverAllState state) {
         String aiMessage = (String) state.value("output", String.class).orElse("");
         List<Message> messageList = state.value("messageList", ArrayList.class).orElse(new ArrayList<Message>());
         if (aiMessage.isEmpty()){
@@ -53,6 +54,6 @@ public class MessageCheckNode implements AsyncNodeAction {
         String content = chatClient.prompt(prompt)
                 .user(aiMessage).call().content();
         log.info("messageCheck结果输出：{}" , content);
-        return CompletableFuture.completedFuture(Map.of("finalOutput", content));
+        return Map.of("finalOutput", content);
     }
 }

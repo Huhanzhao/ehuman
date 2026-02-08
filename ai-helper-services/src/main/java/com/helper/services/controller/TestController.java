@@ -1,9 +1,12 @@
 package com.helper.services.controller;
 
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.helper.services.config.ChatClientFactory;
+import com.helper.services.bean.ChatClientFactory;
+
 import com.helper.services.node.SentimentAnalysisNode;
 import com.helper.services.node.UserGracesNode;
 import com.helper.services.node.MessageGenerateNode;
@@ -18,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+
 @RestController
 @RequestMapping("/test")
 public class TestController {
@@ -26,7 +31,7 @@ public class TestController {
     ChatClientFactory chatClientFactory;
 
     @Autowired
-    SentimentAnalysisNode sentimentAnalysisNode;
+    private SentimentAnalysisNode sentimentAnalysisNode;
 
     @Autowired
     UserGracesNode userGracesNode;
@@ -34,8 +39,36 @@ public class TestController {
     @Autowired
     MessageGenerateNode messageGenerateNode;
 
+    @Autowired
+    private CompiledGraph compiledGraph;
 
 
+    @GetMapping("/hello")
+    public void hello() {
+        var invokeConfig = RunnableConfig.builder()
+                .threadId("Thread1")
+                .build();
+        StateSnapshot state = this.compiledGraph.getState(invokeConfig);
+        // 使用 updateState 更新状态，传入中断时的节点 ID
+        RunnableConfig updatedConfig = null;
+        try {
+            updatedConfig = compiledGraph.updateState(invokeConfig, Map.of("human_feedback", "4"), "IntrerrptableNodeTest");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        System.out.printf("--State after update--\n%s\n", compiledGraph.getState(updatedConfig));
+        // 创建恢复配置，添加 HUMAN_FEEDBACK_METADATA_KEY
+        RunnableConfig resumeConfig = RunnableConfig.builder(updatedConfig)
+                .addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+                .build();
+        // 继续执行 Graph（input 为 null，使用之前的状态）
+        this.compiledGraph.stream(null,resumeConfig)
+//        this.compiledGraph.stream(Map.of("human_feedback","4"), resumeConfig)
+                .doOnNext(event1 -> System.out.println("节点输出: " + event1))
+                .doOnError(error -> System.err.println("流错误: " + error.getMessage()))
+                .doOnComplete(() -> System.out.println("流完成"))
+                .blockLast();
+    }
     @GetMapping("/hello/{userInput}")
     public String hello(@PathVariable(name = "userInput") String userInput) {
         ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
@@ -48,8 +81,8 @@ public class TestController {
         });
 
         try {
-            stateGraph.addNode("sentimentAnalysisNode", sentimentAnalysisNode);
-            stateGraph.addNode("gracesNode", userGracesNode).addNode("messageGenerateNode", messageGenerateNode)
+            stateGraph.addNode("sentimentAnalysisNode", node_async(sentimentAnalysisNode));
+            stateGraph.addNode("gracesNode", node_async(userGracesNode)).addNode("messageGenerateNode", node_async(messageGenerateNode))
                     .addEdge(StateGraph.START, "sentimentAnalysisNode")
                     .addEdge("sentimentAnalysisNode", "gracesNode")
 //                    .addConditionalEdges("node2", edge_async(GracesNode::decideNextNode),

@@ -2,34 +2,39 @@ package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.helper.commonservicescommon.entity.BusinessException;
-import com.helper.services.config.ChatClientFactory;
+import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.enums.ChatModelEnum;
 import com.helper.services.service.TbAiChatMemoryService;
+import com.helper.services.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-@Component
+
 @RequiredArgsConstructor
 @Slf4j
-public class SentimentAnalysisNode implements AsyncNodeAction {
+@Component
+public class SentimentAnalysisNode implements NodeAction {
 
     private final  ChatClientFactory chatClientFactory;
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state) {
+    public Map<String, Object> apply(OverAllState state) {
         String userMessage = (String)state.value("userInput").orElse("");
         Long userId = (Long)state.value("userId").orElse(0L);
-        List<Message> messageList = tbAiChatMemoryService.getMessageList(userId, 10);
+        List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
+                tbAiChatMemoryService.getMessageList(userId, 10));
         if (messageList.isEmpty()){
             throw new BusinessException("用户输入读取失败");
         }
@@ -49,6 +54,6 @@ public class SentimentAnalysisNode implements AsyncNodeAction {
                         """)
                 .messages(messageList).call().content();
         log.info("用户对话情绪：{}" , content);
-        return CompletableFuture.completedFuture(Map.of("sentiment", "用户情绪：" + content));
+        return Map.of("sentiment", "用户情绪：" + content);
     }
 }
