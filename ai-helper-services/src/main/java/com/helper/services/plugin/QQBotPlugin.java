@@ -2,6 +2,7 @@ package com.helper.services.plugin;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.node.*;
 import com.helper.services.service.TbAiChatMemoryService;
@@ -37,6 +38,16 @@ public class QQBotPlugin extends BotPlugin {
 
         String chatId = UUID.randomUUID().toString();
         String userInput = event.getMessage();
+        if (userInput.startsWith("#删除")){
+            userInput = userInput.replace("#删除", "");
+            tbAiChatMemoryService.remove(Wrappers.<TbAiChatMemoryDo>lambdaQuery()
+                    .eq(TbAiChatMemoryDo::getRole,"assistant")
+                    .eq(TbAiChatMemoryDo::getMemoryId,event.getUserId())
+                    .like(TbAiChatMemoryDo::getMessage,userInput)
+            );
+            return;
+        }
+
         // 保存最新消息
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("user").setMessage(userInput));
 
@@ -64,9 +75,12 @@ public class QQBotPlugin extends BotPlugin {
             String[] splitMessages = aiMessage.split("\n");
             for (String splitMessage : splitMessages) {
                 if (splitMessage.isEmpty()) continue;
+                splitMessage  = splitMessage.replaceAll("。", "").trim();
                 Thread.sleep(1000 + (int) (Math.random() * 1000));
-                String msg = MsgUtils.builder().text(splitMessage).build();
-                bot.sendPrivateMsg(event.getUserId(),msg,false);
+                if (!(splitMessage.endsWith(")") && splitMessage.startsWith("("))) {
+                    String msg = MsgUtils.builder().text(splitMessage).build();
+                    bot.sendPrivateMsg(event.getUserId(),msg,false);
+                }
                 tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("assistant").setMessage(splitMessage));
             }
 

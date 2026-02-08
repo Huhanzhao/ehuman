@@ -55,7 +55,7 @@ public class UserWantToNode implements NodeAction {
                         """)
                 .user(memoryString + "\n 以上是用户与ai对话历史，请分析用户意图").call().content();
         log.info("用户意图结果：{}", content);
-        return Map.of("userWantTo", content);
+        return Map.of("userWantTo", content,"memoryString", memoryString);
     }
 
     public static String nextNode(OverAllState state) {

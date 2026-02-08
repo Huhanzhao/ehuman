@@ -32,12 +32,8 @@ public class SentimentAnalysisNode implements NodeAction {
     @Override
     public Map<String, Object> apply(OverAllState state) {
         String userMessage = (String)state.value("userInput").orElse("");
+        String memoryString = (String)state.value("memoryString").orElse("");
         Long userId = (Long)state.value("userId").orElse(0L);
-        List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
-                tbAiChatMemoryService.getMessageList(userId, 10));
-        if (messageList.isEmpty()){
-            throw new BusinessException("用户输入读取失败");
-        }
         log.info("用户输入:{}" , userMessage);
         ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
         String content = chatClient.prompt("""
@@ -52,7 +48,7 @@ public class SentimentAnalysisNode implements NodeAction {
                             例子2：Sad(强度：0.6,范围0~1)
                             ...
                         """)
-                .messages(messageList).call().content();
+                .user(memoryString + "\n 以上是用户对话记录，请分许用户情绪").call().content();
         log.info("用户对话情绪：{}" , content);
         return Map.of("sentiment", "用户情绪：" + content);
     }
