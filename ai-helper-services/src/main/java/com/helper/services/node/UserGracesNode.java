@@ -75,6 +75,7 @@ public class UserGracesNode implements NodeAction {
         Integer grace = graceDo.getGrace();
         // 修改好感度
         try {
+            content = content.replaceAll("```json","").replaceAll("```","");
             TbUpdateGraceHistoryDo parse = JSON.parseObject(content,TbUpdateGraceHistoryDo.class);
             parse.setUserId(userId);
             tbUpdateGraceHistoryDoService.save(parse);

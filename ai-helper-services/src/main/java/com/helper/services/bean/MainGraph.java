@@ -47,8 +47,8 @@ public class MainGraph {
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
-                    Map.of("next", "sentimentAnalysisNode", "exitWithMessage", "sentimentAnalysisNode",
-                            "exitWithoutMessage", StateGraph.END))
+                    Map.of("next", "sentimentAnalysisNode",
+                            "exit", StateGraph.END))
                     .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
                     .addEdge("messageGenerateNode", StateGraph.END);

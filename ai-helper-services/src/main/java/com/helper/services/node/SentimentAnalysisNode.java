@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
+import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.enums.ChatModelEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.utils.MemoryCastUtils;
@@ -32,8 +33,9 @@ public class SentimentAnalysisNode implements NodeAction {
     @Override
     public Map<String, Object> apply(OverAllState state) {
         String userMessage = (String)state.value("userInput").orElse("");
-        String memoryString = (String)state.value("memoryString").orElse("");
         Long userId = (Long)state.value("userId").orElse(0L);
+        List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 4);
+        String memoryString = MemoryCastUtils.memoryCastToString(messageList);
         log.info("用户输入:{}" , userMessage);
         ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
         String content = chatClient.prompt("""

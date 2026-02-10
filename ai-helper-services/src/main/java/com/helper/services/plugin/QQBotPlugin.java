@@ -4,10 +4,13 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemoryDo;
+import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.node.*;
 import com.helper.services.service.TbAiChatMemoryService;
+import com.helper.services.service.TbChatConfigDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
+import com.mikuac.shiro.annotation.common.Order;
 import com.mikuac.shiro.annotation.common.Shiro;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
@@ -32,22 +35,14 @@ public class QQBotPlugin extends BotPlugin {
     private final CompiledGraph compiledGraph;
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
-    @PrivateMessageHandler
-    @MessageHandlerFilter
-    public void privateHandler(Bot bot , PrivateMessageEvent event, Matcher matcher) throws InterruptedException {
 
+    private final TbChatConfigDoService tbChatConfigDoService;
+
+    @PrivateMessageHandler
+    @MessageHandlerFilter(cmd = "(?s)^(?!#).*") // 不是井号开头
+    public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
         String chatId = UUID.randomUUID().toString();
         String userInput = event.getMessage();
-        if (userInput.startsWith("#删除")){
-            userInput = userInput.replace("#删除", "");
-            tbAiChatMemoryService.remove(Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                    .eq(TbAiChatMemoryDo::getRole,"assistant")
-                    .eq(TbAiChatMemoryDo::getMemoryId,event.getUserId())
-                    .like(TbAiChatMemoryDo::getMessage,userInput)
-            );
-            return;
-        }
-
         // 保存最新消息
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("user").setMessage(userInput));
 
@@ -68,22 +63,24 @@ public class QQBotPlugin extends BotPlugin {
 
             if (aiMessage.isEmpty()) {
                 log.error("no message");
-                return;
+                return MESSAGE_IGNORE;
             }
 
             log.info("aiMessage: {}", aiMessage);
             String[] splitMessages = aiMessage.split("\n");
-            for (String splitMessage : splitMessages) {
+        for (String splitMessage : splitMessages) {
                 if (splitMessage.isEmpty()) continue;
                 splitMessage  = splitMessage.replaceAll("。", "").trim();
+            try {
                 Thread.sleep(1000 + (int) (Math.random() * 1000));
-                if (!(splitMessage.endsWith(")") && splitMessage.startsWith("("))) {
-                    String msg = MsgUtils.builder().text(splitMessage).build();
-                    bot.sendPrivateMsg(event.getUserId(),msg,false);
-                }
-                tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("assistant").setMessage(splitMessage));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-
+            String msg = MsgUtils.builder().text(splitMessage).build();
+            bot.sendPrivateMsg(event.getUserId(),msg,false);
+            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("assistant").setMessage(splitMessage));
+        }
+        return MESSAGE_IGNORE;
     }
 
 //    @MessageHandlerFilter(cmd = "2")

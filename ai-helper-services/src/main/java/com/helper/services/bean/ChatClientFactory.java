@@ -1,7 +1,10 @@
 package com.helper.services.bean;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.service.TbChatConfigDoService;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -15,16 +18,22 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ChatClientFactory {
 
+    @Autowired
+    private TbChatConfigDoService tbChatConfigDoService;
+
     public ChatClient createChatClient(ChatModelEnum chatModelEnum) {
         if (chatModelEnum == ChatModelEnum.GPT_4O_MINI ||
                 chatModelEnum == ChatModelEnum.GPT_5){
             return createOpenAiChatClient(chatModelEnum);
+        }else if (chatModelEnum == ChatModelEnum.CLAUDE_SONNET_4_5){
+            return createClaudeChatClient(chatModelEnum);
         }else {
             return createDeepSeekChatClient();
         }
@@ -88,13 +97,16 @@ public class ChatClientFactory {
     private ChatClient createClaudeChatClient(ChatModelEnum chatModelEnum) {
         AnthropicApi anthAiApi = AnthropicApi.builder()
                 .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
-                .baseUrl("https://api.openai-proxy.org").build();
+                .baseUrl("https://api.openai-proxy.org/anthropic").build();
 
+
+        TbChatConfigDo chatConfigDo = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
+                );
         AnthropicChatOptions openAiChatOptions = AnthropicChatOptions.builder()
                 .model(chatModelEnum.getModelName())
-                .temperature(1.0)
+                .temperature(chatConfigDo.getTemperature())
                 .maxTokens(1024)
-//                .topP(1.0) // 模型选词自由度
+//                .topP(chatConfigDo.getTopP()) // 模型选词自由度 claude 不支持和温度一起用
 //                .presencePenalty(1.0) // 模型换词、换说法
 //                .maxTokens(1024)
                 .build();

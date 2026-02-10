@@ -36,21 +36,19 @@ public class UserWantToNode implements NodeAction {
         }
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
         log.info("用户输入:{}", userMessage);
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.CLAUDE_SONNET_4_5);
+        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_5);
         String content = chatClient.prompt("""
                         你是聊天结束意图判断模块。
                                                 
-                        任务：只判断当前用户发来的消息需不需要回复，避免出现机械般的一问一答
+                        目的：只判断当前用户发来的消息需不需要回复，避免出现机械般的一问一答
                                                 
                         输出规则（只输出以下之一）：
-                        - exitWithMessage：当前对话已经结束 但是需要ai回复拜拜之类的结束语
-                        - exitWithoutMessage：当前对话已结束 不需要回复
+                        - exit：当前对话已结束 不需要回复
                         - next：其他所有情况
                         
                         注意：
-                        - 性暗示、暧昧、越界试探（如“想和你做爱”“想睡你”）等等
-                          不代表对话结束，默认输出 next
-                        - 只有明确表达结束、离开、拜拜、不聊了，才视为结束对话
+                        - 性暗示、暧昧、越界试探等等 不代表对话结束，默认输出 next
+                        - 只有明确表达结束并且互道晚安 拜拜 或者再见之类的才视为结束对话
                         只输出结果，不要解释。
                         """)
                 .user(memoryString + "\n 以上是用户与ai对话历史，请分析用户意图").call().content();
