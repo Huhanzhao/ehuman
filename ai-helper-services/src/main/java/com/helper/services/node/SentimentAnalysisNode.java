@@ -7,6 +7,7 @@ import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class SentimentAnalysisNode implements NodeAction {
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 4);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
         log.info("用户输入:{}" , userMessage);
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GRACE);
         String content = chatClient.prompt("""
                         # 你是情绪分析专家，你需要根据用户历史对话记录来判断用户当前情绪，
                         ## 要求：

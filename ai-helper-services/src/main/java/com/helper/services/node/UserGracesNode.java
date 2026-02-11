@@ -11,6 +11,7 @@ import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbUpdateGraceHistoryDo;
 import com.helper.services.entity.TbUserGraceDo;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbUpdateGraceHistoryDoService;
 import com.helper.services.service.TbUserGraceDoService;
@@ -44,7 +45,7 @@ public class UserGracesNode implements NodeAction {
             return Map.of("graces", "unKnow");
         }
 
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.DEEP_SEEK_V3_2);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GRACE);
         String content = chatClient.prompt(
                 """
                         你是一个好感度处理模块，你需要根据对话来分析ai角色是否需要对用户好感度进行修改。

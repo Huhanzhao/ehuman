@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -27,11 +28,12 @@ public class MessageCheckNode implements NodeAction {
     @Override
     public Map<String, Object> apply(OverAllState state) {
         String aiMessage = (String) state.value("output", String.class).orElse("");
+        Long userId = (Long)state.value("userId").orElse(0L);
         List<Message> messageList = state.value("messageList", ArrayList.class).orElse(new ArrayList<Message>());
         if (aiMessage.isEmpty()){
             throw new BusinessException("ai输出读取失败");
         }
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_4O_MINI);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GRACE);
 
         String prompt = """
                 # 你是一个专业ai消息回复审核者，你需要判断ai的输出是否合格，在原输出消息的基础上进行消息更改。

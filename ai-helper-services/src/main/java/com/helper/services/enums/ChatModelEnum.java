@@ -8,11 +8,12 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ChatModelEnum {
 
-    DEEP_SEEK_V3_2("deepseek-chat"),
-    GPT_5("gpt-5"),
-    CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
-    GPT_4O_MINI("gpt-4o-mini");
+    DEEP_SEEK_V3_2("deepseek-chat","deepseek"),
+    GPT_5("gpt-5","gpt"),
+    CLAUDE_SONNET_4_5("claude-sonnet-4-5","claude"),
+    GPT_4O_MINI("gpt-4o-mini","gpt");
 
 
     private final String modelName;
+    private final String category;
 }

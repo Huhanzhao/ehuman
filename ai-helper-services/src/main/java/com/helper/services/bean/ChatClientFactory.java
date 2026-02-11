@@ -2,9 +2,13 @@ package com.helper.services.bean;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.entity.TbChatConfigDo;
+import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbChatConfigDoService;
+import com.helper.services.service.TbUserModelConfigDoService;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -22,31 +26,48 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
 public class ChatClientFactory {
 
     @Autowired
+    private TbUserModelConfigDoService tbUserModelConfigDoService;
+
+    @Autowired
     private TbChatConfigDoService tbChatConfigDoService;
 
-    public ChatClient createChatClient(ChatModelEnum chatModelEnum) {
-        if (chatModelEnum == ChatModelEnum.GPT_4O_MINI ||
-                chatModelEnum == ChatModelEnum.GPT_5){
-            return createOpenAiChatClient(chatModelEnum);
-        }else if (chatModelEnum == ChatModelEnum.CLAUDE_SONNET_4_5){
-            return createClaudeChatClient(chatModelEnum);
+    public ChatClient createChatClient(Long userId, NodeEnum nodeEnum) {
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getOne(Wrappers.<TbUserModelConfigDo>lambdaQuery()
+                .eq(TbUserModelConfigDo::getUserId, userId).eq(TbUserModelConfigDo::getNodeNum, nodeEnum.getNodeNum()));
+        // 没有配置某节点模型 随便取一个模型
+        if (modelConfigDo == null){
+            modelConfigDo = tbUserModelConfigDoService.getOne(Wrappers.<TbUserModelConfigDo>lambdaQuery()
+                    .eq(TbUserModelConfigDo::getUserId, userId));
+        }
+
+        TbChatConfigDo chatConfigDo = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
+                .eq(TbChatConfigDo::getUserId, userId));
+
+        if (ChatModelEnum.GPT_4O_MINI.getCategory().equals(modelConfigDo.getCategory())){
+            return createOpenAiChatClient(modelConfigDo,chatConfigDo);
+        }else if (ChatModelEnum.CLAUDE_SONNET_4_5.getCategory().equals(modelConfigDo.getCategory())){
+            return createClaudeChatClient(modelConfigDo,chatConfigDo);
+        }else if (ChatModelEnum.DEEP_SEEK_V3_2.getCategory().equals(modelConfigDo.getCategory())){
+            return createDeepSeekChatClient(modelConfigDo,chatConfigDo);
         }else {
-            return createDeepSeekChatClient();
+            throw new BusinessException("不支持的模型");
         }
     }
 
-    private ChatClient createDeepSeekChatClient() {
+    public ChatClient createDeepSeekChatClient(TbUserModelConfigDo modelConfigDo,TbChatConfigDo chatConfigDo) {
         DeepSeekApi deepSeekApi = DeepSeekApi.builder()
-                .apiKey("sk-4111b047ff9e4752bd17509c30859e89")
-                .baseUrl("https://api.deepseek.com").build();
+                .apiKey(modelConfigDo.getApiKey())
+                .baseUrl(modelConfigDo.getBaseUrl()).build();
 
         DeepSeekChatOptions deepSeekChatOptions = DeepSeekChatOptions.builder()
-                .model(ChatModelEnum.DEEP_SEEK_V3_2.getModelName())
-                .temperature(0.0)
+                .model(modelConfigDo.getModel())
+                .temperature(chatConfigDo.getTemperature())
                 .maxTokens(1024)
                 .build();
 
@@ -61,19 +82,16 @@ public class ChatClientFactory {
 
 
         return ChatClient.create(deepSeekChatModel);
-//         ChatClient.builder(deepSeekChatModel)
-//                .defaultSystem("你是一个对话机器人")
-//                .build();
     }
 
-    private ChatClient createOpenAiChatClient(ChatModelEnum chatModelEnum) {
+    public ChatClient createOpenAiChatClient(TbUserModelConfigDo modelConfigDo,TbChatConfigDo chatConfigDo) {
         OpenAiApi openAiApi = OpenAiApi.builder()
-                .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
-                .baseUrl("https://api.openai-proxy.org").build();
+                .apiKey(modelConfigDo.getApiKey())
+                .baseUrl(modelConfigDo.getBaseUrl()).build();
 
         OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
-                .model(chatModelEnum.getModelName())
-                .temperature(1.0)
+                .model(modelConfigDo.getModel())
+                .temperature(chatConfigDo.getTemperature())
                 .maxCompletionTokens(1024)
 //                .topP(1.0) // 模型选词自由度
 //                .presencePenalty(1.0) // 模型换词、换说法
@@ -89,21 +107,20 @@ public class ChatClientFactory {
 //                .toolCallingManager(toolCallingManager)
                 .build();
         return ChatClient.create(openAiChatModel);
-//        return ChatClient.builder(openAiChatModel)
-//                .defaultSystem("你是一个对话机器人")
-//                .build();
     }
 
-    private ChatClient createClaudeChatClient(ChatModelEnum chatModelEnum) {
+    public ChatClient createClaudeChatClient(TbUserModelConfigDo modelConfigDo,TbChatConfigDo chatConfigDo) {
         AnthropicApi anthAiApi = AnthropicApi.builder()
-                .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
-                .baseUrl("https://api.openai-proxy.org/anthropic").build();
+                .apiKey(modelConfigDo.getApiKey())
+                .baseUrl(modelConfigDo.getBaseUrl()).build();
+//        AnthropicApi anthAiApi = AnthropicApi.builder()
+//                .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
+//                .baseUrl("https://api.openai-proxy.org/anthropic").build();
 
 
-        TbChatConfigDo chatConfigDo = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
-                );
+
         AnthropicChatOptions openAiChatOptions = AnthropicChatOptions.builder()
-                .model(chatModelEnum.getModelName())
+                .model(modelConfigDo.getModel())
                 .temperature(chatConfigDo.getTemperature())
                 .maxTokens(1024)
 //                .topP(chatConfigDo.getTopP()) // 模型选词自由度 claude 不支持和温度一起用
@@ -120,8 +137,5 @@ public class ChatClientFactory {
 //                .toolCallingManager(toolCallingManager)
                 .build();
         return ChatClient.create(openAiChatModel);
-//        return ChatClient.builder(openAiChatModel)
-//                .defaultSystem("你是一个对话机器人")
-//                .build();
     }
 }

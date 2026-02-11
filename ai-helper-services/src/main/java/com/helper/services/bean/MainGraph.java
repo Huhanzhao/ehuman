@@ -24,6 +24,7 @@ public class MainGraph {
     private final UserGracesNode userGracesNode;
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
+    private final AuthNode authNode;
 
     @Bean
     public CompiledGraph getQQBotCompiledGraph() {
@@ -39,16 +40,24 @@ public class MainGraph {
 
         try {
             stateGraph
+                    .addNode("authNode", node_async(authNode))
                     .addNode("userWantToNode", node_async(userWantToNode))
 //                    .addNode("sentimentAnalysisNode", node_async(sentimentAnalysisNode))
                     .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
 //                    .addNode("messageCheckNode", node_async(messageCheckNode))
 
-                    .addEdge(StateGraph.START, "userWantToNode")
+                    .addEdge(StateGraph.START, "authNode")
+                    .addConditionalEdges("authNode", edge_async(state -> {
+                                return String.valueOf(state.value("auth", Boolean.class).orElse(false));
+                            }),
+                    Map.of("true", "userWantToNode",
+                            "false", StateGraph.END))
+
                     .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
                     Map.of("next", "gracesNode",
                             "exit", StateGraph.END))
+
 //                    .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
                     .addEdge("messageGenerateNode", StateGraph.END);

@@ -7,6 +7,7 @@ import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public class MessageGenerateNodeV2 implements NodeAction {
         if (messageList.isEmpty()){
             throw new BusinessException("用户输入读取失败");
         }
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.CLAUDE_SONNET_4_5);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
         PromptTemplate promptTemplate = PromptTemplate.builder().template("""
                 你是一个消息生成预测专家，你需要根据提供的场景，辅助ai回复消息

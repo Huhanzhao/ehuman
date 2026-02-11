@@ -6,6 +6,7 @@ import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +31,15 @@ public class UserWantToNode implements NodeAction {
     public Map<String, Object> apply (OverAllState state){
         String userMessage = (String) state.value("userInput").orElse("");
         Long userId = (Long) state.value("userId").orElse(0L);
+        // 保存最新消息
+        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(userMessage));
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 10);
         if (messageList.isEmpty()) {
             throw new BusinessException("用户输入读取失败");
         }
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
         log.info("用户输入:{}", userMessage);
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.DEEP_SEEK_V3_2);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
         String content = chatClient.prompt("""
                         你是聊天结束意图判断模块。
                                                 

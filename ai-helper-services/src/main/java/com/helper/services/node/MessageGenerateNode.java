@@ -7,6 +7,7 @@ import com.alibaba.fastjson2.util.DateUtils;
 import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.enums.ChatModelEnum;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.utils.MemoryCastUtils;
 import com.networknt.schema.format.DateTimeFormat;
@@ -47,7 +48,7 @@ public class MessageGenerateNode implements NodeAction {
         if (messageList.isEmpty()){
             throw new BusinessException("用户输入读取失败");
         }
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.CLAUDE_SONNET_4_5);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
         PromptTemplate promptTemplate = PromptTemplate.builder().template("""
                 场景：今天是{dateTime}

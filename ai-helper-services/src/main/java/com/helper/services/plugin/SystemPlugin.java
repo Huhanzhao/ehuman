@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserGraceDo;
+import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbChatConfigDoService;
 import com.helper.services.service.TbUserGraceDoService;
+import com.helper.services.service.TbUserModelConfigDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.annotation.common.Order;
@@ -34,6 +36,8 @@ public class SystemPlugin extends BotPlugin {
 
     private final TbUserGraceDoService tbUserGraceDoService;
 
+    private final TbUserModelConfigDoService tbUserModelConfigDoService;
+
     @PrivateMessageHandler
     @MessageHandlerFilter(cmd = "#.*")
     public void onPrivateMessages(Bot bot , PrivateMessageEvent event){
@@ -59,7 +63,7 @@ public class SystemPlugin extends BotPlugin {
             String msg = MsgUtils.builder().text("temp:" + tbChatConfigDo.getTemperature() + "\ntopP:" + tbChatConfigDo.getTopP()).build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
         }else if (userInput.startsWith("#指令")){
-            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度").build();
+            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
         } else if (userInput.startsWith("#好感度")) {
             userInput = userInput.replace("#好感度", "");
@@ -74,5 +78,28 @@ public class SystemPlugin extends BotPlugin {
             String msg = MsgUtils.builder().text(tbUserGraceDo.getGrace().toString()).build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
         }
+
+        if (userInput.startsWith("#api")){
+            userInput = userInput.replace("#api", "");
+            String[] split = userInput.trim().split("@");
+            if (split.length != 5){
+                bot.sendPrivateMsg(event.getUserId(),"参数错误",false);
+                bot.sendPrivateMsg(event.getUserId(),"请按照以下格式输入，依次对应模型名称，模型大类（gpt,claude,deepseek）" +
+                        "，节点序号 （1 意图识别 2 好感度控制 3 回复生成），api的baseurl，apikey 中间使用@分割 \n#api model@category@nodeNUm@baseUrl@apikey",false);
+            }
+            TbUserModelConfigDo tbUserModelConfigDo = new TbUserModelConfigDo();
+            tbUserModelConfigDo.setUserId(event.getUserId());
+            tbUserModelConfigDo.setModel(split[0]);
+            tbUserModelConfigDo.setCategory(split[1]);
+            tbUserModelConfigDo.setNodeNum(Integer.valueOf(split[2]));
+            tbUserModelConfigDo.setBaseUrl(split[3]);
+            tbUserModelConfigDo.setApiKey(split[4]);
+            tbUserModelConfigDoService.remove(Wrappers.<TbUserModelConfigDo>lambdaQuery()
+                    .eq(TbUserModelConfigDo::getUserId,event.getUserId())
+                    .eq(TbUserModelConfigDo::getNodeNum,Integer.valueOf(split[2]))
+            );
+            tbUserModelConfigDoService.save(tbUserModelConfigDo);
+        }
+
     }
 }

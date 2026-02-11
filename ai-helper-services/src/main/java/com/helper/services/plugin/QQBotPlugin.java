@@ -43,8 +43,7 @@ public class QQBotPlugin extends BotPlugin {
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
         String chatId = UUID.randomUUID().toString();
         String userInput = event.getMessage();
-        // 保存最新消息
-        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("user").setMessage(userInput));
+
 
         // 执行
         Map<String, Object> input = Map.of(
