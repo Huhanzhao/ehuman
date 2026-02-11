@@ -36,7 +36,7 @@ public class UserWantToNode implements NodeAction {
         }
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
         log.info("用户输入:{}", userMessage);
-        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.GPT_5);
+        ChatClient chatClient = chatClientFactory.createChatClient(ChatModelEnum.DEEP_SEEK_V3_2);
         String content = chatClient.prompt("""
                         你是聊天结束意图判断模块。
                                                 

@@ -63,12 +63,10 @@ public class MessageGenerateNode implements NodeAction {
                 
                 【输出规则 - 必须严格遵守】
                 1. {grace}
-                2. 一句话不要太长 如果需要分开多条发送，用换行分割.
+                2. 一句话不要太长 如果需要分开多条发送，用换行分割.每次输出禁止多于四行
                 3. 不要主动发出问句创造新话题，让话题自然结束
-                3. 只允许输出纯文本对话内容
                 4. 禁止出现任何括号，包括但不限于：() （） [] 【】
                 5. 禁止出现动作、心理、旁白、舞台描述
-                6. 如果输出中包含括号或动作描写，视为错误输出
                   """).build();
 
         Integer grace = state.value("grace", Integer.class).orElse(40);

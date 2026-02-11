@@ -40,16 +40,16 @@ public class MainGraph {
         try {
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
-                    .addNode("sentimentAnalysisNode", node_async(sentimentAnalysisNode))
+//                    .addNode("sentimentAnalysisNode", node_async(sentimentAnalysisNode))
                     .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
 //                    .addNode("messageCheckNode", node_async(messageCheckNode))
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
-                    Map.of("next", "sentimentAnalysisNode",
+                    Map.of("next", "gracesNode",
                             "exit", StateGraph.END))
-                    .addEdge("sentimentAnalysisNode", "gracesNode")
+//                    .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
                     .addEdge("messageGenerateNode", StateGraph.END);
 
