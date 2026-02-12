@@ -19,12 +19,11 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Component
 @RequiredArgsConstructor
 public class MainGraph {
-    private final SentimentAnalysisNode sentimentAnalysisNode;
-    private final MessageCheckNode messageCheckNode;
     private final UserGracesNode userGracesNode;
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
+    private final SendMessageNode sendMessageNode;
 
     @Bean
     public CompiledGraph getQQBotCompiledGraph() {
@@ -42,10 +41,9 @@ public class MainGraph {
             stateGraph
                     .addNode("authNode", node_async(authNode))
                     .addNode("userWantToNode", node_async(userWantToNode))
-//                    .addNode("sentimentAnalysisNode", node_async(sentimentAnalysisNode))
                     .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-//                    .addNode("messageCheckNode", node_async(messageCheckNode))
+                    .addNode("sendMessageNode", node_async(sendMessageNode))
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
@@ -60,7 +58,8 @@ public class MainGraph {
 
 //                    .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
-                    .addEdge("messageGenerateNode", StateGraph.END);
+                    .addEdge("messageGenerateNode", "sendMessageNode")
+                    .addEdge("sendMessageNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();

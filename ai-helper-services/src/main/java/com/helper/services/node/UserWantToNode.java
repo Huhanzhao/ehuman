@@ -45,7 +45,7 @@ public class UserWantToNode implements NodeAction {
                                                 
                         目的：只判断当前用户发来的消息需不需要回复，避免出现机械般的一问一答
                                                 
-                        输出规则（只输出以下之一）：
+                        输出规则（只输出以下之一）只回复四个字母，不要有其他多余的符号，否则视为失败：
                         - exit：当前对话已结束 不需要回复
                         - next：其他所有情况
                         
@@ -62,6 +62,6 @@ public class UserWantToNode implements NodeAction {
     public static String nextNode(OverAllState state) {
         // 路由下一个节点
         String wantTo = (String) state.value("userWantTo").orElse("");
-        return wantTo.isEmpty()? "next" : wantTo;
+        return wantTo.contains("next")? "next" : wantTo;
     }
 }

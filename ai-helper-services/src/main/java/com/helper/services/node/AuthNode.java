@@ -3,6 +3,7 @@ package com.helper.services.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserModelConfigDo;
@@ -39,7 +40,7 @@ public class AuthNode implements NodeAction {
             // 通过机器人账号取出 Bot 对象
             Bot bot = botContainer.robots.get(botId);
             // 调用 Bot 对象方法
-            bot.sendPrivateMsg(userId, "没有查到apikey", false);
+            bot.sendPrivateMsg(userId, "请先配置apikey", false);
             return Map.of("auth",false);
         }
 

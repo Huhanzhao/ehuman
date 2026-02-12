@@ -1,6 +1,7 @@
 package com.helper.services.plugin;
 
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemoryDo;
@@ -21,13 +22,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 @Component
-@Shiro
+//@Shiro
 @RequiredArgsConstructor
 @Slf4j
 public class QQBotPlugin extends BotPlugin {
@@ -36,14 +43,21 @@ public class QQBotPlugin extends BotPlugin {
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
-    private final TbChatConfigDoService tbChatConfigDoService;
+    private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
+
 
     @PrivateMessageHandler
-    @MessageHandlerFilter(cmd = "(?s)^(?!#).*") // 不是井号开头
+    @MessageHandlerFilter // 不是井号开头
+    @Override
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
         String chatId = UUID.randomUUID().toString();
         String userInput = event.getMessage();
 
+        if (runningDisposables.containsKey(event.getUserId())){
+            runningDisposables.get(event.getUserId()).dispose();
+            log.info("已取消上次图执行");
+            runningDisposables.remove(event.getUserId());
+        }
 
         // 执行
         Map<String, Object> input = Map.of(
@@ -54,31 +68,21 @@ public class QQBotPlugin extends BotPlugin {
         var invokeConfig = RunnableConfig.builder()
                 .threadId(chatId)
                 .build();
-        OverAllState overAllState = compiledGraph.invoke(input,invokeConfig).get();
+        // 执行图并获取流
+        Flux<NodeOutput> stream = compiledGraph.stream(input, invokeConfig).subscribeOn(Schedulers.boundedElastic());
 
+        // 异步处理每个输出
+        var disposable = stream.subscribe(
+                output -> {
+                    log.info("当前迭代节点: " + output);
+                },
+                error -> log.error("流错误: " + error.getMessage()),
+                () -> log.info("流完成")
+        );
 
+        log.info("标记会话");
+        runningDisposables.put(event.getUserId(), disposable);
 
-            String aiMessage = (String) overAllState.value("finalOutput", String.class).orElse("");
-
-            if (aiMessage.isEmpty()) {
-                log.error("no message");
-                return MESSAGE_IGNORE;
-            }
-
-            log.info("aiMessage: {}", aiMessage);
-            String[] splitMessages = aiMessage.split("\n");
-        for (String splitMessage : splitMessages) {
-                if (splitMessage.isEmpty()) continue;
-                splitMessage  = splitMessage.replaceAll("。", "").trim();
-            try {
-                Thread.sleep(1000 + (int) (Math.random() * 1000));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            String msg = MsgUtils.builder().text(splitMessage).build();
-            bot.sendPrivateMsg(event.getUserId(),msg,false);
-            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(event.getUserId()).setRole("assistant").setMessage(splitMessage));
-        }
         return MESSAGE_IGNORE;
     }
 

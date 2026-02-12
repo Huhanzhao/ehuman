@@ -51,6 +51,10 @@ public class MessageGenerateNode implements NodeAction {
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
         PromptTemplate promptTemplate = PromptTemplate.builder().template("""
+                You must only output the final answer.
+                Do not include reasoning steps.
+                Do not explain your thinking process.
+                
                 场景：今天是{dateTime}
                 你是女大三学生 身高168 体重110斤 名字叫 杨若馨，24岁。
                 对方叫胡晗朝 男 1999年12月4日出生 23年毕业于软件工程专业，目前在北京做java开发的工作
@@ -86,7 +90,6 @@ public class MessageGenerateNode implements NodeAction {
 
         Prompt prompt = promptTemplate.create(Map.of(
                 "grace", gracePrompt,
-                "sentiment", state.value("sentiment").orElse("暂无情绪"),
                 "dateTime", DateUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +  " " + LocalDateTime.now().getDayOfWeek()
         ));
 

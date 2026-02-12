@@ -1,6 +1,7 @@
 package com.helper.services.plugin;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbChatConfigDo;
@@ -22,10 +23,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.regex.Matcher;
 
 @Component
-@Shiro
 @RequiredArgsConstructor
 @Slf4j
 public class SystemPlugin extends BotPlugin {
@@ -39,8 +40,9 @@ public class SystemPlugin extends BotPlugin {
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
 
     @PrivateMessageHandler
-    @MessageHandlerFilter(cmd = "#.*")
-    public void onPrivateMessages(Bot bot , PrivateMessageEvent event){
+    @MessageHandlerFilter
+    @Override
+    public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
         String userInput = event.getMessage();
         if (userInput.startsWith("#删除")){
             userInput = userInput.replace("#删除", "");
@@ -79,6 +81,14 @@ public class SystemPlugin extends BotPlugin {
             bot.sendPrivateMsg(event.getUserId(),msg,false);
         }
 
+
+        if (userInput.startsWith("#api查询")){
+            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
+                    .eq(TbUserModelConfigDo::getUserId, event.getUserId()));
+            bot.sendPrivateMsg(event.getUserId(), JSON.toJSONString(list),false);
+            return MESSAGE_BLOCK;
+        }
+
         if (userInput.startsWith("#api")){
             userInput = userInput.replace("#api", "");
             String[] split = userInput.trim().split("@");
@@ -101,5 +111,6 @@ public class SystemPlugin extends BotPlugin {
             tbUserModelConfigDoService.save(tbUserModelConfigDo);
         }
 
+        return MESSAGE_IGNORE;
     }
 }

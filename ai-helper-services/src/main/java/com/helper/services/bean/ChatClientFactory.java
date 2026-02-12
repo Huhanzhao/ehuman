@@ -26,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -42,8 +44,10 @@ public class ChatClientFactory {
                 .eq(TbUserModelConfigDo::getUserId, userId).eq(TbUserModelConfigDo::getNodeNum, nodeEnum.getNodeNum()));
         // 没有配置某节点模型 随便取一个模型
         if (modelConfigDo == null){
-            modelConfigDo = tbUserModelConfigDoService.getOne(Wrappers.<TbUserModelConfigDo>lambdaQuery()
+            List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
                     .eq(TbUserModelConfigDo::getUserId, userId));
+            if (modelConfigDos.isEmpty()) throw new BusinessException("请先配置apikey",userId);
+            modelConfigDo = modelConfigDos.getFirst();
         }
 
         TbChatConfigDo chatConfigDo = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
@@ -56,7 +60,7 @@ public class ChatClientFactory {
         }else if (ChatModelEnum.DEEP_SEEK_V3_2.getCategory().equals(modelConfigDo.getCategory())){
             return createDeepSeekChatClient(modelConfigDo,chatConfigDo);
         }else {
-            throw new BusinessException("不支持的模型");
+            throw new BusinessException("不支持的模型",userId);
         }
     }
 
@@ -88,11 +92,12 @@ public class ChatClientFactory {
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .apiKey(modelConfigDo.getApiKey())
                 .baseUrl(modelConfigDo.getBaseUrl()).build();
-
         OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
                 .model(modelConfigDo.getModel())
                 .temperature(chatConfigDo.getTemperature())
                 .maxCompletionTokens(1024)
+                .extraBody(Map.of("chat_template_kwargs", Map.of("enable_thinking", false)))
+
 //                .topP(1.0) // 模型选词自由度
 //                .presencePenalty(1.0) // 模型换词、换说法
 //                .maxTokens(1024)
@@ -113,11 +118,6 @@ public class ChatClientFactory {
         AnthropicApi anthAiApi = AnthropicApi.builder()
                 .apiKey(modelConfigDo.getApiKey())
                 .baseUrl(modelConfigDo.getBaseUrl()).build();
-//        AnthropicApi anthAiApi = AnthropicApi.builder()
-//                .apiKey("sk-PLLvztGg0Oa2qxQ5TfkMuU4j7PT5MbUm6Mo7Kaei21HQfffo")
-//                .baseUrl("https://api.openai-proxy.org/anthropic").build();
-
-
 
         AnthropicChatOptions openAiChatOptions = AnthropicChatOptions.builder()
                 .model(modelConfigDo.getModel())
