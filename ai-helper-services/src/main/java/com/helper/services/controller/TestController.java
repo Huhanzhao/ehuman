@@ -52,7 +52,7 @@
 //        // 使用 updateState 更新状态，传入中断时的节点 ID
 //        RunnableConfig updatedConfig = null;
 //        try {
-//            updatedConfig = compiledGraph.updateState(invokeConfig, Map.of("human_feedback", "4"), "IntrerrptableNodeTest");
+//            updatedConfig = compiledGraph.updateState(invokeConfig, Map.of("human_feedback", "4"), "ModelNode");
 //        } catch (Exception e) {
 //            throw new RuntimeException(e);
 //        }

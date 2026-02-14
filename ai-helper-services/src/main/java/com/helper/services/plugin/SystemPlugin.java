@@ -3,6 +3,7 @@ package com.helper.services.plugin;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -18,6 +19,7 @@ import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
+import com.mikuac.shiro.core.BotContainer;
 import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import groovyjarjarantlr4.v4.misc.Graph;
@@ -26,9 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,7 +56,10 @@ public class SystemPlugin extends BotPlugin {
 
     private final CompiledGraph qqSystemGraph;
 
-    private final ConcurrentHashMap<String,Long> runningTask = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<Long, String> userCurrentNodeMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, String> userThreadIdMap = new ConcurrentHashMap<>();
 
     public SystemPlugin(@Qualifier("qqSystemGraph")CompiledGraph qqSystemGraph){
         this.qqSystemGraph = qqSystemGraph;
@@ -139,52 +146,87 @@ public class SystemPlugin extends BotPlugin {
 
         if (userInput.startsWith("#开始配置api")){
 
-            if (runningTask.containsKey(event.getUserId().toString())){
+            String threadId = userThreadIdMap.get(event.getUserId());
+            if (!userThreadIdMap.containsKey(event.getUserId())){
+                threadId = UUID.randomUUID().toString();
+                userThreadIdMap.put(event.getUserId(), threadId);
+            }
+
+            if (runningDisposables.containsKey(event.getUserId())){
                 bot.sendPrivateMsg(event.getUserId(), "请先退出当前api配置",false);
                 return MESSAGE_BLOCK;
             }
             // 执行
             Map<String, Object> input = Map.of(
-                    "userInput", userInput,
-                    "userId", event.getUserId()
+                    "userInput", "",
+                    "userId", event.getUserId().toString()
             );
             // 配置线程 ID
             var invokeConfig = RunnableConfig.builder()
-                    .threadId(event.getUserId().toString())
+                    .threadId(threadId)
                     .build();
             // 执行图并获取流
-            Flux<NodeOutput> stream = qqSystemGraph.stream(input, invokeConfig);
-//                    .subscribeOn(Schedulers.boundedElastic()); // 异步 执行
+            Flux<NodeOutput> stream = qqSystemGraph.stream(input, invokeConfig)
+                    .subscribeOn(Schedulers.boundedElastic()); // 异步 执行
 
             // 异步处理每个输出
             var disposable = stream.subscribe(
                     output -> {
                         log.info("当前迭代节点: " + output);
+                        userCurrentNodeMap.put(event.getUserId(), output.node());
+                        if (output.node().equals(StateGraph.END)){
+                            runningDisposables.remove(event.getUserId());
+                            userCurrentNodeMap.remove(event.getUserId());
+                            userThreadIdMap.remove(event.getUserId());
+                        }
                     },
                     error -> log.error("流错误: " + error.getMessage()),
                     () -> {
-                        runningTask.remove(event.getUserId().toString());
                         log.info("流完成");
                     }
 
             );
 
             log.info("标记会话");
-            runningTask.put(event.getUserId().toString(), event.getUserId());
-
+            runningDisposables.put(event.getUserId(), disposable);
             return MESSAGE_BLOCK;
         }
 
         // 如果当前有阻塞的图 继续执行图
-        if (runningTask.containsKey(event.getUserId().toString())){
+        if (runningDisposables.containsKey(event.getUserId())){
+            if (userCurrentNodeMap.get(event.getUserId()).equals(StateGraph.END)){
+                log.info("已经执行到了end节点，移除会话标记");
+                userCurrentNodeMap.remove(event.getUserId());
+                runningDisposables.remove(event.getUserId());
+                userCurrentNodeMap.remove(event.getUserId());
+                userThreadIdMap.remove(event.getUserId());
+                return MESSAGE_BLOCK;
+            }
+
+            if ("exit".equals(userInput)){
+                runningDisposables.get(event.getUserId()).dispose();
+                runningDisposables.remove(event.getUserId());
+                userCurrentNodeMap.remove(event.getUserId());
+                userThreadIdMap.remove(event.getUserId());
+                bot.sendPrivateMsg(event.getUserId(), "已退出当前配置",false);
+                return MESSAGE_BLOCK;
+            }
+
             // 配置线程 ID
             var invokeConfig = RunnableConfig.builder()
-                    .threadId(event.getUserId().toString())
+                    .threadId(userThreadIdMap.get(event.getUserId()))
                     .build();
             // 使用 updateState 更新状态，传入中断时的节点 ID
             RunnableConfig updatedConfig = null;
             try {
-                updatedConfig = qqSystemGraph.updateState(invokeConfig, Map.of("userInput", userInput), "modelConfigNode");
+                Map<String,Object> map = new HashMap<>();
+                map.put("userInput",userInput);
+
+                // 如果第一个节点就中断 放入model实例
+                if (userCurrentNodeMap.get(event.getUserId()).equals("modelCategoryNode")){
+                    map.put("modelConfig",new TbUserModelConfigDo());
+                }
+                updatedConfig = qqSystemGraph.updateState(invokeConfig, map, userCurrentNodeMap.get(event.getUserId()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -194,7 +236,15 @@ public class SystemPlugin extends BotPlugin {
                     .build();
             // 继续执行 Graph（input 为 null，使用之前的状态）
             qqSystemGraph.stream(null,resumeConfig)
-                    .doOnNext(event1 -> System.out.println("节点输出: " + event1))
+                    .doOnNext(event1 -> {
+                        log.info("当前迭代节点: " + event1);
+                        userCurrentNodeMap.put(event.getUserId(), event1.node());
+                        if (event1.node().equals(StateGraph.END)){
+                            runningDisposables.remove(event.getUserId());
+                            userCurrentNodeMap.remove(event.getUserId());
+                            userThreadIdMap.remove(event.getUserId());
+                        }
+                    })
                     .doOnError(error -> System.err.println("流错误: " + error.getMessage()))
                     .doOnComplete(() -> System.out.println("流完成"))
                     .blockLast();
