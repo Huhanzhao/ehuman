@@ -10,7 +10,7 @@ import java.util.Date;
  * ai聊天记忆表
  * @TableName tb_ai_chat_memory
  */
-@TableName(value ="TB_AI_CHAT_MEMORY")
+@TableName(value ="tb_ai_chat_memory")
 @Data
 @Accessors(chain = true)
 public class TbAiChatMemoryDo {

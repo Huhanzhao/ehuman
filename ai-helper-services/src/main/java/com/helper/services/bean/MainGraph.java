@@ -25,8 +25,8 @@ public class MainGraph {
     private final AuthNode authNode;
     private final SendMessageNode sendMessageNode;
 
-    @Bean
-    public CompiledGraph getQQBotCompiledGraph() {
+    @Bean("qqBotMainGraph")
+    public CompiledGraph qqBotMainGraph() {
         // 配置 KeyStrategyFactory
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -47,8 +47,7 @@ public class MainGraph {
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
-                                return String.valueOf(state.value("auth", Boolean.class).orElse(false));
-                            }),
+                                return String.valueOf(state.value("auth", Boolean.class).orElse(false));}),
                     Map.of("true", "userWantToNode",
                             "false", StateGraph.END))
 
@@ -56,7 +55,7 @@ public class MainGraph {
                     Map.of("next", "gracesNode",
                             "exit", StateGraph.END))
 
-//                    .addEdge("sentimentAnalysisNode", "gracesNode")
+//                  .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
                     .addEdge("messageGenerateNode", "sendMessageNode")
                     .addEdge("sendMessageNode", StateGraph.END);
@@ -67,9 +66,8 @@ public class MainGraph {
                     .saverConfig(SaverConfig.builder()
                             .register(saver)
                             .build())
-                    // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
                     .build();
-
+            // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
         } catch (Exception e) {
             throw new RuntimeException(e);

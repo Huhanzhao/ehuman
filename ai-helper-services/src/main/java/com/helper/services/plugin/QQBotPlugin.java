@@ -35,16 +35,18 @@ import java.util.regex.Matcher;
 
 @Component
 //@Shiro
-@RequiredArgsConstructor
 @Slf4j
 public class QQBotPlugin extends BotPlugin {
 
-    private final CompiledGraph compiledGraph;
+    private final CompiledGraph qqBotMainGraph;
 
-    private final TbAiChatMemoryService tbAiChatMemoryService;
-
+    @Autowired
+    private TbAiChatMemoryService tbAiChatMemoryService;
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
 
+    public QQBotPlugin(@Qualifier("qqBotMainGraph")CompiledGraph qqBotMainGraph){
+        this.qqBotMainGraph = qqBotMainGraph;
+    }
 
     @PrivateMessageHandler
     @MessageHandlerFilter // 不是井号开头
@@ -69,7 +71,8 @@ public class QQBotPlugin extends BotPlugin {
                 .threadId(chatId)
                 .build();
         // 执行图并获取流
-        Flux<NodeOutput> stream = compiledGraph.stream(input, invokeConfig).subscribeOn(Schedulers.boundedElastic());
+        Flux<NodeOutput> stream = qqBotMainGraph.stream(input, invokeConfig)
+                .subscribeOn(Schedulers.boundedElastic()); // 异步 执行
 
         // 异步处理每个输出
         var disposable = stream.subscribe(
@@ -77,7 +80,10 @@ public class QQBotPlugin extends BotPlugin {
                     log.info("当前迭代节点: " + output);
                 },
                 error -> log.error("流错误: " + error.getMessage()),
-                () -> log.info("流完成")
+                () -> {
+                    runningDisposables.remove(event.getUserId());
+                    log.info("流完成");
+                }
         );
 
         log.info("标记会话");
@@ -95,7 +101,7 @@ public class QQBotPlugin extends BotPlugin {
 //        StateSnapshot state = this.compiledGraph.getState(invokeConfig);
 //        System.out.println(aaa);
 //        // 使用 updateState 更新状态，传入中断时的节点 ID
-//        var updatedConfig = compiledGraph.updateState(invokeConfig, Map.of("human_feedback", "4"), "IntrerrptableNodeTest");
+//        var updatedConfig = compiledGraph.updateState(invokeConfig, Map.of("human_feedback", "4"), "ModelNode");
 //        System.out.printf("--State after update--\n%s\n", compiledGraph.getState(updatedConfig));
 //        // 创建恢复配置，添加 HUMAN_FEEDBACK_METADATA_KEY
 //        RunnableConfig resumeConfig = RunnableConfig.builder(updatedConfig)
@@ -108,7 +114,7 @@ public class QQBotPlugin extends BotPlugin {
 //                .doOnError(error -> System.err.println("流错误: " + error.getMessage()))
 //                .doOnComplete(() -> System.out.println("流完成"))
 //                .blockLast();
-////        compiledGraph.updateState(invokeConfig, Map.of("message", "4"), "IntrerrptableNodeTest");
+////        compiledGraph.updateState(invokeConfig, Map.of("message", "4"), "ModelNode");
 ////        StateSnapshot stateSnapshot=this.compiledGraph.getState(invokeConfig);
 ////   OverAllState state    = stateSnapshot.state();
 ////    state.withResume();

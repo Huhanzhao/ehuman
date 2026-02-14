@@ -1,6 +1,9 @@
 package com.helper.services.plugin;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbAiChatMemoryDo;
@@ -13,37 +16,60 @@ import com.helper.services.service.TbUserGraceDoService;
 import com.helper.services.service.TbUserModelConfigDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
-import com.mikuac.shiro.annotation.common.Order;
-import com.mikuac.shiro.annotation.common.Shiro;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
+import groovyjarjarantlr4.v4.misc.Graph;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
-import java.util.regex.Matcher;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class SystemPlugin extends BotPlugin {
 
-    private final TbAiChatMemoryService tbAiChatMemoryService;
+    @Autowired
+    private  TbAiChatMemoryService tbAiChatMemoryService;
 
-    private final TbChatConfigDoService tbChatConfigDoService;
+    @Autowired
+    private  TbChatConfigDoService tbChatConfigDoService;
 
-    private final TbUserGraceDoService tbUserGraceDoService;
+    @Autowired
+    private  TbUserGraceDoService tbUserGraceDoService;
 
-    private final TbUserModelConfigDoService tbUserModelConfigDoService;
+    @Autowired
+    private  TbUserModelConfigDoService tbUserModelConfigDoService;
+
+    private final CompiledGraph qqSystemGraph;
+
+    private final ConcurrentHashMap<String,Long> runningTask = new ConcurrentHashMap<>();
+
+    public SystemPlugin(@Qualifier("qqSystemGraph")CompiledGraph qqSystemGraph){
+        this.qqSystemGraph = qqSystemGraph;
+    }
 
     @PrivateMessageHandler
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
         String userInput = event.getMessage();
+
+        if (userInput.startsWith("#指令")){
+            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api\n#模型查询").build();
+            bot.sendPrivateMsg(event.getUserId(),msg,false);
+            return MESSAGE_BLOCK;
+        }
+
         if (userInput.startsWith("#删除")){
             userInput = userInput.replace("#删除", "");
             tbAiChatMemoryService.remove(Wrappers.<TbAiChatMemoryDo>lambdaQuery()
@@ -51,7 +77,10 @@ public class SystemPlugin extends BotPlugin {
                     .eq(TbAiChatMemoryDo::getMemoryId,event.getUserId())
                     .like(TbAiChatMemoryDo::getMessage,userInput)
             );
-        }else if (userInput.startsWith("#对话配置")){
+            return MESSAGE_BLOCK;
+        }
+
+        if (userInput.startsWith("#对话配置")){
             userInput = userInput.replace("#对话配置", "");
             if (!userInput.isEmpty()){
                 String[] split = userInput.trim().split(" ");
@@ -64,10 +93,10 @@ public class SystemPlugin extends BotPlugin {
                     .eq(TbChatConfigDo::getUserId,event.getUserId()));
             String msg = MsgUtils.builder().text("temp:" + tbChatConfigDo.getTemperature() + "\ntopP:" + tbChatConfigDo.getTopP()).build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
-        }else if (userInput.startsWith("#指令")){
-            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api").build();
-            bot.sendPrivateMsg(event.getUserId(),msg,false);
-        } else if (userInput.startsWith("#好感度")) {
+            return MESSAGE_BLOCK;
+        }
+
+        if (userInput.startsWith("#好感度")) {
             userInput = userInput.replace("#好感度", "");
             if (!userInput.isEmpty()){
                 Integer grace = Integer.valueOf(userInput);
@@ -79,8 +108,8 @@ public class SystemPlugin extends BotPlugin {
                     .eq(TbUserGraceDo::getUserId,event.getUserId()));
             String msg = MsgUtils.builder().text(tbUserGraceDo.getGrace().toString()).build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
+            return MESSAGE_BLOCK;
         }
-
 
         if (userInput.startsWith("#api查询")){
             List<TbUserModelConfigDo> list = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
@@ -89,26 +118,87 @@ public class SystemPlugin extends BotPlugin {
             return MESSAGE_BLOCK;
         }
 
-        if (userInput.startsWith("#api")){
-            userInput = userInput.replace("#api", "");
-            String[] split = userInput.trim().split("@");
-            if (split.length != 5){
-                bot.sendPrivateMsg(event.getUserId(),"参数错误",false);
-                bot.sendPrivateMsg(event.getUserId(),"请按照以下格式输入，依次对应模型名称，模型大类（gpt,claude,deepseek）" +
-                        "，节点序号 （1 意图识别 2 好感度控制 3 回复生成），api的baseurl，apikey 中间使用@分割 \n#api model@category@nodeNUm@baseUrl@apikey",false);
+        if (userInput.startsWith("#模型查询")){
+            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
+                    .eq(TbUserModelConfigDo::getUserId, event.getUserId()).ne(TbUserModelConfigDo::getNodeNum,0)
+                    .orderByAsc(TbUserModelConfigDo::getNodeNum));
+            StringBuilder msg = new StringBuilder();
+            for (TbUserModelConfigDo tbUserModelConfigDo : list) {
+                msg.append("nodeNum:").append(tbUserModelConfigDo.getNodeNum()).append(",")
+                        .append("model:").append(tbUserModelConfigDo.getModel())
+                        .append("\n");
             }
-            TbUserModelConfigDo tbUserModelConfigDo = new TbUserModelConfigDo();
-            tbUserModelConfigDo.setUserId(event.getUserId());
-            tbUserModelConfigDo.setModel(split[0]);
-            tbUserModelConfigDo.setCategory(split[1]);
-            tbUserModelConfigDo.setNodeNum(Integer.valueOf(split[2]));
-            tbUserModelConfigDo.setBaseUrl(split[3]);
-            tbUserModelConfigDo.setApiKey(split[4]);
-            tbUserModelConfigDoService.remove(Wrappers.<TbUserModelConfigDo>lambdaQuery()
-                    .eq(TbUserModelConfigDo::getUserId,event.getUserId())
-                    .eq(TbUserModelConfigDo::getNodeNum,Integer.valueOf(split[2]))
+
+            bot.sendPrivateMsg(event.getUserId(), msg.toString(),false);
+            return MESSAGE_BLOCK;
+        }
+
+        if (userInput.startsWith("#api")){
+            bot.sendPrivateMsg(event.getUserId(), "输入 #开始配置api 进入api配置引导状态",false);
+        }
+
+        if (userInput.startsWith("#开始配置api")){
+
+            if (runningTask.containsKey(event.getUserId().toString())){
+                bot.sendPrivateMsg(event.getUserId(), "请先退出当前api配置",false);
+                return MESSAGE_BLOCK;
+            }
+            // 执行
+            Map<String, Object> input = Map.of(
+                    "userInput", userInput,
+                    "userId", event.getUserId()
             );
-            tbUserModelConfigDoService.save(tbUserModelConfigDo);
+            // 配置线程 ID
+            var invokeConfig = RunnableConfig.builder()
+                    .threadId(event.getUserId().toString())
+                    .build();
+            // 执行图并获取流
+            Flux<NodeOutput> stream = qqSystemGraph.stream(input, invokeConfig);
+//                    .subscribeOn(Schedulers.boundedElastic()); // 异步 执行
+
+            // 异步处理每个输出
+            var disposable = stream.subscribe(
+                    output -> {
+                        log.info("当前迭代节点: " + output);
+                    },
+                    error -> log.error("流错误: " + error.getMessage()),
+                    () -> {
+                        runningTask.remove(event.getUserId().toString());
+                        log.info("流完成");
+                    }
+
+            );
+
+            log.info("标记会话");
+            runningTask.put(event.getUserId().toString(), event.getUserId());
+
+            return MESSAGE_BLOCK;
+        }
+
+        // 如果当前有阻塞的图 继续执行图
+        if (runningTask.containsKey(event.getUserId().toString())){
+            // 配置线程 ID
+            var invokeConfig = RunnableConfig.builder()
+                    .threadId(event.getUserId().toString())
+                    .build();
+            // 使用 updateState 更新状态，传入中断时的节点 ID
+            RunnableConfig updatedConfig = null;
+            try {
+                updatedConfig = qqSystemGraph.updateState(invokeConfig, Map.of("userInput", userInput), "modelConfigNode");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            // 创建恢复配置，添加 HUMAN_FEEDBACK_METADATA_KEY
+            RunnableConfig resumeConfig = RunnableConfig.builder(updatedConfig)
+                    .addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+                    .build();
+            // 继续执行 Graph（input 为 null，使用之前的状态）
+            qqSystemGraph.stream(null,resumeConfig)
+                    .doOnNext(event1 -> System.out.println("节点输出: " + event1))
+                    .doOnError(error -> System.err.println("流错误: " + error.getMessage()))
+                    .doOnComplete(() -> System.out.println("流完成"))
+                    .blockLast();
+            return MESSAGE_BLOCK;
         }
 
         return MESSAGE_IGNORE;
