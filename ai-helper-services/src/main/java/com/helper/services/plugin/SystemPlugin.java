@@ -1,5 +1,7 @@
 package com.helper.services.plugin;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -21,6 +23,8 @@ import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import com.mikuac.shiro.core.BotPlugin;
+import com.mikuac.shiro.dto.action.common.ActionData;
+import com.mikuac.shiro.dto.action.response.BooleanResp;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import groovyjarjarantlr4.v4.misc.Graph;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +36,8 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.net.URI;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -72,7 +74,7 @@ public class SystemPlugin extends BotPlugin {
         String userInput = event.getMessage();
 
         if (userInput.startsWith("#指令")){
-            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api\n#模型查询").build();
+            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api\n#模型查询\n#api查询").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
         }
@@ -142,6 +144,7 @@ public class SystemPlugin extends BotPlugin {
 
         if (userInput.startsWith("#api")){
             bot.sendPrivateMsg(event.getUserId(), "输入 #开始配置api 进入api配置引导状态",false);
+            return MESSAGE_BLOCK;
         }
 
         if (userInput.startsWith("#开始配置api")){

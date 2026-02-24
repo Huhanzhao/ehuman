@@ -23,7 +23,8 @@ public class MainGraph {
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
-    private final SendMessageNode sendMessageNode;
+    private final SendVoiceNode sendMessageNode;
+//    private final SendMessageNode sendMessageNode;
 
     @Bean("qqBotMainGraph")
     public CompiledGraph qqBotMainGraph() {
