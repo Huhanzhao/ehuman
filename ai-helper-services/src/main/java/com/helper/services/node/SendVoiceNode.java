@@ -69,8 +69,10 @@ public class SendVoiceNode implements NodeAction {
                 throw new RuntimeException(e);
             }
 
+            boolean voiceSend = false;
+
             Map<String,String> resultMap = null;
-            for (int i = 0; i < 10; i++){
+            for (int i = 0; i < 30; i++){
                 HttpResponse response = HttpRequest
                         .get("https://api.302.ai/302/index_tts2/task")
                         .header("Authorization", "Bearer sk-Vqex6dWmqqFMVS1wsuwMjywSvFvfq7RFzTX3v0N8T05fg0q7")
@@ -79,6 +81,10 @@ public class SendVoiceNode implements NodeAction {
                 log.info("taskId:{} 查询执行完毕", taskIdList.get(j));
                 resultMap = (Map<String, String>) JSON.parse(response.body());
                 if (!resultMap.get("state").equals("SUCCESS")){
+                    if (resultMap.get("state").equals("FAILURE")){
+                        log.info("语音合成失败：{}", resultMap.get("message"));
+                        break;
+                    }
                     log.info("消息：{} 语音合成中 状态：{}", splitMessages[j], resultMap.get("state"));
                     try {
                         Thread.sleep(2000);
@@ -87,15 +93,25 @@ public class SendVoiceNode implements NodeAction {
                     }
                 }else {
                     log.info("消息：{} 语音合成成功", splitMessages[j]);
+                    voiceSend = true;
                     break;
                 }
             }
 
-            String build = MsgUtils.builder().voice(resultMap.get("audio_url")).build();
             // 通过机器人账号取出 Bot 对象
             Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
-            bot.sendPrivateMsg(userId,build,false);
-            log.info("消息：{} 语音发送成功", splitMessages[j]);
+
+            // 成功发送语音，失败发送文字
+            if (voiceSend){
+                String build = MsgUtils.builder().voice(resultMap.get("audio_url")).build();
+                bot.sendPrivateMsg(userId,build,false);
+                log.info("消息：{} 语音发送成功", splitMessages[j]);
+            }else {
+                log.error("消息：{} 语音合成失败", splitMessages[j]);
+                String build = MsgUtils.builder().text(splitMessages[j]).build();
+                bot.sendPrivateMsg(userId,build,false);
+            }
+
 
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessages[j]));
         }

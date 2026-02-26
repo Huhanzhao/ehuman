@@ -49,5 +49,6 @@ shiro:
       url: "/ws"   # websocket服务端地址 napCat需要在webui页面配置ws客户端 ws://localhost:8081/ws
     access-token: huhanzhao
   plugin-list:
+   - com.helper.services.plugin.TestPlugin
    - com.helper.services.plugin.SystemPlugin
    - com.helper.services.plugin.QQBotPlugin

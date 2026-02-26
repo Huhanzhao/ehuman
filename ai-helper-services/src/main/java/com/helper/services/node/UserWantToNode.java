@@ -52,9 +52,10 @@ public class UserWantToNode implements NodeAction {
                         注意：
                         - 性暗示、暧昧、越界试探等等 不代表对话结束，默认输出 next
                         - 只有明确表达结束并且互道晚安 拜拜 或者再见之类的才视为结束对话
+                        - 必须ai与用户都说了晚安 拜拜 或者再见 之类的话 才能视为exit 只有用户说了再见需要ai再回复一次就输出next
                         只输出结果，不要解释。
                         """)
-                .user(memoryString + "\n 以上是用户与ai对话历史，请分析用户意图").call().content();
+                .user(memoryString + "\n 以上是用户与ai对话历史，请分析是否需要ai回复").call().content();
         log.info("用户意图结果：{}", content);
         return Map.of("userWantTo", content,"memoryString", memoryString);
     }
