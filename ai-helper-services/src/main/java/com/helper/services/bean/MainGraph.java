@@ -23,7 +23,8 @@ public class MainGraph {
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
-    private final SendVoiceNode sendMessageNode;
+    private final SendVoiceNode sendVoiceNode;
+    private final ImageAnalysisNode imageAnalysisNode;
 //    private final SendMessageNode sendMessageNode;
 
     @Bean("qqBotMainGraph")
@@ -41,25 +42,25 @@ public class MainGraph {
         try {
             stateGraph
                     .addNode("authNode", node_async(authNode))
+                    .addNode("imageAnalysisNode", node_async(imageAnalysisNode))
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("sendMessageNode", node_async(sendMessageNode))
+                    .addNode("sendVoiceNode", node_async(sendVoiceNode))
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
                                 return String.valueOf(state.value("auth", Boolean.class).orElse(false));}),
-                    Map.of("true", "userWantToNode",
+                    Map.of("true", "imageAnalysisNode",
                             "false", StateGraph.END))
-
+                    .addEdge("imageAnalysisNode", "userWantToNode")
                     .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
                     Map.of("next", "gracesNode",
                             "exit", StateGraph.END))
-
 //                  .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
-                    .addEdge("messageGenerateNode", "sendMessageNode")
-                    .addEdge("sendMessageNode", StateGraph.END);
+                    .addEdge("messageGenerateNode", "sendVoiceNode")
+                    .addEdge("sendVoiceNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();

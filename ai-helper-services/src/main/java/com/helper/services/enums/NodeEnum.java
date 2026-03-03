@@ -9,7 +9,9 @@ public enum NodeEnum {
 
     WANT_TO("UserWantToNode",1),
     GRACE("UserGracesNode",2),
-    GENERATE("MessageGenerateNode",3);
+    GENERATE("MessageGenerateNode",3),
+    IMAGE_ANALYSIS("ImageAnalysisNode",4);
+
 
 
     private final String nodeName;
