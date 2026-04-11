@@ -23,9 +23,9 @@ public class MainGraph {
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
-    private final SendVoiceNode sendVoiceNode;
+//    private final SendVoiceNode sendVoiceNode;
     private final ImageAnalysisNode imageAnalysisNode;
-//    private final SendMessageNode sendMessageNode;
+    private final SendMessageNode sendMessageNode;
 
     @Bean("qqBotMainGraph")
     public CompiledGraph qqBotMainGraph() {
@@ -46,7 +46,7 @@ public class MainGraph {
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("sendVoiceNode", node_async(sendVoiceNode))
+                    .addNode("sendVoiceNode", node_async(sendMessageNode))
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {

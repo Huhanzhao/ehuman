@@ -3,6 +3,7 @@ package com.helper.services.bean;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.commonservicescommon.entity.BusinessException;
+import com.helper.services.entity.GrokChatClient;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.enums.ChatModelEnum;
@@ -24,7 +25,11 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.transport.ProxyProvider;
 
 import java.util.List;
 import java.util.Map;
@@ -55,6 +60,8 @@ public class ChatClientFactory {
 
         if (ChatModelEnum.GPT_4O_MINI.getCategory().equals(modelConfigDo.getCategory())){
             return createOpenAiChatClient(modelConfigDo,chatConfigDo);
+        }if (ChatModelEnum.GROK_4_1_NO_REASONING.getCategory().equals(modelConfigDo.getCategory())){
+            return createGrokChatClient(modelConfigDo);
         }else if (ChatModelEnum.CLAUDE_SONNET_4_5.getCategory().equals(modelConfigDo.getCategory())){
             return createClaudeChatClient(modelConfigDo,chatConfigDo);
         }else if (ChatModelEnum.DEEP_SEEK_V3_2.getCategory().equals(modelConfigDo.getCategory())){
@@ -62,6 +69,10 @@ public class ChatClientFactory {
         }else {
             throw new BusinessException("不支持的模型",userId);
         }
+    }
+
+    private ChatClient createGrokChatClient(TbUserModelConfigDo modelConfigDo) {
+        return new GrokChatClient(modelConfigDo.getApiKey(),modelConfigDo.getBaseUrl(),modelConfigDo.getModel());
     }
 
     public ChatClient createDeepSeekChatClient(TbUserModelConfigDo modelConfigDo,TbChatConfigDo chatConfigDo) {
@@ -97,7 +108,6 @@ public class ChatClientFactory {
                 .temperature(chatConfigDo.getTemperature())
                 .maxCompletionTokens(1024)
                 .extraBody(Map.of("chat_template_kwargs", Map.of("enable_thinking", false)))
-
 //                .topP(1.0) // 模型选词自由度
 //                .presencePenalty(1.0) // 模型换词、换说法
 //                .maxTokens(1024)

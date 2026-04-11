@@ -9,6 +9,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.helper.services.bean.SystemGraph;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserGraceDo;
@@ -27,6 +28,7 @@ import com.mikuac.shiro.dto.action.common.ActionData;
 import com.mikuac.shiro.dto.action.response.BooleanResp;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import groovyjarjarantlr4.v4.misc.Graph;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,15 +58,23 @@ public class SystemPlugin extends BotPlugin {
     @Autowired
     private  TbUserModelConfigDoService tbUserModelConfigDoService;
 
-    private final CompiledGraph qqSystemGraph;
+    @Autowired
+    private SystemGraph systemGraph;
+
+    private CompiledGraph apiConfigGraph;
+
+    private CompiledGraph voiceConfigGraph;
 
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<Long, String> userCurrentNodeMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, String> userThreadIdMap = new ConcurrentHashMap<>();
 
-    public SystemPlugin(@Qualifier("qqSystemGraph")CompiledGraph qqSystemGraph){
-        this.qqSystemGraph = qqSystemGraph;
+
+    @PostConstruct
+    public void init() {
+        this.apiConfigGraph = systemGraph.getApiConfigGraph();
+        this.voiceConfigGraph = systemGraph.getVoiceGraph();
     }
 
     @PrivateMessageHandler
@@ -76,6 +86,11 @@ public class SystemPlugin extends BotPlugin {
         if (userInput.startsWith("#指令")){
             String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api\n#模型查询\n#api查询").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
+            return MESSAGE_BLOCK;
+        }
+
+        if (userInput.startsWith("#切换声音")){
+
             return MESSAGE_BLOCK;
         }
 
@@ -169,7 +184,7 @@ public class SystemPlugin extends BotPlugin {
                     .threadId(threadId)
                     .build();
             // 执行图并获取流
-            Flux<NodeOutput> stream = qqSystemGraph.stream(input, invokeConfig)
+            Flux<NodeOutput> stream = apiConfigGraph.stream(input, invokeConfig)
                     .subscribeOn(Schedulers.boundedElastic()); // 异步 执行
 
             // 异步处理每个输出
@@ -229,7 +244,7 @@ public class SystemPlugin extends BotPlugin {
                 if (userCurrentNodeMap.get(event.getUserId()).equals("modelCategoryNode")){
                     map.put("modelConfig",new TbUserModelConfigDo());
                 }
-                updatedConfig = qqSystemGraph.updateState(invokeConfig, map, userCurrentNodeMap.get(event.getUserId()));
+                updatedConfig = apiConfigGraph.updateState(invokeConfig, map, userCurrentNodeMap.get(event.getUserId()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -238,7 +253,7 @@ public class SystemPlugin extends BotPlugin {
                     .addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
                     .build();
             // 继续执行 Graph（input 为 null，使用之前的状态）
-            qqSystemGraph.stream(null,resumeConfig)
+            apiConfigGraph.stream(null,resumeConfig)
                     .doOnNext(event1 -> {
                         log.info("当前迭代节点: " + event1);
                         userCurrentNodeMap.put(event.getUserId(), event1.node());

@@ -5,9 +5,12 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.JSON;
+import com.helper.commonservicescommon.entity.BusinessException;
 import com.helper.services.entity.TbAiChatMemoryDo;
+import com.helper.services.entity.TbUserVoiceModelDo;
 import com.helper.services.enums.QQbotIdEnum;
 import com.helper.services.service.TbAiChatMemoryService;
+import com.helper.services.service.TbUserVoiceModelDoService;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
@@ -27,6 +30,10 @@ public class SendVoiceNode implements NodeAction {
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
+    private final TbUserVoiceModelDoService tbUserVoiceModelDoService;
+
+    private final String API_KEY = "Bearer sk-GXqCEbErJlwrUYDwhMzrKhv4AxnIvpvSvEIkb1XBdkx3Ct2m";
+
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
         String aiMessage = (String) state.value("finalOutput", String.class).orElse("");
@@ -39,28 +46,40 @@ public class SendVoiceNode implements NodeAction {
         log.info("aiMessage: {}", aiMessage);
         String[] splitMessages = aiMessage.replaceAll("\n\n","\n").split("\n");
 
+        TbUserVoiceModelDo tbUserVoiceModelDo = tbUserVoiceModelDoService.getVoiceModelByUserId(userId).getFirst();
+
+        // 通过机器人账号取出 Bot 对象
+        Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
+
         List<String> taskIdList = new ArrayList<>();
         for (String splitMessage : splitMessages) {
             if (splitMessage.isEmpty() || splitMessage.isBlank()) continue;
             // 语音合成
             Map<String,Object> paramMap = new HashMap();
             paramMap.put("text", splitMessage);
-            paramMap.put("speaker_audio_url", "https://file.302.ai/gpt/imgs/20260223/9324e78b1f5d1cc60b5a713a43dbb5fb.m4a");
-            paramMap.put("emotion_audio_url", "https://file.302.ai/gpt/imgs/20260223/9324e78b1f5d1cc60b5a713a43dbb5fb.m4a");
+            paramMap.put("speaker_audio_url",tbUserVoiceModelDo.getVoiceModelUrl() );
+            paramMap.put("emotion_audio_url", tbUserVoiceModelDo.getVoiceModelUrl());
+//            paramMap.put("speaker_aud io_url", "https://file.302.ai/gpt/imgs/20260308/555729ebec7de9b020ae42c9c5e59d85.m4a");
+//            paramMap.put("emotion_audio_url", "https://file.302.ai/gpt/imgs/20260308/555729ebec7de9b020ae42c9c5e59d85.m4a");
             paramMap.put("emotion_alpha", 1);
 
             HttpResponse taskResponse = HttpRequest.post("https://api.302.ai/302/index_tts2/task")
-                    .header("Authorization", "Bearer sk-Vqex6dWmqqFMVS1wsuwMjywSvFvfq7RFzTX3v0N8T05fg0q7")
+                    .header("Authorization", API_KEY)
                     .body(JSON.toJSONString(paramMap)).execute();
             int status = taskResponse.getStatus();
+            log.info("语音合成相应 responseBody:{}", taskResponse.body());
             if (status != 200) {
                 log.error("status: {}", status);
-                log.error("taskResponse: {}", taskResponse.body());
+                log.info("taskResponse: {}", taskResponse.body());
+                String build = MsgUtils.builder().text(splitMessage).build();
+                bot.sendPrivateMsg(userId,build,false);
+            }else{
+                log.info("taskResponse: {}", taskResponse.body());
+                Map<String,String> taskMap = (Map<String, String>) JSON.parse(taskResponse.body());
+                String taskId = taskMap.get("task_id");
+                log.info("消息：{} 语音合成任务发送成功 taskId: {}",splitMessage, taskId);
+                taskIdList.add(taskId);
             }
-            Map<String,String> taskMap = (Map<String, String>) JSON.parse(taskResponse.body());
-            String taskId = taskMap.get("task_id");
-            log.info("消息：{} 发送成功 taskId: {}",splitMessage, taskId);
-            taskIdList.add(taskId);
         }
         for (int j = 0; j < taskIdList.size(); j++) {
             try {
@@ -75,10 +94,11 @@ public class SendVoiceNode implements NodeAction {
             for (int i = 0; i < 30; i++){
                 HttpResponse response = HttpRequest
                         .get("https://api.302.ai/302/index_tts2/task")
-                        .header("Authorization", "Bearer sk-Vqex6dWmqqFMVS1wsuwMjywSvFvfq7RFzTX3v0N8T05fg0q7")
+                        .header("Authorization", API_KEY)
                         .form("task_id", taskIdList.get(j))
                         .execute();
-                log.info("taskId:{} 查询执行完毕", taskIdList.get(j));
+                log.info("taskId:{} 查询执行完毕 responseBody:{}", taskIdList.get(j),response.body());
+
                 resultMap = (Map<String, String>) JSON.parse(response.body());
                 if (!resultMap.get("state").equals("SUCCESS")){
                     if (resultMap.get("state").equals("FAILURE")){
@@ -97,9 +117,6 @@ public class SendVoiceNode implements NodeAction {
                     break;
                 }
             }
-
-            // 通过机器人账号取出 Bot 对象
-            Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
 
             // 成功发送语音，失败发送文字
             if (voiceSend){
