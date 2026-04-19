@@ -43,7 +43,7 @@ public class MyQuartzJob implements Job {
             if (!(contentSplit[i].contains("摘要:")
                     || contentSplit[i].contains("来源:")
                     || contentSplit[i].contains("发布时间:")
-                    || contentSplit[i].contains("链接:")
+//                    || contentSplit[i].contains("链接:")
                     || contentSplit[i].contains("条热点新闻")
             )){
                 sb.append(contentSplit[i].replace("标题：","")).append("\n");
