@@ -10,19 +10,8 @@ spring:
     active: dev
   config:
     import:
-      - optional:nacos:ai-helper-services.yml
-      - optional:nacos:ai-helper-services-${spring.profiles.active}.yml
-  cloud:
-    nacos:
-      discovery:
-        server-addr: localhost:8848
-        namespace: ai-helper
-        group: DEFAULT_GROUP
-      config:
-        server-addr: localhost:8848
-        namespace: ai-helper
-        group: DEFAULT_GROUP
-        file-extension: yml
+      - optional:ai-helper-services.yml
+      - optional:ai-helper-services-${spring.profiles.active}.yml
   ai:
     anthropic:
       api-key: sdfs

@@ -63,4 +63,6 @@ public class TbUserModelConfigDo {
     @TableLogic
     private Boolean deleteFlag;
 
+    private Boolean needProxy;
+
 }

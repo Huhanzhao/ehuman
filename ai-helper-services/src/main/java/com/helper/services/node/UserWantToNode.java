@@ -2,7 +2,7 @@ package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.helper.commonservicescommon.entity.BusinessException;
+import com.helper.common.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.enums.ChatModelEnum;

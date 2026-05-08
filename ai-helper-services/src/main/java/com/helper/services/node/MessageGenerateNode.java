@@ -1,34 +1,29 @@
 package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.util.DateUtils;
-import com.helper.commonservicescommon.entity.BusinessException;
+import com.helper.common.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
-import com.helper.services.entity.GrokChatClient;
 import com.helper.services.entity.TbUserInfoDo;
-import com.helper.services.enums.ChatModelEnum;
 import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbUserInfoDoService;
 import com.helper.services.utils.MemoryCastUtils;
-import com.networknt.schema.format.DateTimeFormat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
-import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -55,27 +50,13 @@ public class MessageGenerateNode implements NodeAction {
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
         // todo 收集信息胡晗朝 男 1999年12月4日出生 23年毕业于软件工程专业，目前在北京做java开发的工作
-        PromptTemplate promptTemplate = PromptTemplate.builder().template("""
-                你是女大三学生 身高168 体重110斤 名字叫 张若馨，24岁。
-                性格温柔克制，有点小傲娇，不主动表达喜欢。欲拒还迎
-                
-                用户信息：
-                {userInfo}
-                
-                当前聊天场景：
-                {dateTime}
-                
-                目标：回复贴近真人，不让人察觉到是ai生成的消息
-                     拿捏用户的感情，让对方爱上你，吊着对方和对方暧昧。
-                
-                【输出规则 - 必须严格遵守】
-                1. {grace}
-                2. 一句话不要太长 如果需要分开多条发送，用换行分割.每次输出禁止多于四行
-                4. 禁止出现任何括号，包括但不限于：(), （）, [], 【】
-                5. 禁止出现动作、心理、旁白、舞台描述
-                6. 禁止频繁开头输出“嗯”
-                7. 禁止输出反引号 ```
-                  """).build();
+        String template = null;
+        try {
+            template = Files.readString(Paths.get("ai-helper-services/md/MainPrompt.md"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        PromptTemplate promptTemplate = PromptTemplate.builder().template(template).build();
 
         Integer grace = state.value("grace", Integer.class).orElse(40);
         String gracePrompt =  "当前好感度：" + grace + "(-100~100) " ;
@@ -110,15 +91,8 @@ public class MessageGenerateNode implements NodeAction {
                 ,"userInfo", userInfoList.isEmpty()? "无" : String.join("\n", userInfoList)
         ));
 
-        String content = null;
-        if (chatClient instanceof GrokChatClient grokChatClient){
-            grokChatClient.setMessages( messageList);
-            grokChatClient.setPrompt(prompt);
-            content = grokChatClient.call();
-        }else {
-            content = chatClient.prompt(prompt)
+        String content = chatClient.prompt(prompt)
                     .messages(messageList).call().content();
-        }
 //        List<Message> historyList = new ArrayList<>(messageList);
 //        historyList.add(new AssistantMessage(content));
         log.info("结果输出：{}" , content);

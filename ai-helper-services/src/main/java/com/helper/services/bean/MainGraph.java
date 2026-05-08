@@ -23,7 +23,6 @@ public class MainGraph {
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
-//    private final SendVoiceNode sendVoiceNode;
     private final ImageAnalysisNode imageAnalysisNode;
     private final SendMessageNode sendMessageNode;
 
@@ -46,7 +45,7 @@ public class MainGraph {
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("sendVoiceNode", node_async(sendMessageNode))
+                    .addNode("sendMessageNode", node_async(sendMessageNode))
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
@@ -59,8 +58,8 @@ public class MainGraph {
                             "exit", StateGraph.END))
 //                  .addEdge("sentimentAnalysisNode", "gracesNode")
                     .addEdge("gracesNode", "messageGenerateNode")
-                    .addEdge("messageGenerateNode", "sendVoiceNode")
-                    .addEdge("sendVoiceNode", StateGraph.END);
+                    .addEdge("messageGenerateNode", "sendMessageNode")
+                    .addEdge("sendMessageNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();

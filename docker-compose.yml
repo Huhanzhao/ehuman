@@ -17,6 +17,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       retries: 5
+      # 添加napcat
 
   redis:
     image: redis:7.0
@@ -27,78 +28,18 @@ services:
     volumes:
       - redis_data:/data
 
-  chromadb:
-    image: chromadb/chroma:1.3.6.dev37  # 官方 Docker 镜像，版本可替换
-    container_name: chromadb
+  ai-helper-service:
+    build:
+      context: ./ai-helper-services
+      dockerfile: Dockerfile
+    container_name: ai-helper-services
     restart: always
     ports:
-      - "8000:8000"    # HTTP API 默认端口
-      - "8001:8001"    # gRPC 端口（可选）
-    environment:
-      CHROMA_DB_IMPL: duckdb  # 使用内存+文件存储，也可以改为 'duckdb+parquet'
-      CHROMA_API: rest        # 通过 REST API 访问
-      CHROMA_SERVER_HOST: 0.0.0.0
-      CHROMA_SERVER_PORT: 8000
-    volumes:
-      - chroma_data:/chroma   # 持久化数据
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 10s
-      retries: 5
-
-  nacos:
-    image: nacos/nacos-server:v2.5.2
-    container_name: nacos
-    environment:
-      - PREFER_HOST_MODE=hostname
-      - MODE=standalone
-      - NACOS_AUTH_ENABLE=false
-    ports:
-      - "8848:8848"
-      - "9848:9848"
-      - "9849:9849"
-    restart: always
-
-  minio:
-    image: minio/minio:RELEASE.2025-07-18T21-56-31Z-cpuv1
-    container_name: minio
-    ports:
-      - "9000:9000"   # MinIO 对象存储 API（S3‑兼容接口）端口
-      - "9001:9001"   # MinIO 控制台 (Console / Web UI) 端口
-    environment:
-      MINIO_ROOT_USER: "admin"         # 管理账户名
-      MINIO_ROOT_PASSWORD: "admin123"  # 管理账户密码（建议改成安全密码）
-    volumes:
-      - ./minio_data:/data         # 将宿主机 ./minio_data 目录挂载为容器 /data，用于持久化存储
-    command: server /data --console-address ":9001"
-    restart: always
-#  gateway:
-#    build:
-#      context: ./gateway
-#      dockerfile: Dockerfile
-#    container_name: gateway
-#    restart: always
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      - mysql
-#      - redis
-#      - rabbitmq
-#
-#  ai-helper-service:
-#    build:
-#      context: ./ai-helper-services
-#      dockerfile: Dockerfile
-#    container_name: ai-helper-services
-#    restart: always
-#    ports:
-#      - "8081:8081"
-#    depends_on:
-#      - redis
-#      - chromadb
-#      - mysql
+      - "8081:8081"
+    depends_on:
+      - redis
+      - mysql
 
 volumes:
   mysql_data:
   redis_data:
-  chroma_data:
