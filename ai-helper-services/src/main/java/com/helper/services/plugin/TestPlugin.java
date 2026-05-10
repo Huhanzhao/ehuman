@@ -26,12 +26,22 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.OpenAiImageOptions;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 
 
 @Component
@@ -67,6 +77,26 @@ public class TestPlugin extends BotPlugin{
 //            String result = grokChatClient.call();
 //            bot.sendPrivateMsg(event.getUserId(),result,false);
 //        }
+//        SimpleClientHttpRequestFactory factory =  new SimpleClientHttpRequestFactory();
+//
+//        Proxy proxy = new Proxy(
+//                Proxy.Type.HTTP,
+//                new InetSocketAddress("127.0.0.1", 7890)
+//        );
+//
+//        factory.setProxy(proxy);
+//
+//
+//        OpenAiImageOptions build = OpenAiImageOptions.builder().model("grok-imagine-image-pro").build();
+//        RestClient.Builder builder = RestClient.builder()
+//                .requestFactory(factory);
+//        ImageModel imageModel = new OpenAiImageModel(OpenAiImageApi.builder().restClientBuilder(builder)
+//                .apiKey("xai-GMCqe")
+//                .baseUrl("https://api.x.ai").build());
+//
+//
+//        ImageResponse resp = imageModel.call(new ImagePrompt("生成一张清纯的女生照片，充满生活气息",build));
+        // 图片生成太贵不要了
         return MESSAGE_IGNORE;
     }
 }
