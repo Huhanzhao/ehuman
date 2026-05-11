@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.helper.services.mapper.TbBotLifeDetailDoMapper">
+
+    <resultMap id="BaseResultMap" type="com.helper.services.entity.TbBotLifeDetailDo">
+            <id property="id" column="id" />
+            <result property="botId" column="bot_id" />
+            <result property="date" column="date" />
+            <result property="lifeDetail" column="life_detail" />
+            <result property="createTime" column="create_time" />
+            <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,bot_id,date,life_detail,create_time,update_time
+    </sql>
+</mapper>

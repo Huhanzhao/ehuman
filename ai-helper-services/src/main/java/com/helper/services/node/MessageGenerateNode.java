@@ -88,7 +88,7 @@ public class MessageGenerateNode implements NodeAction {
                 "grace", gracePrompt,
                 "dateTime", "当前时间：" +
                         DateUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +  " " + LocalDateTime.now().getDayOfWeek()
-                ,"userInfo", userInfoList.isEmpty()? "无" : String.join("\n", userInfoList)
+                ,"userInfo", userInfoList.isEmpty()? "无" : userInfoList.getFirst()
         ));
 
         String content = chatClient.prompt(prompt)

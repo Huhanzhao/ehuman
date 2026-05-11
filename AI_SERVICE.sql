@@ -11,7 +11,7 @@
  Target Server Version : 80044
  File Encoding         : 65001
 
- Date: 08/05/2026 22:57:26
+ Date: 11/05/2026 21:58:58
 */
 
 SET NAMES utf8mb4;
@@ -33,6 +33,20 @@ CREATE TABLE `tb_ai_chat_memory`  (
   INDEX `DELETE_FLAG`(`DELETE_FLAG` ASC, `MEMORY_ID` ASC) USING BTREE,
   INDEX `MEMORY_ID`(`MEMORY_ID` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_bot_life_detail
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_life_detail`;
+CREATE TABLE `tb_bot_life_detail`  (
+  `id` bigint NOT NULL COMMENT '主键',
+  `bot_id` bigint NOT NULL COMMENT 'botqq号',
+  `date` timestamp NOT NULL COMMENT '时间',
+  `life_detail` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '生活细节',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for tb_chat_config
@@ -102,13 +116,23 @@ DROP TABLE IF EXISTS `tb_user_info`;
 CREATE TABLE `tb_user_info`  (
   `id` bigint NOT NULL COMMENT '主键id',
   `user_id` bigint NOT NULL COMMENT '用户id',
-  `other_info` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '其他信息',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '姓名',
-  `sex` bit(1) NULL DEFAULT NULL COMMENT '性别',
-  `age` int NULL DEFAULT NULL COMMENT '年龄',
-  `job` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '职业',
-  `city` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所在城市',
-  `user_info` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `user_info` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '用户信息',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `user_id`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_user_message_summary
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_user_message_summary`;
+CREATE TABLE `tb_user_message_summary`  (
+  `id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息总结',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
