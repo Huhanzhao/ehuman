@@ -1,7 +1,7 @@
 package com.helper.services.bean;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.helper.common.entity.BusinessException;
+import com.helper.services.common.entity.BusinessException;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.enums.ChatModelEnum;
@@ -12,9 +12,6 @@ import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;

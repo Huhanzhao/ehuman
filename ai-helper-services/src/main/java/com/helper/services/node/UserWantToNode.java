@@ -2,20 +2,17 @@ package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.helper.common.entity.BusinessException;
+import com.helper.services.common.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbAiChatMemoryDo;
-import com.helper.services.enums.ChatModelEnum;
 import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

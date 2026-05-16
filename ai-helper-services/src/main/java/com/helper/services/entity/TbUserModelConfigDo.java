@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.util.Date;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * 
@@ -11,6 +12,7 @@ import lombok.Data;
  */
 @TableName(value ="tb_user_model_config")
 @Data
+@Accessors(chain = true)
 public class TbUserModelConfigDo {
     /**
      * 

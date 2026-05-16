@@ -1,4 +1,4 @@
-package com.helper.common.utils;
+package com.helper.services.common.utils;
 
 public class UserContext {
     private static final ThreadLocal<String> userIdHolder = new ThreadLocal<>();

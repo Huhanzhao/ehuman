@@ -1,8 +1,8 @@
-package com.helper.common.config;
+package com.helper.services.common.config;
 
 
-import com.helper.common.entity.BusinessException;
-import com.helper.common.entity.Result;
+import com.helper.services.common.entity.BusinessException;
+import com.helper.services.common.entity.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // 业务异常
+    // 业务异常  todo 错误发送给qq
     @ExceptionHandler(BusinessException.class)
     public Result<?> handleTokenExpired(BusinessException e) {
         log.error(e.getMessage());

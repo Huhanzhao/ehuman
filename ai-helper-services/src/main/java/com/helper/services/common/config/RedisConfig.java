@@ -1,4 +1,4 @@
-package com.helper.common.config;
+package com.helper.services.common.config;
 
 
 import org.springframework.context.annotation.Bean;

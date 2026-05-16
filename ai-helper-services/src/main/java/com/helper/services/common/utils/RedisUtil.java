@@ -1,4 +1,4 @@
-package com.helper.common.utils;
+package com.helper.services.common.utils;
 
 
 import org.springframework.beans.factory.annotation.Autowired;

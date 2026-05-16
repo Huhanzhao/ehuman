@@ -6,6 +6,8 @@ import com.helper.services.service.TbUserModelConfigDoService;
 import com.helper.services.mapper.TbUserModelConfigDoMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
 * @author Lenovo
 * @description 针对表【tb_user_model_config】的数据库操作Service实现
@@ -15,6 +17,19 @@ import org.springframework.stereotype.Service;
 public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfigDoMapper, TbUserModelConfigDo>
     implements TbUserModelConfigDoService{
 
+    @Override
+    public List<TbUserModelConfigDo> getModelList(TbUserModelConfigDo modelConfigDo) {
+        return lambdaQuery()
+                .eq(modelConfigDo.getUserId() != null,TbUserModelConfigDo::getUserId,modelConfigDo.getUserId())
+                .eq(modelConfigDo.getModel() != null,TbUserModelConfigDo::getModel,modelConfigDo.getModel())
+                .eq(modelConfigDo.getCategory() != null,TbUserModelConfigDo::getCategory,modelConfigDo.getCategory())
+                .eq(modelConfigDo.getNeedProxy() != null,TbUserModelConfigDo::getNeedProxy,modelConfigDo.getNeedProxy())
+                .eq(modelConfigDo.getNodeNum() != null,TbUserModelConfigDo::getNodeNum,modelConfigDo.getNodeNum())
+                .eq(modelConfigDo.getId() != null,TbUserModelConfigDo::getId,modelConfigDo.getId())
+                .eq(modelConfigDo.getApiKey() != null,TbUserModelConfigDo::getApiKey,modelConfigDo.getApiKey())
+                .eq(modelConfigDo.getBaseUrl() != null,TbUserModelConfigDo::getBaseUrl,modelConfigDo.getBaseUrl())
+                .list();
+    }
 }
 
 

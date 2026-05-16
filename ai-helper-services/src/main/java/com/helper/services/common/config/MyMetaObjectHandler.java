@@ -1,7 +1,7 @@
-package com.helper.common.config;
+package com.helper.services.common.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import com.helper.common.utils.UserContext;
+import com.helper.services.common.utils.UserContext;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 

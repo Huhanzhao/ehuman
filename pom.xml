@@ -13,7 +13,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>ai-helper-services</module>
-        <module>ai-helper-common</module>
     </modules>
 
     <properties>
@@ -106,18 +105,6 @@
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
                 <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.helper</groupId>
-                <artifactId>common-services-common</artifactId>
-                <version>${common.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.helper</groupId>
-                <artifactId>common-auth</artifactId>
-                <version>${common.version}</version>
             </dependency>
 
             <!--spring cloud-->

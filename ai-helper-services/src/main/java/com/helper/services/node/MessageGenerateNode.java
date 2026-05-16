@@ -3,7 +3,7 @@ package com.helper.services.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.util.DateUtils;
-import com.helper.common.entity.BusinessException;
+import com.helper.services.common.entity.BusinessException;
 import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbUserInfoDo;
 import com.helper.services.enums.NodeEnum;
