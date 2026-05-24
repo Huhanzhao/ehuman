@@ -68,6 +68,7 @@ public class SystemPlugin extends BotPlugin {
 
     private CompiledGraph apiConfigGraph;
 
+    // todo 声音voice graph
     private CompiledGraph voiceConfigGraph;
 
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();

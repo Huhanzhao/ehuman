@@ -64,6 +64,8 @@ public class SystemGraph {
     }
 
     public CompiledGraph getVoiceGraph() {
+        // todo 配置需要克隆的参考音频保存到数据库
+
         // 配置 KeyStrategyFactory 不配置会导致人类反馈拿不到状态
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
