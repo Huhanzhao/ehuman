@@ -30,6 +30,39 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
                 .eq(modelConfigDo.getBaseUrl() != null,TbUserModelConfigDo::getBaseUrl,modelConfigDo.getBaseUrl())
                 .list();
     }
+
+    @Override
+    public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, Integer nodeNum) {
+        return lambdaQuery()
+                .eq(TbUserModelConfigDo::getUserId, userId)
+                .eq(TbUserModelConfigDo::getNodeNum, nodeNum)
+                .one();
+    }
+
+    @Override
+    public List<TbUserModelConfigDo> getByUserId(Long userId) {
+        return lambdaQuery()
+                .eq(TbUserModelConfigDo::getUserId, userId)
+                .list();
+    }
+
+    @Override
+    public List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId) {
+        return lambdaQuery()
+                .eq(TbUserModelConfigDo::getUserId, userId)
+                .ne(TbUserModelConfigDo::getNodeNum, 0)
+                .orderByAsc(TbUserModelConfigDo::getNodeNum)
+                .list();
+    }
+
+    @Override
+    public void clearNodeNumByUserIdAndNodeNum(Long userId, Integer nodeNum) {
+        lambdaUpdate()
+                .set(TbUserModelConfigDo::getNodeNum, 0)
+                .eq(TbUserModelConfigDo::getUserId, userId)
+                .eq(TbUserModelConfigDo::getNodeNum, nodeNum)
+                .update();
+    }
 }
 
 

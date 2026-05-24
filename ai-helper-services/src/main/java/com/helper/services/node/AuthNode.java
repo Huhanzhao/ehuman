@@ -2,7 +2,6 @@ package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.service.TbChatConfigDoService;
@@ -30,8 +29,7 @@ public class AuthNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state){
         Long userId = state.value("userId",Long.class).orElse(0L);
 
-        List<TbUserModelConfigDo> list = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
-                .eq(TbUserModelConfigDo::getUserId, userId));
+        List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserId(userId);
         if (list.isEmpty()) {
             Bot bot = botContainer.robots.get(3839330250L);
             // 调用 Bot 对象方法
@@ -39,8 +37,7 @@ public class AuthNode implements NodeAction {
             return Map.of("auth",false);
         }
 
-        TbChatConfigDo one = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
-                .eq(TbChatConfigDo::getUserId, userId));
+        TbChatConfigDo one = tbChatConfigDoService.getByUserId(userId);
         if (one == null) {
             TbChatConfigDo tb = new TbChatConfigDo();
             tb.setUserId(userId);

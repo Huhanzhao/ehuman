@@ -8,9 +8,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.fastjson2.JSON;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.bean.SystemGraph;
-import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserGraceDo;
 import com.helper.services.entity.TbUserModelConfigDo;
@@ -96,11 +94,7 @@ public class SystemPlugin extends BotPlugin {
 
         if (userInput.startsWith("#删除")){
             userInput = userInput.replace("#删除", "");
-            tbAiChatMemoryService.remove(Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                    .eq(TbAiChatMemoryDo::getRole,"assistant")
-                    .eq(TbAiChatMemoryDo::getMemoryId,event.getUserId())
-                    .like(TbAiChatMemoryDo::getMessage,userInput)
-            );
+            tbAiChatMemoryService.removeByMemoryIdAndLikeMessage(event.getUserId(), userInput);
             return MESSAGE_BLOCK;
         }
 
@@ -108,13 +102,9 @@ public class SystemPlugin extends BotPlugin {
             userInput = userInput.replace("#对话配置", "");
             if (!userInput.isEmpty()){
                 String[] split = userInput.trim().split(" ");
-                tbChatConfigDoService.update(Wrappers.<TbChatConfigDo>lambdaUpdate()
-                        .set(TbChatConfigDo::getTemperature,Double.valueOf(split[0]))
-                        .set(TbChatConfigDo::getTopP,Double.valueOf(split[1]))
-                        .eq(TbChatConfigDo::getUserId,event.getUserId()));
+                tbChatConfigDoService.updateByUserId(event.getUserId(), Double.valueOf(split[0]), Double.valueOf(split[1]));
             }
-            TbChatConfigDo tbChatConfigDo = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
-                    .eq(TbChatConfigDo::getUserId,event.getUserId()));
+            TbChatConfigDo tbChatConfigDo = tbChatConfigDoService.getByUserId(event.getUserId());
             String msg = MsgUtils.builder().text("temp:" + tbChatConfigDo.getTemperature() + "\ntopP:" + tbChatConfigDo.getTopP()).build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
@@ -124,28 +114,22 @@ public class SystemPlugin extends BotPlugin {
             userInput = userInput.replace("#好感度", "");
             if (!userInput.isEmpty()){
                 Integer grace = Integer.valueOf(userInput);
-                tbUserGraceDoService.update(Wrappers.<TbUserGraceDo>lambdaUpdate()
-                        .set(TbUserGraceDo::getGrace,grace)
-                        .eq(TbUserGraceDo::getUserId,event.getUserId()));
+                tbUserGraceDoService.updateGraceByUserId(event.getUserId(), grace);
             }
-            TbUserGraceDo tbUserGraceDo = tbUserGraceDoService.getOne(Wrappers.<TbUserGraceDo>lambdaQuery()
-                    .eq(TbUserGraceDo::getUserId,event.getUserId()));
+            TbUserGraceDo tbUserGraceDo = tbUserGraceDoService.getByUserId(event.getUserId());
             String msg = MsgUtils.builder().text(tbUserGraceDo.getGrace().toString()).build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
         }
 
         if (userInput.startsWith("#api查询")){
-            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
-                    .eq(TbUserModelConfigDo::getUserId, event.getUserId()));
+            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserId(event.getUserId());
             bot.sendPrivateMsg(event.getUserId(), JSON.toJSONString(list),false);
             return MESSAGE_BLOCK;
         }
 
         if (userInput.startsWith("#模型查询")){
-            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
-                    .eq(TbUserModelConfigDo::getUserId, event.getUserId()).ne(TbUserModelConfigDo::getNodeNum,0)
-                    .orderByAsc(TbUserModelConfigDo::getNodeNum));
+            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserIdNodeNumNotZero(event.getUserId());
             StringBuilder msg = new StringBuilder();
             for (TbUserModelConfigDo tbUserModelConfigDo : list) {
                 msg.append("nodeNum:").append(tbUserModelConfigDo.getNodeNum()).append(",")

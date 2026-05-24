@@ -15,6 +15,21 @@ import org.springframework.stereotype.Service;
 public class TbChatConfigDoServiceImpl extends ServiceImpl<TbChatConfigDoMapper, TbChatConfigDo>
     implements TbChatConfigDoService{
 
+    @Override
+    public TbChatConfigDo getByUserId(Long userId) {
+        return lambdaQuery()
+                .eq(TbChatConfigDo::getUserId, userId)
+                .one();
+    }
+
+    @Override
+    public void updateByUserId(Long userId, Double temperature, Double topP) {
+        lambdaUpdate()
+                .set(TbChatConfigDo::getTemperature, temperature)
+                .set(TbChatConfigDo::getTopP, topP)
+                .eq(TbChatConfigDo::getUserId, userId)
+                .update();
+    }
 }
 
 

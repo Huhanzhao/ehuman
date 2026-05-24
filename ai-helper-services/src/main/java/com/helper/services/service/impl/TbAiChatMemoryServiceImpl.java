@@ -29,6 +29,14 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
                 .orderByDesc(TbAiChatMemoryDo::getCreateTime)
         ).getRecords().reversed();
     }
+
+    @Override
+    public void removeByMemoryIdAndLikeMessage(Long memoryId, String message) {
+        remove(lambdaQuery()
+                .eq(TbAiChatMemoryDo::getRole, "assistant")
+                .eq(TbAiChatMemoryDo::getMemoryId, memoryId)
+                .like(TbAiChatMemoryDo::getMessage, message));
+    }
 }
 
 

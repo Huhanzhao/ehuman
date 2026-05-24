@@ -10,4 +10,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbChatConfigDoService extends IService<TbChatConfigDo> {
 
+    TbChatConfigDo getByUserId(Long userId);
+
+    void updateByUserId(Long userId, Double temperature, Double topP);
 }

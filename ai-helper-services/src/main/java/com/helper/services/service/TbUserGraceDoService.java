@@ -10,4 +10,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbUserGraceDoService extends IService<TbUserGraceDo> {
 
+    TbUserGraceDo getByUserId(Long userId);
+
+    void updateGraceByUserId(Long userId, Integer grace);
 }

@@ -1,6 +1,5 @@
 package com.helper.services.bean;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.common.entity.BusinessException;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserModelConfigDo;
@@ -35,18 +34,15 @@ public class ChatClientFactory {
     private TbChatConfigDoService tbChatConfigDoService;
 
     public ChatClient createChatClient(Long userId, NodeEnum nodeEnum) {
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getOne(Wrappers.<TbUserModelConfigDo>lambdaQuery()
-                .eq(TbUserModelConfigDo::getUserId, userId).eq(TbUserModelConfigDo::getNodeNum, nodeEnum.getNodeNum()));
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, nodeEnum.getNodeNum());
         // 没有配置某节点模型 随便取一个模型
         if (modelConfigDo == null){
-            List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.list(Wrappers.<TbUserModelConfigDo>lambdaQuery()
-                    .eq(TbUserModelConfigDo::getUserId, userId));
+            List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);
             if (modelConfigDos.isEmpty()) throw new BusinessException("请先配置apikey",userId);
             modelConfigDo = modelConfigDos.getFirst();
         }
 
-        TbChatConfigDo chatConfigDo = tbChatConfigDoService.getOne(Wrappers.<TbChatConfigDo>lambdaQuery()
-                .eq(TbChatConfigDo::getUserId, userId));
+        TbChatConfigDo chatConfigDo = tbChatConfigDoService.getByUserId(userId);
 
         if (ChatModelEnum.GPT_4O_MINI.getCategory().equals(modelConfigDo.getCategory()) ||
                 ChatModelEnum.DEEP_SEEK_V3_2.getCategory().equals(modelConfigDo.getCategory()) ||

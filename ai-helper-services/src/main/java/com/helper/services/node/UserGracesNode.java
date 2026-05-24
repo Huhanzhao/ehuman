@@ -1,17 +1,12 @@
 package com.helper.services.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.JSON;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.bean.ChatClientFactory;
-import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbUpdateGraceHistoryDo;
 import com.helper.services.entity.TbUserGraceDo;
-import com.helper.services.enums.ChatModelEnum;
 import com.helper.services.enums.NodeEnum;
-import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbUpdateGraceHistoryDoService;
 import com.helper.services.service.TbUserGraceDoService;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
@@ -66,7 +59,7 @@ public class UserGracesNode implements NodeAction {
         ).user(memoryString + "\n 以上是用户与ai对话历史，请分析用户对ai的好感度").call().content();
 
         // 查询用户好感度
-        TbUserGraceDo graceDo = tbUserGraceDoService.getOne(Wrappers.<TbUserGraceDo>lambdaQuery().eq(TbUserGraceDo::getUserId, userId));
+        TbUserGraceDo graceDo = tbUserGraceDoService.getByUserId(userId);
         if (graceDo == null) {
             graceDo = new TbUserGraceDo().setUserId((long)userId).setGrace(0);
             tbUserGraceDoService.save(graceDo);
@@ -87,9 +80,7 @@ public class UserGracesNode implements NodeAction {
             }
             grace = grace < 100 ? grace : 100;
             grace = grace > -100 ? grace : -100;
-            tbUserGraceDoService.update(Wrappers.<TbUserGraceDo>lambdaUpdate()
-                    .set(TbUserGraceDo::getGrace, grace)
-                    .eq(TbUserGraceDo::getUserId, userId));
+            tbUserGraceDoService.updateGraceByUserId(userId, grace);
         }catch (Exception e){
             log.error("解析用户好感度失败:{}",e.getMessage());
         }

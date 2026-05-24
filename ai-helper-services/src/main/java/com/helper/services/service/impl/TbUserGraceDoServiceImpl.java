@@ -15,6 +15,20 @@ import org.springframework.stereotype.Service;
 public class TbUserGraceDoServiceImpl extends ServiceImpl<TbUserGraceDoMapper, TbUserGraceDo>
     implements TbUserGraceDoService{
 
+    @Override
+    public TbUserGraceDo getByUserId(Long userId) {
+        return lambdaQuery()
+                .eq(TbUserGraceDo::getUserId, userId)
+                .one();
+    }
+
+    @Override
+    public void updateGraceByUserId(Long userId, Integer grace) {
+        lambdaUpdate()
+                .set(TbUserGraceDo::getGrace, grace)
+                .eq(TbUserGraceDo::getUserId, userId)
+                .update();
+    }
 }
 
 

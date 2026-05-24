@@ -14,4 +14,12 @@ import java.util.List;
 public interface TbUserModelConfigDoService extends IService<TbUserModelConfigDo> {
 
     List<TbUserModelConfigDo> getModelList(TbUserModelConfigDo modelConfigDo);
+
+    TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, Integer nodeNum);
+
+    List<TbUserModelConfigDo> getByUserId(Long userId);
+
+    List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId);
+
+    void clearNodeNumByUserIdAndNodeNum(Long userId, Integer nodeNum);
 }

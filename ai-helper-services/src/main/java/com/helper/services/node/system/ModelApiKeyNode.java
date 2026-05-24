@@ -5,7 +5,6 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.enums.QQbotIdEnum;
 import com.helper.services.service.TbUserModelConfigDoService;
@@ -39,11 +38,7 @@ public class ModelApiKeyNode implements AsyncNodeActionWithConfig, Interruptable
             botContainer.robots.get(QQbotIdEnum.DEFAULT.getId()).sendPrivateMsg(userId, "设置成功",false);
 
             // 把该节点的配置清空
-            tbUserModelConfigDoService.update(Wrappers.<TbUserModelConfigDo>lambdaUpdate()
-                    .set(TbUserModelConfigDo::getNodeNum,0)
-                    .eq(TbUserModelConfigDo::getUserId,userId)
-                    .eq(TbUserModelConfigDo::getNodeNum,modelConfigDo.getNodeNum())
-            );
+            tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(userId, modelConfigDo.getNodeNum());
 
             // 插入数据
             tbUserModelConfigDoService.save(modelConfigDo);
