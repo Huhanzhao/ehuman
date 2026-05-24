@@ -158,6 +158,7 @@ public class GraceUpdateJob implements Job {
         try {
             ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
             String content = chatClient.prompt(prompt).call().content();
+            log.info("AI评估好感度结果：{}", content);
             return parseEvaluation(content);
         } catch (Exception e) {
             log.error("AI评估好感度失败，userId={}", userId, e);
