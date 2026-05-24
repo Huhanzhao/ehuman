@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Component
-public class GraceUpdateJob implements Job {
+public class UserInfoAndGraceUpdateJob implements Job {
 
     @Autowired
     private TbUserGraceDoService tbUserGraceDoService;
