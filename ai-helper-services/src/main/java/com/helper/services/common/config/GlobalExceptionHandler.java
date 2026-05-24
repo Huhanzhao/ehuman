@@ -4,6 +4,7 @@ package com.helper.services.common.config;
 import com.helper.services.common.entity.BusinessException;
 import com.helper.services.common.entity.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 

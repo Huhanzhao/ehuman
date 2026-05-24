@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class VoxCpmVoiceSendUtil {
+public class VoiceSendUtil {
 
     private final BotContainer botContainer;
 
@@ -42,9 +42,18 @@ public class VoxCpmVoiceSendUtil {
     private final String API_KEY = "Bearer sk-GXqCEbErJlwrUYDwhMzrKhv4AxnIvpvSvEIkb1XBdkx3Ct2m";
 
     public boolean sendVoice(String message,Long userId){
-        List<TbUserModelConfigDo> modelList = tbUserModelConfigDoService.getModelList(new TbUserModelConfigDo().setUserId(userId).setCategory("tts").setNodeNum(9999));
+        List<TbUserModelConfigDo> modelList = tbUserModelConfigDoService.getModelList(
+                new TbUserModelConfigDo()
+                        .setUserId(userId)
+                        .setCategory("tts")
+                        .setNodeNum(9999));
         if (modelList.size() == 0){
-            // todo 代理发送消息
+            throw new BusinessException("语音消息生成失败，没有查询到声音模型");
+        }
+        if (modelList.getFirst().getModel().equals("index-tts2")){
+            this.sendIndexTTSVoice(message,userId);
+        }else{
+            this.sendVoxCpmVoice(message,userId);
         }
         return true;
     }
@@ -171,7 +180,7 @@ public class VoxCpmVoiceSendUtil {
 //            paramMap.put("emotion_audio_url", "https://file.302.ai/gpt/imgs/20260308/555729ebec7de9b020ae42c9c5e59d85.m4a");
         paramMap.put("emotion_alpha", 1);
 
-        HttpResponse taskResponse = HttpRequest.post("https://api.302.ai/302/index_tts2/task")
+        HttpResponse taskResponse = HttpRequest.post("https://api.302ai.com/302/index_tts2/task")
                 .header("Authorization", API_KEY)
                 .body(JSON.toJSONString(paramMap)).execute();
         int status = taskResponse.getStatus();
@@ -200,7 +209,7 @@ public class VoxCpmVoiceSendUtil {
             Map<String,String> resultMap = null;
             for (int i = 0; i < 30; i++){
                 HttpResponse response = HttpRequest
-                        .get("https://api.302.ai/302/index_tts2/task")
+                        .get("https://api.302ai.com/302/index_tts2/task")
                         .header("Authorization", API_KEY)
                         .form("task_id", taskIdList.get(j))
                         .execute();

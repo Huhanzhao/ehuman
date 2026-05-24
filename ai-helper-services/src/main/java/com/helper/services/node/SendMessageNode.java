@@ -5,7 +5,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.enums.QQbotIdEnum;
 import com.helper.services.service.TbAiChatMemoryService;
-import com.helper.services.utils.VoxCpmVoiceSendUtil;
+import com.helper.services.utils.VoiceSendUtil;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
@@ -24,7 +24,7 @@ public class SendMessageNode implements NodeAction {
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
-    private final VoxCpmVoiceSendUtil voxCpmVoiceSendUtil;
+    private final VoiceSendUtil voiceSendUtil;
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -41,7 +41,7 @@ public class SendMessageNode implements NodeAction {
             if (splitMessage.isEmpty()) continue;
             splitMessage  = splitMessage.replaceAll("。", "").trim();
             if (splitMessage.startsWith("<voice>") && splitMessage.endsWith("</voice>")){
-                voxCpmVoiceSendUtil.sendVoice(splitMessage,userId);
+                voiceSendUtil.sendVoice(splitMessage,userId);
                 continue;
             }
             try {

@@ -101,9 +101,24 @@ public class ChatClientFactory {
     }
 
     public ChatClient createClaudeChatClient(TbUserModelConfigDo modelConfigDo,TbChatConfigDo chatConfigDo) {
-        AnthropicApi anthAiApi = AnthropicApi.builder()
+        AnthropicApi.Builder authropicApiBuilder = AnthropicApi.builder()
                 .apiKey(modelConfigDo.getApiKey())
-                .baseUrl(modelConfigDo.getBaseUrl()).build();
+                .baseUrl(modelConfigDo.getBaseUrl());
+        if (modelConfigDo.getNeedProxy()){
+            SimpleClientHttpRequestFactory factory =  new SimpleClientHttpRequestFactory();
+
+            Proxy proxy = new Proxy(
+                    Proxy.Type.HTTP,
+                    new InetSocketAddress("127.0.0.1", 7890)
+            );
+
+            factory.setProxy(proxy);
+
+            RestClient.Builder builder = RestClient.builder()
+                    .requestFactory(factory);
+            authropicApiBuilder.restClientBuilder(builder);
+        }
+        AnthropicApi anthAiApi = authropicApiBuilder.build();
 
         AnthropicChatOptions openAiChatOptions = AnthropicChatOptions.builder()
                 .model(modelConfigDo.getModel())
