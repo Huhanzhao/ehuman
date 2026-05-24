@@ -1,5 +1,6 @@
 package com.helper.services.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.helper.services.entity.TbUserModelConfigDo;
 import com.helper.services.service.TbUserModelConfigDoService;
@@ -62,6 +63,14 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .eq(TbUserModelConfigDo::getNodeNum, nodeNum)
                 .update();
+    }
+
+    @Override
+    public Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize) {
+        Page<TbUserModelConfigDo> page = new Page<>(pageNum, pageSize);
+        return lambdaQuery()
+                .eq(TbUserModelConfigDo::getUserId, userId)
+                .page(page);
     }
 }
 

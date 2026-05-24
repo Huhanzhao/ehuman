@@ -13,4 +13,8 @@ import java.util.List;
 public interface TbUserVoiceModelDoService extends IService<TbUserVoiceModelDo> {
 
     List<TbUserVoiceModelDo> getVoiceModelByUserId(Long userId);
+
+    List<TbUserVoiceModelDo> getByUserId(Long userId);
+
+    boolean switchVoiceModel(Long userId, String voiceModelName);
 }

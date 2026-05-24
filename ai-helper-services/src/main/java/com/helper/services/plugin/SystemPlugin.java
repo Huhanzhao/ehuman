@@ -8,15 +8,18 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.helper.services.bean.SystemGraph;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserGraceDo;
 import com.helper.services.entity.TbUserModelConfigDo;
+import com.helper.services.entity.TbUserVoiceModelDo;
 import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbChatConfigDoService;
 import com.helper.services.service.TbUserGraceDoService;
 import com.helper.services.service.TbUserModelConfigDoService;
+import com.helper.services.service.TbUserVoiceModelDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.common.utils.MsgUtils;
@@ -58,6 +61,9 @@ public class SystemPlugin extends BotPlugin {
     private  TbUserModelConfigDoService tbUserModelConfigDoService;
 
     @Autowired
+    private TbUserVoiceModelDoService tbUserVoiceModelDoService;
+
+    @Autowired
     private SystemGraph systemGraph;
 
     private CompiledGraph apiConfigGraph;
@@ -83,13 +89,46 @@ public class SystemPlugin extends BotPlugin {
         String userInput = event.getMessage();
 
         if (userInput.trim().equals("#")){
-            String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api\n#模型查询\n#api查询").build();
+            String msg = MsgUtils.builder()
+                    .text("#声音 [模型名] - 查看/切换声音模型\n" +
+                          "#温度 [温度 topP] - 查看/修改模型参数\n" +
+                          "#好感度 [数值] - 查看/修改好感度\n" +
+                          "#模型查询 - 查看已配置模型\n" +
+                          "#api查询 - 查看API配置\n" +
+                          "#api - 配置API引导")
+                    .build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
         }
 
-        if (userInput.startsWith("#切换声音")){
-
+        if (userInput.startsWith("#声音")){
+            String param = userInput.replace("#声音", "").trim();
+            // 切换声音
+            if (!param.isEmpty()) {
+                boolean success = tbUserVoiceModelDoService.switchVoiceModel(event.getUserId(), param);
+                if (success) {
+                    bot.sendPrivateMsg(event.getUserId(), "已切换到声音模型：" + param, false);
+                } else {
+                    bot.sendPrivateMsg(event.getUserId(), "没有找到该声音模型：" + param, false);
+                }
+                return MESSAGE_BLOCK;
+            }
+            // 查询声音列表
+            List<TbUserVoiceModelDo> voiceModels = tbUserVoiceModelDoService.getByUserId(event.getUserId());
+            if (voiceModels.isEmpty()) {
+                bot.sendPrivateMsg(event.getUserId(), "暂无声音模型", false);
+                return MESSAGE_BLOCK;
+            }
+            StringBuilder msg = new StringBuilder();
+            for (TbUserVoiceModelDo model : voiceModels) {
+                msg.append(model.getVoiceModelName());
+                if (Boolean.TRUE.equals(model.getEnable())) {
+                    msg.append(" [当前启用]");
+                }
+                msg.append("\n");
+            }
+            msg.append("\n切换声音：#声音 模型名");
+            bot.sendPrivateMsg(event.getUserId(), msg.toString().trim(), false);
             return MESSAGE_BLOCK;
         }
 
@@ -99,33 +138,65 @@ public class SystemPlugin extends BotPlugin {
             return MESSAGE_BLOCK;
         }
 
-        if (userInput.startsWith("#对话配置")){
-            userInput = userInput.replace("#对话配置", "");
-            if (!userInput.isEmpty()){
-                String[] split = userInput.trim().split(" ");
+        if (userInput.startsWith("#温度")){
+            String param = userInput.replace("#温度", "").trim();
+            // 修改参数
+            if (!param.isEmpty()){
+                String[] split = param.split(" ");
                 tbChatConfigDoService.updateByUserId(event.getUserId(), Double.valueOf(split[0]), Double.valueOf(split[1]));
             }
+            // 查询当前配置
             TbChatConfigDo tbChatConfigDo = tbChatConfigDoService.getByUserId(event.getUserId());
-            String msg = MsgUtils.builder().text("temp:" + tbChatConfigDo.getTemperature() + "\ntopP:" + tbChatConfigDo.getTopP()).build();
+            String msg = MsgUtils.builder().text("温度: " + tbChatConfigDo.getTemperature() + "\ntopP: " + tbChatConfigDo.getTopP() + "\n\n修改格式：#温度 0.7 1.0").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
         }
 
         if (userInput.startsWith("#好感度")) {
-            userInput = userInput.replace("#好感度", "");
-            if (!userInput.isEmpty()){
-                Integer grace = Integer.valueOf(userInput);
+            String param = userInput.replace("#好感度", "").trim();
+            // 修改好感度
+            if (!param.isEmpty()){
+                Integer grace = Integer.valueOf(param);
                 tbUserGraceDoService.updateGraceByUserId(event.getUserId(), grace);
             }
+            // 查询当前好感度
             TbUserGraceDo tbUserGraceDo = tbUserGraceDoService.getByUserId(event.getUserId());
-            String msg = MsgUtils.builder().text(tbUserGraceDo.getGrace().toString()).build();
+            String msg = MsgUtils.builder().text("当前好感度: " + tbUserGraceDo.getGrace() + "\n\n修改格式：#好感度 50").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
         }
 
         if (userInput.startsWith("#api查询")){
-            List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserId(event.getUserId());
-            bot.sendPrivateMsg(event.getUserId(), JSON.toJSONString(list),false);
+            String param = userInput.replace("#api查询", "").trim();
+            int pageNum = 1;
+            if (!param.isEmpty()) {
+                try {
+                    pageNum = Integer.parseInt(param);
+                } catch (NumberFormatException e) {
+                    // 页码格式错误，默认第1页
+                }
+            }
+            int pageSize = 10;
+            Page<TbUserModelConfigDo> page = tbUserModelConfigDoService.getByUserIdPage(event.getUserId(), pageNum, pageSize);
+            List<TbUserModelConfigDo> list = page.getRecords();
+            if (list.isEmpty()) {
+                bot.sendPrivateMsg(event.getUserId(), "暂无API配置", false);
+                return MESSAGE_BLOCK;
+            }
+            StringBuilder msg = new StringBuilder();
+            int start = (pageNum - 1) * pageSize + 1;
+            for (int i = 0; i < list.size(); i++) {
+                TbUserModelConfigDo config = list.get(i);
+                msg.append("【").append(start + i).append("】\n");
+                msg.append("模型: ").append(config.getModel()).append("\n");
+                msg.append("分类: ").append(config.getCategory()).append("\n");
+                msg.append("baseUrl: ").append(config.getBaseUrl()).append("\n");
+                msg.append("apiKey: ").append(config.getApiKey()).append("\n");
+                msg.append("代理: ").append(Boolean.TRUE.equals(config.getNeedProxy()) ? "是" : "否").append("\n\n");
+            }
+            msg.append("第 ").append(pageNum).append("/").append(page.getPages()).append(" 页，共 ").append(page.getTotal()).append(" 条");
+            msg.append("\n翻页：#api查询 页码");
+            bot.sendPrivateMsg(event.getUserId(), msg.toString().trim(), false);
             return MESSAGE_BLOCK;
         }
 

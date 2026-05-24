@@ -20,9 +20,40 @@ public class TbUserVoiceModelDoServiceImpl extends ServiceImpl<TbUserVoiceModelD
 
     @Override
     public List<TbUserVoiceModelDo> getVoiceModelByUserId(Long userId) {
-        return this.list(Wrappers.<TbUserVoiceModelDo>lambdaQuery().eq(TbUserVoiceModelDo::getUserId, userId)
+        return lambdaQuery()
+                .eq(TbUserVoiceModelDo::getUserId, userId)
                 .eq(TbUserVoiceModelDo::getEnable, true)
-        );
+                .list();
+    }
+
+    @Override
+    public List<TbUserVoiceModelDo> getByUserId(Long userId) {
+        return lambdaQuery()
+                .eq(TbUserVoiceModelDo::getUserId, userId)
+                .list();
+    }
+
+    @Override
+    public boolean switchVoiceModel(Long userId, String voiceModelName) {
+        // 先查询是否有该模型
+        TbUserVoiceModelDo targetModel = lambdaQuery()
+                .eq(TbUserVoiceModelDo::getUserId, userId)
+                .eq(TbUserVoiceModelDo::getVoiceModelName, voiceModelName)
+                .one();
+        if (targetModel == null) {
+            return false;
+        }
+        // 把该用户所有模型设为不启用
+        lambdaUpdate()
+                .set(TbUserVoiceModelDo::getEnable, false)
+                .eq(TbUserVoiceModelDo::getUserId, userId)
+                .update();
+        // 把目标模型设为启用
+        lambdaUpdate()
+                .set(TbUserVoiceModelDo::getEnable, true)
+                .eq(TbUserVoiceModelDo::getId, targetModel.getId())
+                .update();
+        return true;
     }
 }
 
