@@ -49,7 +49,6 @@ public class MessageGenerateNode implements NodeAction {
         }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
-        // todo 收集信息胡晗朝 男 1999年12月4日出生 23年毕业于软件工程专业，目前在北京做java开发的工作
         String template = null;
         try {
             template = Files.readString(Paths.get("ai-bot-service/md/MainPrompt.md"));

@@ -1,8 +1,10 @@
 package com.bot.service.service.impl;
 
+
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.mapper.TbUserMessageSummaryDoMapper;
+import com.bot.service.service.TbUserMessageSummaryDoService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,7 +14,7 @@ import org.springframework.stereotype.Service;
 */
 @Service
 public class TbUserMessageSummaryDoServiceImpl extends ServiceImpl<TbUserMessageSummaryDoMapper, TbUserMessageSummaryDo>
-    implements com.bot.services.service.TbUserMessageSummaryDoService {
+    implements TbUserMessageSummaryDoService {
 
 }
 

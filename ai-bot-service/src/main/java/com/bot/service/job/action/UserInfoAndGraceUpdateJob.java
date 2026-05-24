@@ -8,13 +8,11 @@ import com.bot.service.entity.TbUserGraceDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.NodeEnum;
-import com.bot.service.service.TbAiChatMemoryService;
-import com.bot.service.service.TbUpdateGraceHistoryDoService;
-import com.bot.service.service.TbUserGraceDoService;
-import com.bot.service.service.TbUserInfoDoService;
+import com.bot.service.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,7 +35,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
     private TbUpdateGraceHistoryDoService tbUpdateGraceHistoryDoService;
 
     @Autowired
-    private com.bot.services.service.TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
+    private TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
 
     @Autowired
     private TbUserInfoDoService tbUserInfoDoService;
@@ -49,7 +47,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
     private ChatClientFactory chatClientFactory;
 
     @Override
-    public void execute(JobExecutionContext jobExecutionContext) {
+    public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         // 查询所有有好感度记录的用户
         List<TbUserGraceDo> graceList = tbUserGraceDoService.list();
         if (graceList == null || graceList.isEmpty()) {
