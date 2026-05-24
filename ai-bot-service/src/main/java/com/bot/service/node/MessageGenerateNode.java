@@ -3,11 +3,15 @@ package com.bot.service.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.util.DateUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.common.entity.BusinessException;
 import com.bot.service.bean.ChatClientFactory;
+import com.bot.service.entity.TbAiChatMemoryDo;
+import com.bot.service.entity.TbBotLifeDetailDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
+import com.bot.service.service.TbBotLifeDetailDoService;
 import com.bot.service.service.TbUserInfoDoService;
 import com.bot.service.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +37,7 @@ public class MessageGenerateNode implements NodeAction {
     private final ChatClientFactory chatClientFactory;
     private final TbAiChatMemoryService tbAiChatMemoryService;
     private final TbUserInfoDoService tbUserInfoDoService;
+    private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -83,10 +88,39 @@ public class MessageGenerateNode implements NodeAction {
         }
 
         List<String> userInfoList = tbUserInfoDoService.getUserInfoByUserId(userId).stream().map(TbUserInfoDo::getUserInfo).toList();
+
+        // 查询bot当前正在做的事
+        Date now = new Date();
+        TbBotLifeDetailDo currentLife = tbBotLifeDetailDoService.getOne(
+                Wrappers.<TbBotLifeDetailDo>lambdaQuery()
+                        .le(TbBotLifeDetailDo::getStartTime, now)
+                        .ge(TbBotLifeDetailDo::getEndTime, now)
+                        .last("limit 1")
+        );
+        String lifeDetail = currentLife != null ? currentLife.getDetail() : "";
+
+        // 查询加上好友的天数（从第一条消息开始算）
+        TbAiChatMemoryDo firstMessage = tbAiChatMemoryService.getOne(
+                Wrappers.<TbAiChatMemoryDo>lambdaQuery()
+                        .eq(TbAiChatMemoryDo::getMemoryId, userId)
+                        .orderByAsc(TbAiChatMemoryDo::getCreateTime)
+                        .last("limit 1")
+        );
+        String daysInfo = "";
+        if (firstMessage != null && firstMessage.getCreateTime() != null) {
+            long days = java.time.temporal.ChronoUnit.DAYS.between(
+                    firstMessage.getCreateTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
+                    java.time.LocalDate.now()
+            );
+            daysInfo = "。今天是你们加上好友的第" + days + "天";
+        }
+
         Prompt prompt = promptTemplate.create(Map.of(
                 "grace", gracePrompt,
-                "dateTime", "当前时间：" +
-                        DateUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +  " " + LocalDateTime.now().getDayOfWeek()
+                "scene", "当前时间：" +
+                        DateUtils.format(now,"yyyy-MM-dd HH:mm:ss") +  " " + LocalDateTime.now().getDayOfWeek()
+                        + daysInfo
+                        + (lifeDetail.isBlank() ? "" : "。你现在正在" + lifeDetail)
                 ,"userInfo", userInfoList.isEmpty()? "无" : userInfoList.getFirst()
         ));
 
