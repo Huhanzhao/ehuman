@@ -7,9 +7,13 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.helper.services.node.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +22,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class MainGraph {
     private final UserGracesNode userGracesNode;
     private final MessageGenerateNode messageGenerateNode;
@@ -68,6 +73,14 @@ public class MainGraph {
                             .register(saver)
                             .build())
                     .build();
+
+            // 生成 puml 文件
+            GraphRepresentation myGraphFlow = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
+                    "myGraph flow");
+            Path pumlDir = Paths.get("ai-helper-services/src/main/resources/puml");
+            Files.createDirectories(pumlDir);
+            Files.writeString(pumlDir.resolve("MainGraph.puml"), myGraphFlow.content());
+
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
         } catch (Exception e) {

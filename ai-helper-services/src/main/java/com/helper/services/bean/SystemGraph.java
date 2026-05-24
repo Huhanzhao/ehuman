@@ -10,6 +10,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 @Component
@@ -56,6 +59,13 @@ public class SystemGraph {
                             .register(saver)
                             .build())
                     .build();
+            // 生成 PUML 文件
+            GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
+                    "API Config flow");
+            Path pumlDir = Paths.get("ai-helper-services/src/main/resources/puml");
+            Files.createDirectories(pumlDir);
+            Files.writeString(pumlDir.resolve("ApiConfigGraph.puml"), graphRepresentation.content());
+
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
         } catch (Exception e) {
@@ -100,6 +110,13 @@ public class SystemGraph {
                             .register(saver)
                             .build())
                     .build();
+            // 生成 PUML 文件
+            GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
+                    "Voice flow");
+            Path pumlDir = Paths.get("ai-helper-services/src/main/resources/puml");
+            Files.createDirectories(pumlDir);
+            Files.writeString(pumlDir.resolve("VoiceGraph.puml"), graphRepresentation.content());
+
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
         } catch (Exception e) {
