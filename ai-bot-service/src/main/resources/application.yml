@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/qq_bot?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  application:
+    name: ai-bot-service
+  profiles:
+    active: dev
+  config:
+    import:
+      - optional:ai-bot-service.yml
+      - optional:ai-bot-service-${spring.profiles.active}.yml
+  ai:
+    anthropic:
+      api-key: sdfs
+    openai:
+      api-key: dsg
+server:
+  port: 8081
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+#tavily:
+#  api-key: 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
+
+logging:
+  level:
+    com.bot.service.config: info
+
+
+shiro:
+  ws:
+    server:
+      enable: true
+      url: "/ws"   # websocket服务端地址 napCat需要在webui页面配置ws客户端 ws://localhost:8081/ws
+    access-token: huhanzhao
+  plugin-list:
+   - com.bot.service.plugin.TestPlugin
+   - com.bot.service.plugin.SystemPlugin
+   - com.bot.service.plugin.QQBotPlugin

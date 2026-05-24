@@ -1,0 +1,34 @@
+@startuml myGraph_flow
+skinparam usecaseFontSize 14
+skinparam usecaseStereotypeFontSize 12
+skinparam hexagonFontSize 14
+skinparam hexagonStereotypeFontSize 12
+title "myGraph flow"
+footer
+
+powered by spring-ai-alibaba
+end footer
+circle start<<input>> as __START__
+circle stop as __END__
+usecase "authNode"<<Node>>
+usecase "imageAnalysisNode"<<Node>>
+usecase "userWantToNode"<<Node>>
+usecase "messageGenerateNode"<<Node>>
+usecase "sendMessageNode"<<Node>>
+hexagon "check state" as condition1<<Condition>>
+hexagon "check state" as condition2<<Condition>>
+"__START__" -down-> "authNode"
+"authNode" .down.> "condition1"
+"condition1" .down.> "__END__": "false"
+'"authNode" .down.> "__END__": "false"
+"condition1" .down.> "imageAnalysisNode": "true"
+'"authNode" .down.> "imageAnalysisNode": "true"
+"imageAnalysisNode" -down-> "userWantToNode"
+"userWantToNode" .down.> "condition2"
+"condition2" .down.> "messageGenerateNode": "next"
+'"userWantToNode" .down.> "messageGenerateNode": "next"
+"condition2" .down.> "__END__": "exit"
+'"userWantToNode" .down.> "__END__": "exit"
+"messageGenerateNode" -down-> "sendMessageNode"
+"sendMessageNode" -down-> "__END__"
+@enduml
