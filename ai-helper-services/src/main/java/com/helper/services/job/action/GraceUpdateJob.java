@@ -5,10 +5,14 @@ import com.helper.services.bean.ChatClientFactory;
 import com.helper.services.entity.TbAiChatMemoryDo;
 import com.helper.services.entity.TbUpdateGraceHistoryDo;
 import com.helper.services.entity.TbUserGraceDo;
+import com.helper.services.entity.TbUserInfoDo;
+import com.helper.services.entity.TbUserMessageSummaryDo;
 import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbUpdateGraceHistoryDoService;
 import com.helper.services.service.TbUserGraceDoService;
+import com.helper.services.service.TbUserInfoDoService;
+import com.helper.services.service.TbUserMessageSummaryDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -32,6 +36,12 @@ public class GraceUpdateJob implements Job {
 
     @Autowired
     private TbUpdateGraceHistoryDoService tbUpdateGraceHistoryDoService;
+
+    @Autowired
+    private TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
+
+    @Autowired
+    private TbUserInfoDoService tbUserInfoDoService;
 
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
@@ -79,10 +89,27 @@ public class GraceUpdateJob implements Job {
                     continue;
                 }
             } else {
-                // 有消息，用AI评分
-                AiEvaluation evaluation = evaluateByAi(userId, todayMessages);
+                // 有消息，用AI评分、生成总结、提取用户画像
+                List<TbUserInfoDo> existingInfoList = tbUserInfoDoService.getUserInfoByUserId(userId);
+                String existingInfo = (existingInfoList != null && !existingInfoList.isEmpty())
+                        ? existingInfoList.getFirst().getUserInfo() : null;
+
+                AiEvaluation evaluation = evaluateByAi(userId, todayMessages, existingInfo);
                 delta = evaluation.delta();
                 reason = evaluation.reason();
+
+                // 保存当日聊天总结
+                if (evaluation.summary() != null && !evaluation.summary().isBlank()) {
+                    TbUserMessageSummaryDo summary = new TbUserMessageSummaryDo();
+                    summary.setUserId(userId);
+                    summary.setSummary(evaluation.summary());
+                    tbUserMessageSummaryDoService.save(summary);
+                }
+
+                // 保存或更新用户画像
+                if (evaluation.userInfo() != null && !evaluation.userInfo().isBlank()) {
+                    saveOrUpdateUserInfo(userId, evaluation.userInfo());
+                }
             }
 
             // 更新好感度，限制在-100~100范围内
@@ -106,18 +133,27 @@ public class GraceUpdateJob implements Job {
         }
     }
 
-    private AiEvaluation evaluateByAi(Long userId, List<TbAiChatMemoryDo> messages) {
+    private AiEvaluation evaluateByAi(Long userId, List<TbAiChatMemoryDo> messages, String existingUserInfo) {
         // 拼接聊天记录
         StringBuilder chatLog = new StringBuilder();
         for (TbAiChatMemoryDo msg : messages) {
             chatLog.append(msg.getRole()).append(": ").append(msg.getMessage()).append("\n");
         }
 
-        String prompt = "你是一个好感度评估专家。请根据用户今天的聊天记录，为用户的好感度变化评分。" +
-                "评分范围：-5到+5的整数，正数表示好感度增加，负数表示好感度减少。" +
-                "评估维度：聊天频率、态度友好程度、话题积极性、互动质量。" +
-                "今天用户的聊天记录如下：\n" + chatLog +
-                "\n请严格按以下格式输出，不要输出其他内容：\n评分: <数字>\n原因: <一句话说明>";
+        String userInfoSection = (existingUserInfo != null && !existingUserInfo.isBlank())
+                ? "\n用户已有的画像信息：\n" + existingUserInfo
+                : "\n该用户暂无画像信息。";
+
+        String prompt = "请根据用户今天的聊天记录完成以下任务：\n" +
+                "1. 好感度评分：评分范围-5到+5的整数，正数表示好感度增加，负数表示好感度减少。" +
+                "评估维度：聊天频率、态度友好程度、话题积极性、互动质量。\n" +
+                "2. 聊天总结：用简洁的语言总结今天的聊天内容（50字以内）。\n" +
+                "3. 用户画像更新：分析聊天记录中是否有值得补充的用户画像信息（如性格特点、兴趣爱好、职业、年龄、习惯偏好等）。" +
+                "如果已有画像信息，只输出需要新增或修改的部分；如果没有新信息则输出\"无\"。\n" +
+                userInfoSection +
+                "\n今天用户的聊天记录如下：\n" + chatLog +
+                "\n请严格按以下格式输出，不要输出其他内容：\n" +
+                "评分: <数字>\n原因: <一句话说明>\n总结: <聊天内容总结>\n画像: <用户画像信息或\"无\">";
 
         try {
             ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
@@ -125,13 +161,13 @@ public class GraceUpdateJob implements Job {
             return parseEvaluation(content);
         } catch (Exception e) {
             log.error("AI评估好感度失败，userId={}", userId, e);
-            return new AiEvaluation(0, "AI评估失败，默认不调整");
+            return new AiEvaluation(0, "AI评估失败，默认不调整", null, null);
         }
     }
 
     private AiEvaluation parseEvaluation(String content) {
         if (content == null || content.isBlank()) {
-            return new AiEvaluation(0, "AI返回为空");
+            return new AiEvaluation(0, "AI返回为空", null, null);
         }
 
         // 提取评分
@@ -150,8 +186,43 @@ public class GraceUpdateJob implements Job {
             reason = reasonMatcher.group(1).trim();
         }
 
-        return new AiEvaluation(delta, reason);
+        // 提取总结
+        String summary = null;
+        Pattern summaryPattern = Pattern.compile("总结[:：]\\s*(.+)");
+        Matcher summaryMatcher = summaryPattern.matcher(content);
+        if (summaryMatcher.find()) {
+            summary = summaryMatcher.group(1).trim();
+        }
+
+        // 提取画像
+        String userInfo = null;
+        Pattern userInfoPattern = Pattern.compile("画像[:：]\\s*(.+)");
+        Matcher userInfoMatcher = userInfoPattern.matcher(content);
+        if (userInfoMatcher.find()) {
+            String raw = userInfoMatcher.group(1).trim();
+            if (!raw.equals("无")) {
+                userInfo = raw;
+            }
+        }
+
+        return new AiEvaluation(delta, reason, summary, userInfo);
     }
 
-    private record AiEvaluation(int delta, String reason) {}
+    private void saveOrUpdateUserInfo(Long userId, String newInfo) {
+        List<TbUserInfoDo> existingList = tbUserInfoDoService.getUserInfoByUserId(userId);
+        if (existingList != null && !existingList.isEmpty()) {
+            // 已有记录，追加更新
+            TbUserInfoDo existing = existingList.getFirst();
+            existing.setUserInfo(existing.getUserInfo() + "；" + newInfo);
+            tbUserInfoDoService.updateById(existing);
+        } else {
+            // 新建记录
+            TbUserInfoDo userInfoDo = new TbUserInfoDo();
+            userInfoDo.setUserId(userId);
+            userInfoDo.setUserInfo(newInfo);
+            tbUserInfoDoService.save(userInfoDo);
+        }
+    }
+
+    private record AiEvaluation(int delta, String reason, String summary, String userInfo) {}
 }
