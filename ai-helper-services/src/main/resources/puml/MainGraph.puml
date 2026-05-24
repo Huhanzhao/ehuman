@@ -13,24 +13,22 @@ circle stop as __END__
 usecase "authNode"<<Node>>
 usecase "imageAnalysisNode"<<Node>>
 usecase "userWantToNode"<<Node>>
-usecase "gracesNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
 usecase "sendMessageNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
 hexagon "check state" as condition2<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
-"condition1" .down.> "__END__": "false"
-'"authNode" .down.> "__END__": "false"
 "condition1" .down.> "imageAnalysisNode": "true"
 '"authNode" .down.> "imageAnalysisNode": "true"
+"condition1" .down.> "__END__": "false"
+'"authNode" .down.> "__END__": "false"
 "imageAnalysisNode" -down-> "userWantToNode"
 "userWantToNode" .down.> "condition2"
-"condition2" .down.> "gracesNode": "next"
-'"userWantToNode" .down.> "gracesNode": "next"
 "condition2" .down.> "__END__": "exit"
 '"userWantToNode" .down.> "__END__": "exit"
-"gracesNode" -down-> "messageGenerateNode"
+"condition2" .down.> "messageGenerateNode": "next"
+'"userWantToNode" .down.> "messageGenerateNode": "next"
 "messageGenerateNode" -down-> "sendMessageNode"
 "sendMessageNode" -down-> "__END__"
 @enduml

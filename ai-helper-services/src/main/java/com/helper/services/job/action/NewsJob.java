@@ -1,25 +1,20 @@
 package com.helper.services.job.action;
 
 import com.helper.services.bean.ChatClientFactory;
-import com.helper.services.enums.NodeEnum;
 import com.helper.services.enums.QQbotIdEnum;
 import com.helper.services.tools.CommandTool;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
-import com.mikuac.shiro.dto.action.common.ActionData;
-import com.mikuac.shiro.dto.action.common.MsgId;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
 @Component
-public class MyQuartzJob implements Job {
+public class NewsJob implements Job {
 
     @Autowired
     private CommandTool commandTool;

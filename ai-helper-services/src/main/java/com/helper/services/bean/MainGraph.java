@@ -24,7 +24,6 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @RequiredArgsConstructor
 @Slf4j
 public class MainGraph {
-    private final UserGracesNode userGracesNode;
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
@@ -48,7 +47,6 @@ public class MainGraph {
                     .addNode("authNode", node_async(authNode))
                     .addNode("imageAnalysisNode", node_async(imageAnalysisNode))
                     .addNode("userWantToNode", node_async(userWantToNode))
-                    .addNode("gracesNode", node_async(userGracesNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
                     .addNode("sendMessageNode", node_async(sendMessageNode))
 
@@ -59,10 +57,9 @@ public class MainGraph {
                             "false", StateGraph.END))
                     .addEdge("imageAnalysisNode", "userWantToNode")
                     .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
-                    Map.of("next", "gracesNode",
+                    Map.of("next", "messageGenerateNode",
                             "exit", StateGraph.END))
-//                  .addEdge("sentimentAnalysisNode", "gracesNode")
-                    .addEdge("gracesNode", "messageGenerateNode")
+                    // todo bot状态节点？
                     .addEdge("messageGenerateNode", "sendMessageNode")
                     .addEdge("sendMessageNode", StateGraph.END);
 
