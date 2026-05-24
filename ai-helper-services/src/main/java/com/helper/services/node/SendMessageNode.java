@@ -52,7 +52,13 @@ public class SendMessageNode implements NodeAction {
             String msg = MsgUtils.builder().text(splitMessage).build();
             // 通过机器人账号取出 Bot 对象
             Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
-            bot.sendPrivateMsg(userId,msg,false);
+
+            // 保持沉默的时候给自己发送
+            if (splitMessage.startsWith("<silence>") && splitMessage.endsWith("</silence>")){
+                bot.sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(),msg,false);
+            }else{
+                bot.sendPrivateMsg(userId,msg,false);
+            }
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessage));
         }
         return Map.of();
