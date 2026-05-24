@@ -16,4 +16,13 @@ public enum NodeEnum {
 
     private final String nodeName;
     private final Integer nodeNum;
+
+    public static String getByNameNodeNum(Integer nodeNum){
+        for (NodeEnum value : values()) {
+            if (nodeNum.equals(value.getNodeNum())){
+                return value.getNodeName();
+            }
+        }
+        return null;
+    }
 }

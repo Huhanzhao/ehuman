@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserModelConfigDo;
+import com.helper.services.enums.QQbotIdEnum;
 import com.helper.services.service.TbChatConfigDoService;
 import com.helper.services.service.TbUserModelConfigDoService;
 import com.mikuac.shiro.core.Bot;
@@ -31,7 +32,7 @@ public class AuthNode implements NodeAction {
 
         List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserId(userId);
         if (list.isEmpty()) {
-            Bot bot = botContainer.robots.get(3839330250L);
+            Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
             // 调用 Bot 对象方法
             bot.sendPrivateMsg(userId, "请先配置apikey", false);
             return Map.of("auth",false);

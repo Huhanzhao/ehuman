@@ -12,6 +12,7 @@ import com.helper.services.bean.SystemGraph;
 import com.helper.services.entity.TbChatConfigDo;
 import com.helper.services.entity.TbUserGraceDo;
 import com.helper.services.entity.TbUserModelConfigDo;
+import com.helper.services.enums.NodeEnum;
 import com.helper.services.service.TbAiChatMemoryService;
 import com.helper.services.service.TbChatConfigDoService;
 import com.helper.services.service.TbUserGraceDoService;
@@ -81,7 +82,7 @@ public class SystemPlugin extends BotPlugin {
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
         String userInput = event.getMessage();
 
-        if (userInput.startsWith("#指令")){
+        if (userInput.trim().equals("#")){
             String msg = MsgUtils.builder().text("#删除+模糊词\n#对话配置\n#好感度\n#api\n#模型查询\n#api查询").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
@@ -132,8 +133,9 @@ public class SystemPlugin extends BotPlugin {
             List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserIdNodeNumNotZero(event.getUserId());
             StringBuilder msg = new StringBuilder();
             for (TbUserModelConfigDo tbUserModelConfigDo : list) {
-                msg.append("nodeNum:").append(tbUserModelConfigDo.getNodeNum()).append(",")
-                        .append("model:").append(tbUserModelConfigDo.getModel())
+                msg.append(NodeEnum.getByNameNodeNum(tbUserModelConfigDo.getNodeNum()))
+                        .append(":")
+                        .append(tbUserModelConfigDo.getModel())
                         .append("\n");
             }
 
