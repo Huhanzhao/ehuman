@@ -77,7 +77,7 @@ public class ChatClientFactory {
         OpenAiApi openAiApi = openaiBuilder.build();
         OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
                 .model(modelConfigDo.getModel())
-                .temperature(chatConfigDo.getTemperature())
+                .temperature(chatConfigDo == null? 0.5:chatConfigDo.getTemperature())
                 .maxCompletionTokens(1024)
                 .extraBody(Map.of("chat_template_kwargs", Map.of("enable_thinking", false)))
 //                .topP(1.0) // 模型选词自由度
@@ -118,7 +118,7 @@ public class ChatClientFactory {
 
         AnthropicChatOptions openAiChatOptions = AnthropicChatOptions.builder()
                 .model(modelConfigDo.getModel())
-                .temperature(chatConfigDo.getTemperature())
+                .temperature(chatConfigDo == null? 0.5:chatConfigDo.getTemperature())
                 .maxTokens(1024)
 //                .topP(chatConfigDo.getTopP()) // 模型选词自由度 claude 不支持和温度一起用
 //                .presencePenalty(1.0) // 模型换词、换说法

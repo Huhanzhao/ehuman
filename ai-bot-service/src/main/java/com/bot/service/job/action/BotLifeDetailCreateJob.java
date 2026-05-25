@@ -8,6 +8,7 @@ import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbBotLifeDetailDoService;
 import com.bot.service.service.TbUserMessageSummaryDoService;
+import com.mikuac.shiro.core.BotContainer;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -37,6 +38,9 @@ public class BotLifeDetailCreateJob implements Job {
     @Autowired
     private ChatClientFactory chatClientFactory;
 
+    @Autowired
+    private BotContainer botContainer;
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         Long botId = QQbotIdEnum.DEFAULT.getId();
@@ -61,15 +65,14 @@ public class BotLifeDetailCreateJob implements Job {
             summaryText.append("暂无近期聊天记录。");
         }
 
-        // 生成明天的日期字符串
-        LocalDate tomorrow = today.plusDays(1);
-        String tomorrowStr = tomorrow.getYear() + "年" + tomorrow.getMonthValue() + "月" + tomorrow.getDayOfMonth() + "日";
-        String weekDay = getWeekDay(tomorrow.getDayOfWeek().getValue());
+        // 生成今天的日期字符串
+        String todayStr = today.getYear() + "年" + today.getMonthValue() + "月" + today.getDayOfMonth() + "日";
+        String weekDay = getWeekDay(today.getDayOfWeek().getValue() - 1);
 
-        // 调用AI生成明天的生活细节
-        String prompt = "你是一个虚拟生活规划师。请为以下角色生成明天（" + tomorrowStr + " " + weekDay + "）的详细生活安排。\n\n" +
+        // 调用AI生成今天的生活细节  todo 多生成一个字段根据心情与当前发生的事情 或者思念程度 是否要跟用户发消息 需要发送消息插入定时任务
+        String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的详细生活安排。\n\n" +
                 "## 角色信息\n" +
-                "张若馨，24岁女大学生，身高168，体重110斤，性格温柔克制，有点小傲娇。\n\n" +
+                "张若馨，单身 24岁女大学生，身高168，体重110斤，性格温柔克制，有点小傲娇。\n\n" +
                 "## 近三天的聊天记录总结\n" + summaryText +
                 "\n## 要求\n" +
                 "1. 生成一整天24小时的生活细节，从00:00到24:00\n" +
@@ -94,10 +97,16 @@ public class BotLifeDetailCreateJob implements Job {
             log.info("AI生成的生活细节:\n{}", content);
 
             // 解析并保存
-            List<TbBotLifeDetailDo> details = parseLifeDetails(botId, tomorrow, content);
+            List<TbBotLifeDetailDo> details = parseLifeDetails(botId, today, content);
             if (!details.isEmpty()) {
                 tbBotLifeDetailDoService.saveBatch(details);
                 log.info("已保存{}条生活细节", details.size());
+                try{
+                    botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
+                            .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
+                }catch(Exception e){
+                    log.error("发送消息失败", e);
+                }
             }
         } catch (Exception e) {
             log.error("生成生活细节失败", e);

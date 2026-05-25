@@ -8,10 +8,12 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbBotLifeDetailDo;
+import com.bot.service.entity.TbUserGraceDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbBotLifeDetailDoService;
+import com.bot.service.service.TbUserGraceDoService;
 import com.bot.service.service.TbUserInfoDoService;
 import com.bot.service.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class MessageGenerateNode implements NodeAction {
     private final TbAiChatMemoryService tbAiChatMemoryService;
     private final TbUserInfoDoService tbUserInfoDoService;
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
+    private final TbUserGraceDoService tbUserGraceDoService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -62,7 +65,13 @@ public class MessageGenerateNode implements NodeAction {
         }
         PromptTemplate promptTemplate = PromptTemplate.builder().template(template).build();
 
-        Integer grace = state.value("grace", Integer.class).orElse(40);
+        TbUserGraceDo graceDo = tbUserGraceDoService.getByUserId(userId);
+        if (graceDo == null) {
+            graceDo = new TbUserGraceDo().setUserId((long)userId).setGrace(0);
+            tbUserGraceDoService.save(graceDo);
+        }
+        Integer grace = graceDo.getGrace();
+
         String gracePrompt =  "当前好感度：" + grace + "(-100~100) " ;
         // 区间控制
         if (grace <= -60){

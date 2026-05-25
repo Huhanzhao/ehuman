@@ -8,7 +8,9 @@ import com.bot.service.entity.TbUserGraceDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.NodeEnum;
+import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.*;
+import com.mikuac.shiro.core.BotContainer;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -46,6 +48,9 @@ public class UserInfoAndGraceUpdateJob implements Job {
     @Autowired
     private ChatClientFactory chatClientFactory;
 
+    @Autowired
+    private BotContainer botContainer;
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         // 查询所有有好感度记录的用户
@@ -54,20 +59,20 @@ public class UserInfoAndGraceUpdateJob implements Job {
             return;
         }
 
-        LocalDate today = LocalDate.now();
-        Date todayStart = Date.from(today.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date todayEnd = Date.from(today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        LocalDate yesterday  = LocalDate.now().minusDays(1);
+        Date yesterdayStart = Date.from(yesterday.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date yesterdayEnd = Date.from(yesterday.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         for (TbUserGraceDo graceDo : graceList) {
             Long userId = graceDo.getUserId();
             Integer currentGrace = graceDo.getGrace();
 
-            // 查询该用户今天的所有消息
+            // 查询该用户昨天的所有消息
             List<TbAiChatMemoryDo> todayMessages = tbAiChatMemoryService.list(
                     Wrappers.<TbAiChatMemoryDo>lambdaQuery()
                             .eq(TbAiChatMemoryDo::getMemoryId, userId)
-                            .ge(TbAiChatMemoryDo::getCreateTime, todayStart)
-                            .lt(TbAiChatMemoryDo::getCreateTime, todayEnd)
+                            .ge(TbAiChatMemoryDo::getCreateTime, yesterdayStart)
+                            .lt(TbAiChatMemoryDo::getCreateTime, yesterdayEnd)
                             .orderByAsc(TbAiChatMemoryDo::getCreateTime)
             );
 
@@ -78,10 +83,10 @@ public class UserInfoAndGraceUpdateJob implements Job {
                 // 没有消息，好感度逐渐趋于0
                 if (currentGrace > 0) {
                     delta = -1;
-                    reason = "今日无互动，好感度-1";
+                    reason = "昨日无互动，好感度-1";
                 } else if (currentGrace < 0) {
                     delta = 1;
-                    reason = "今日无互动，好感度+1";
+                    reason = "昨日无互动，好感度+1";
                 } else {
                     continue;
                 }
@@ -95,7 +100,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
                 delta = evaluation.delta();
                 reason = evaluation.reason();
 
-                // 保存当日聊天总结
+                // 保存昨日聊天总结
                 if (evaluation.summary() != null && !evaluation.summary().isBlank()) {
                     TbUserMessageSummaryDo summary = new TbUserMessageSummaryDo();
                     summary.setUserId(userId);
@@ -127,6 +132,12 @@ public class UserInfoAndGraceUpdateJob implements Job {
             tbUpdateGraceHistoryDoService.save(history);
 
             log.info("用户{}好感度更新: {} -> {} (delta={})", userId, currentGrace, newGrace, delta);
+            try{
+                botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
+                        .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
+            }catch(Exception e){
+                log.error("发送消息失败", e);
+            }
         }
     }
 
@@ -141,7 +152,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
                 ? "\n用户已有的画像信息：\n" + existingUserInfo
                 : "\n该用户暂无画像信息。";
 
-        String prompt = "请根据用户今天的聊天记录完成以下任务：\n" +
+        String prompt = "请根据用户昨天的聊天记录完成以下任务：\n" +
                 "1. 好感度评分：评分范围-5到+5的整数，正数表示好感度增加，负数表示好感度减少。" +
                 "评估维度：聊天频率、态度友好程度、话题积极性、互动质量。\n" +
                 "2. 聊天总结：用简洁的语言总结今天的聊天内容（50字以内）。\n" +
@@ -177,7 +188,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
         }
 
         // 提取原因
-        String reason = "AI评估今日聊天";
+        String reason = "AI评估昨日聊天";
         Pattern reasonPattern = Pattern.compile("原因[:：]\\s*(.+)");
         Matcher reasonMatcher = reasonPattern.matcher(content);
         if (reasonMatcher.find()) {
