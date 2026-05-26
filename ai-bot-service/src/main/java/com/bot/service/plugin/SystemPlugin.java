@@ -7,13 +7,13 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bot.service.bean.SystemGraph;
 import com.bot.service.entity.TbChatConfigDo;
-import com.bot.service.entity.TbUserGraceDo;
+import com.bot.service.entity.TbUserBotStatusDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserVoiceModelDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbChatConfigDoService;
-import com.bot.service.service.TbUserGraceDoService;
+import com.bot.service.service.TbUserBotStatusDoService;
 import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.service.TbUserVoiceModelDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
@@ -44,7 +44,7 @@ public class SystemPlugin extends BotPlugin {
     private  TbChatConfigDoService tbChatConfigDoService;
 
     @Autowired
-    private  TbUserGraceDoService tbUserGraceDoService;
+    private TbUserBotStatusDoService tbUserBotStatusDoService;
 
     @Autowired
     private  TbUserModelConfigDoService tbUserModelConfigDoService;
@@ -147,11 +147,11 @@ public class SystemPlugin extends BotPlugin {
             // 修改好感度
             if (!param.isEmpty()){
                 Integer grace = Integer.valueOf(param);
-                tbUserGraceDoService.updateGraceByUserId(event.getUserId(), grace);
+                tbUserBotStatusDoService.updateGraceByUserId(event.getUserId(), grace);
             }
             // 查询当前好感度
-            TbUserGraceDo tbUserGraceDo = tbUserGraceDoService.getByUserId(event.getUserId());
-            String msg = MsgUtils.builder().text("当前好感度: " + tbUserGraceDo.getGrace() + "\n\n修改格式：#好感度 50").build();
+            TbUserBotStatusDo tbUserBotStatusDo = tbUserBotStatusDoService.getByUserId(event.getUserId());
+            String msg = MsgUtils.builder().text("当前好感度: " + tbUserBotStatusDo.getGrace() + "\n\n修改格式：#好感度 50").build();
             bot.sendPrivateMsg(event.getUserId(),msg,false);
             return MESSAGE_BLOCK;
         }

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUpdateGraceHistoryDo;
-import com.bot.service.entity.TbUserGraceDo;
+import com.bot.service.entity.TbUserBotStatusDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.NodeEnum;
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public class UserInfoAndGraceUpdateJob implements Job {
 
     @Autowired
-    private TbUserGraceDoService tbUserGraceDoService;
+    private TbUserBotStatusDoService tbUserBotStatusDoService;
 
     @Autowired
     private TbUpdateGraceHistoryDoService tbUpdateGraceHistoryDoService;
@@ -53,8 +53,8 @@ public class UserInfoAndGraceUpdateJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        // 查询所有有好感度记录的用户
-        List<TbUserGraceDo> graceList = tbUserGraceDoService.list();
+        // 查询所有有好感度记录的用
+        List<TbUserBotStatusDo> graceList = tbUserBotStatusDoService.list();
         if (graceList == null || graceList.isEmpty()) {
             return;
         }
@@ -63,7 +63,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
         Date yesterdayStart = Date.from(yesterday.atStartOfDay(ZoneId.systemDefault()).toInstant());
         Date yesterdayEnd = Date.from(yesterday.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-        for (TbUserGraceDo graceDo : graceList) {
+        for (TbUserBotStatusDo graceDo : graceList) {
             Long userId = graceDo.getUserId();
             Integer currentGrace = graceDo.getGrace();
 
@@ -116,7 +116,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
 
             // 更新好感度，限制在-100~100范围内
             int newGrace = Math.max(-100, Math.min(100, currentGrace + delta));
-            tbUserGraceDoService.updateGraceByUserId(userId, newGrace);
+            tbUserBotStatusDoService.updateGraceByUserId(userId, newGrace);
 
             // 记录好感度修改历史
             TbUpdateGraceHistoryDo history = new TbUpdateGraceHistoryDo();
@@ -132,12 +132,12 @@ public class UserInfoAndGraceUpdateJob implements Job {
             tbUpdateGraceHistoryDoService.save(history);
 
             log.info("用户{}好感度更新: {} -> {} (delta={})", userId, currentGrace, newGrace, delta);
-            try{
-                botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                        .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
-            }catch(Exception e){
-                log.error("发送消息失败", e);
-            }
+        }
+        try{
+            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
+                    .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "好感度定时任务执行完毕",false);
+        }catch(Exception e){
+            log.error("发送消息失败", e);
         }
     }
 

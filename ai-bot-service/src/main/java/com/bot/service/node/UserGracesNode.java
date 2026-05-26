@@ -5,10 +5,10 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.JSON;
 import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbUpdateGraceHistoryDo;
-import com.bot.service.entity.TbUserGraceDo;
+import com.bot.service.entity.TbUserBotStatusDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbUpdateGraceHistoryDoService;
-import com.bot.service.service.TbUserGraceDoService;
+import com.bot.service.service.TbUserBotStatusDoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -23,7 +23,7 @@ public class UserGracesNode implements NodeAction {
 
     private final ChatClientFactory chatClientFactory;
 
-    private final TbUserGraceDoService tbUserGraceDoService;
+    private final TbUserBotStatusDoService tbUserBotStatusDoService;
 
     private final TbUpdateGraceHistoryDoService tbUpdateGraceHistoryDoService;
 
@@ -59,10 +59,10 @@ public class UserGracesNode implements NodeAction {
         ).user(memoryString + "\n 以上是用户与ai对话历史，请分析用户对ai的好感度").call().content();
 
         // 查询用户好感度
-        TbUserGraceDo graceDo = tbUserGraceDoService.getByUserId(userId);
+        TbUserBotStatusDo graceDo = tbUserBotStatusDoService.getByUserId(userId);
         if (graceDo == null) {
-            graceDo = new TbUserGraceDo().setUserId((long)userId).setGrace(0);
-            tbUserGraceDoService.save(graceDo);
+            graceDo = new TbUserBotStatusDo().setUserId((long)userId).setGrace(0);
+            tbUserBotStatusDoService.save(graceDo);
         }
 
         Integer grace = graceDo.getGrace();
@@ -80,7 +80,7 @@ public class UserGracesNode implements NodeAction {
             }
             grace = grace < 100 ? grace : 100;
             grace = grace > -100 ? grace : -100;
-            tbUserGraceDoService.updateGraceByUserId(userId, grace);
+            tbUserBotStatusDoService.updateGraceByUserId(userId, grace);
         }catch (Exception e){
             log.error("解析用户好感度失败:{}",e.getMessage());
         }

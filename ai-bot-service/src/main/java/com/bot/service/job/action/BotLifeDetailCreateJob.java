@@ -101,15 +101,15 @@ public class BotLifeDetailCreateJob implements Job {
             if (!details.isEmpty()) {
                 tbBotLifeDetailDoService.saveBatch(details);
                 log.info("已保存{}条生活细节", details.size());
-                try{
-                    botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                            .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
-                }catch(Exception e){
-                    log.error("发送消息失败", e);
-                }
             }
         } catch (Exception e) {
             log.error("生成生活细节失败", e);
+        }
+        try{
+            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
+                    .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
+        }catch(Exception e){
+            log.error("发送消息失败", e);
         }
     }
 

@@ -8,12 +8,12 @@ import java.util.Date;
 
 /**
  * 
- * @TableName tb_user_grace
+ * @TableName tb_user_bot_status
  */
-@TableName(value ="tb_user_grace")
+@TableName(value ="tb_user_bot_status")
 @Accessors(chain = true)
 @Data
-public class TbUserGraceDo {
+public class TbUserBotStatusDo {
     /**
      *
      * -- GETTER --
@@ -38,6 +38,19 @@ public class TbUserGraceDo {
 
      */
     private Integer grace;
+
+    /**
+     *  bot 亲密度 familiarity
+     */
+    private Integer familiarity;
+
+
+    /**
+     * bot心情
+     *  bot心情
+     */
+    private Integer mood;
+
 
     /**
      * 创建人
@@ -95,7 +108,7 @@ public class TbUserGraceDo {
         if (getClass() != that.getClass()) {
             return false;
         }
-        TbUserGraceDo other = (TbUserGraceDo) that;
+        TbUserBotStatusDo other = (TbUserBotStatusDo) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
             && (this.getGrace() == null ? other.getGrace() == null : this.getGrace().equals(other.getGrace()))

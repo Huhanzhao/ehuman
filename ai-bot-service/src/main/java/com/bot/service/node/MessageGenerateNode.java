@@ -8,12 +8,12 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbBotLifeDetailDo;
-import com.bot.service.entity.TbUserGraceDo;
+import com.bot.service.entity.TbUserBotStatusDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbBotLifeDetailDoService;
-import com.bot.service.service.TbUserGraceDoService;
+import com.bot.service.service.TbUserBotStatusDoService;
 import com.bot.service.service.TbUserInfoDoService;
 import com.bot.service.utils.MemoryCastUtils;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class MessageGenerateNode implements NodeAction {
     private final TbAiChatMemoryService tbAiChatMemoryService;
     private final TbUserInfoDoService tbUserInfoDoService;
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
-    private final TbUserGraceDoService tbUserGraceDoService;
+    private final TbUserBotStatusDoService tbUserBotStatusDoService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -65,10 +65,10 @@ public class MessageGenerateNode implements NodeAction {
         }
         PromptTemplate promptTemplate = PromptTemplate.builder().template(template).build();
 
-        TbUserGraceDo graceDo = tbUserGraceDoService.getByUserId(userId);
+        TbUserBotStatusDo graceDo = tbUserBotStatusDoService.getByUserId(userId);
         if (graceDo == null) {
-            graceDo = new TbUserGraceDo().setUserId((long)userId).setGrace(0);
-            tbUserGraceDoService.save(graceDo);
+            graceDo = new TbUserBotStatusDo().setUserId((long)userId).setGrace(0);
+            tbUserBotStatusDoService.save(graceDo);
         }
         Integer grace = graceDo.getGrace();
 
@@ -107,6 +107,7 @@ public class MessageGenerateNode implements NodeAction {
                         .last("limit 1")
         );
         String lifeDetail = currentLife != null ? currentLife.getDetail() : "";
+        // todo 当时之前的事情也加上
 
         // 查询加上好友的天数（从第一条消息开始算）
         TbAiChatMemoryDo firstMessage = tbAiChatMemoryService.getOne(
