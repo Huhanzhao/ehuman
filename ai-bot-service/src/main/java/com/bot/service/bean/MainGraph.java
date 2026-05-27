@@ -28,7 +28,6 @@ public class MainGraph {
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
     private final ImageAnalysisNode imageAnalysisNode;
-    private final SendMessageNode sendMessageNode;
 
     @Bean("qqBotMainGraph")
     public CompiledGraph qqBotMainGraph() {
@@ -48,7 +47,6 @@ public class MainGraph {
                     .addNode("imageAnalysisNode", node_async(imageAnalysisNode))
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("sendMessageNode", node_async(sendMessageNode))
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
@@ -59,9 +57,8 @@ public class MainGraph {
                     .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
                     Map.of("next", "messageGenerateNode",
                             "exit", StateGraph.END))
-                    // todo bot状态节点？
-                    .addEdge("messageGenerateNode", "sendMessageNode")
-                    .addEdge("sendMessageNode", StateGraph.END);
+                    // todo bot状态节点？ 异步修改心情
+                    .addEdge("messageGenerateNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();

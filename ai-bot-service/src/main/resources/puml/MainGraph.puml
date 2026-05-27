@@ -14,7 +14,6 @@ usecase "authNode"<<Node>>
 usecase "imageAnalysisNode"<<Node>>
 usecase "userWantToNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
-usecase "sendMessageNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
 hexagon "check state" as condition2<<Condition>>
 "__START__" -down-> "authNode"
@@ -29,6 +28,5 @@ hexagon "check state" as condition2<<Condition>>
 '"userWantToNode" .down.> "messageGenerateNode": "next"
 "condition2" .down.> "__END__": "exit"
 '"userWantToNode" .down.> "__END__": "exit"
-"messageGenerateNode" -down-> "sendMessageNode"
-"sendMessageNode" -down-> "__END__"
+"messageGenerateNode" -down-> "__END__"
 @enduml

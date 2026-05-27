@@ -6,6 +6,7 @@ import com.bot.service.entity.TbBotLifeDetailDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.QQbotIdEnum;
+import com.bot.service.job.JobManager;
 import com.bot.service.service.TbBotLifeDetailDoService;
 import com.bot.service.service.TbUserMessageSummaryDoService;
 import com.mikuac.shiro.core.BotContainer;
@@ -39,6 +40,9 @@ public class BotLifeDetailCreateJob implements Job {
     private ChatClientFactory chatClientFactory;
 
     @Autowired
+    private JobManager jobManager;
+
+    @Autowired
     private BotContainer botContainer;
 
     @Override
@@ -69,7 +73,7 @@ public class BotLifeDetailCreateJob implements Job {
         String todayStr = today.getYear() + "年" + today.getMonthValue() + "月" + today.getDayOfMonth() + "日";
         String weekDay = getWeekDay(today.getDayOfWeek().getValue() - 1);
 
-        // 调用AI生成今天的生活细节  todo 多生成一个字段根据心情与当前发生的事情 或者思念程度 是否要跟用户发消息 需要发送消息插入定时任务
+        // 调用AI生成今天的生活细节
         String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的详细生活安排。\n\n" +
                 "## 角色信息\n" +
                 "张若馨，单身 24岁女大学生，身高168，体重110斤，性格温柔克制，有点小傲娇。\n\n" +
@@ -101,6 +105,9 @@ public class BotLifeDetailCreateJob implements Job {
             if (!details.isEmpty()) {
                 tbBotLifeDetailDoService.saveBatch(details);
                 log.info("已保存{}条生活细节", details.size());
+
+                // 评估哪些生活细节值得主动分享给用户
+                evaluateAndScheduleMessages(botId, details);
             }
         } catch (Exception e) {
             log.error("生成生活细节失败", e);
@@ -110,6 +117,61 @@ public class BotLifeDetailCreateJob implements Job {
                     .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
         }catch(Exception e){
             log.error("发送消息失败", e);
+        }
+    }
+
+    private void evaluateAndScheduleMessages(Long botId, List<TbBotLifeDetailDo> details) {
+        StringBuilder detailList = new StringBuilder();
+        for (int i = 0; i < details.size(); i++) {
+            TbBotLifeDetailDo d = details.get(i);
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+            detailList.append(i + 1).append(". ")
+                    .append(sdf.format(d.getStartTime())).append("-")
+                    .append(sdf.format(d.getEndTime())).append(": ")
+                    .append(d.getDetail()).append("\n");
+        }
+
+        String evalPrompt = "你是一个情绪陪伴暧昧机器人的生活规划助手。\n" +
+                "以下是你今天的虚拟生活细节安排：\n" + detailList +
+                "\n请判断每条生活细节是否适合主动给用户发消息分享（分享日常、简单问好、表达想念等都算）。\n" +
+                "判断标准：\n" +
+                "- 适合分享的日常（做饭、出门、有趣的活动、吃饭、学习等）\n" +
+                "- 太私密或无聊的细节不适合分享（睡觉、上厕所、发呆等）\n\n" +
+                "对每条输出一行，格式：序号. 是/否\n" +
+                "不要输出其他内容。";
+
+        try {
+            ChatClient evalClient = chatClientFactory.createChatClient(botId, NodeEnum.WANT_TO);
+            String evalResult = evalClient.prompt(evalPrompt).call().content();
+            log.info("生活细节主动消息评估结果:\n{}", evalResult);
+
+            String[] evalLines = evalResult.split("\n");
+            for (String line : evalLines) {
+                Matcher m = Pattern.compile("(\\d+)\\.\\s*(是|否)").matcher(line);
+                if (m.find()) {
+                    int idx = Integer.parseInt(m.group(1)) - 1;
+                    boolean shouldSend = "是".equals(m.group(2));
+                    if (shouldSend && idx >= 0 && idx < details.size()) {
+                        TbBotLifeDetailDo detail = details.get(idx);
+                        Date startTime = detail.getStartTime();
+                        java.util.Calendar cal = java.util.Calendar.getInstance();
+                        cal.setTime(startTime);
+                        String cron = "0 " + cal.get(java.util.Calendar.MINUTE) + " " + cal.get(java.util.Calendar.HOUR_OF_DAY)
+                                + " " + cal.get(java.util.Calendar.DAY_OF_MONTH) + " " + (cal.get(java.util.Calendar.MONTH) + 1) + " ?";
+
+                        String jobName = "proactive_msg_" + detail.getId();
+                        try {
+                            jobManager.addJob(jobName, "message", cron,
+                                    "com.bot.service.job.action.SendMessageJob", detail.getDetail());
+                            log.info("已创建主动消息定时任务: {} at {}", jobName, cron);
+                        } catch (Exception e) {
+                            log.error("创建主动消息任务失败: {}", jobName, e);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("评估生活细节是否发送消息失败", e);
         }
     }
 

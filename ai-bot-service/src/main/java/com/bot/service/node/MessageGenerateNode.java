@@ -16,6 +16,7 @@ import com.bot.service.service.TbBotLifeDetailDoService;
 import com.bot.service.service.TbUserBotStatusDoService;
 import com.bot.service.service.TbUserInfoDoService;
 import com.bot.service.utils.MemoryCastUtils;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -41,6 +42,7 @@ public class MessageGenerateNode implements NodeAction {
     private final TbUserInfoDoService tbUserInfoDoService;
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
     private final TbUserBotStatusDoService tbUserBotStatusDoService;
+    private final SendMessageUtil sendMessageUtil;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -139,6 +141,7 @@ public class MessageGenerateNode implements NodeAction {
 //        List<Message> historyList = new ArrayList<>(messageList);
 //        historyList.add(new AssistantMessage(content));
         log.info("结果输出：{}" , content);
-        return Map.of("finalOutput", content);
+        sendMessageUtil.sendMsg(userId,content);
+        return Map.of();
     }
 }

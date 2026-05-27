@@ -1,42 +1,37 @@
-package com.bot.service.node;
+package com.bot.service.utils;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbAiChatMemoryService;
-import com.bot.service.utils.VoiceSendUtil;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
 @Slf4j
+@Component
 @RequiredArgsConstructor
-public class SendMessageNode implements NodeAction {
+public class SendMessageUtil {
 
     private final BotContainer botContainer;
 
-    private final TbAiChatMemoryService tbAiChatMemoryService;
-
     private final VoiceSendUtil voiceSendUtil;
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) throws Exception {
-        String aiMessage = (String) state.value("finalOutput", String.class).orElse("");
-        Long userId = (Long)state.value("userId").orElse(0L);
+    private final TbAiChatMemoryService tbAiChatMemoryService;
 
-        if (aiMessage.isEmpty()) {
+    // 发送文字消息
+    public void sendMsg(Long userId, String message) {
+        if (message.isEmpty()) {
             log.error("no message");
         }
 
-        log.info("aiMessage: {}", aiMessage);
-        String[] splitMessages = aiMessage.split("\n");
+        log.info("aiMessage: {}", message);
+        String[] splitMessages = message.split("\n");
         for (String splitMessage : splitMessages) {
             if (splitMessage.isEmpty()) continue;
             splitMessage  = splitMessage.replaceAll("。", "").trim();
@@ -61,6 +56,5 @@ public class SendMessageNode implements NodeAction {
             }
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessage));
         }
-        return Map.of();
     }
 }
