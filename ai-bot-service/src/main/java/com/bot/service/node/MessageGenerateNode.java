@@ -109,7 +109,7 @@ public class MessageGenerateNode implements NodeAction {
                         .last("limit 1")
         );
         String lifeDetail = currentLife != null ? currentLife.getDetail() : "";
-        // todo 当时之前的事情也加上
+        // todo 当时之前的事情也加上 增加心情节点 抽出公用消息生成代码
 
         // 查询加上好友的天数（从第一条消息开始算）
         TbAiChatMemoryDo firstMessage = tbAiChatMemoryService.getOne(
@@ -141,7 +141,7 @@ public class MessageGenerateNode implements NodeAction {
 //        List<Message> historyList = new ArrayList<>(messageList);
 //        historyList.add(new AssistantMessage(content));
         log.info("结果输出：{}" , content);
-        sendMessageUtil.sendMsg(userId,content);
+        sendMessageUtil.sendChatMsg(userId,content);
         return Map.of();
     }
 }

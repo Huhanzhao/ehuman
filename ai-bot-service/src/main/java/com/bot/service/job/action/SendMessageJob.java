@@ -149,7 +149,7 @@ public class SendMessageJob implements Job {
                     "2. 可以分享正在做的事、表达想念、撒娇、问好等\n" +
                     "3. 根据心情调整语气：开心时更活泼，悲伤时可以倾诉，愤怒/烦躁时可以抱怨\n" +
                     "4. 根据亲密度调整亲密程度：陌生时礼貌客气，喜爱时亲密撒娇\n" +
-                    "5. 一句话不要太长，最多两行,也可以发一条消息不换行\n" +
+                    "5. 一句话不要太长 一行代表一条消息\n" +
                     "6. 禁止出现括号、动作描述、心理旁白\n" +
                     "7. 可以使用<voice></voice>标签包裹内容生成语音\n\n" +
                     "直接输出消息内容，不要加任何前缀说明。";
@@ -158,7 +158,7 @@ public class SendMessageJob implements Job {
                 ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
                 String message = chatClient.prompt(prompt).call().content();
                 log.info("主动消息生成结果(userId={}): {}", userId, message);
-                sendMessageUtil.sendMsg(userId, message);
+                sendMessageUtil.sendChatMsg(userId, message);
             } catch (Exception e) {
                 log.error("主动消息发送失败, userId={}", userId, e);
             }

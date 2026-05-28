@@ -27,4 +27,7 @@ public class TbQuartzJobDo {
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
+
+    @TableLogic
+    private Boolean deleted;
 }

@@ -25,7 +25,7 @@ public class SendMessageUtil {
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
     // 发送文字消息
-    public void sendMsg(Long userId, String message) {
+    public void sendChatMsg(Long userId, String message) {
         if (message.isEmpty()) {
             log.error("no message");
         }
