@@ -3,6 +3,8 @@ package com.bot.service.entity;
 import com.baomidou.mybatisplus.annotation.*;
 
 import java.util.Date;
+
+import com.bot.service.common.config.SqliteDateTypeHandler;
 import lombok.Data;
 
 /**
@@ -36,13 +38,13 @@ public class TbUserVoiceModelDo {
     /**
      * 创建时间
      */
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(fill = FieldFill.INSERT,typeHandler = SqliteDateTypeHandler.class)
     private Date createTime;
 
     /**
      * 更新时间
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(fill = FieldFill.INSERT_UPDATE,typeHandler = SqliteDateTypeHandler.class)
     private Date updateTime;
 
     /**

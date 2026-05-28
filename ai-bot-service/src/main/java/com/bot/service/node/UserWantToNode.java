@@ -28,8 +28,8 @@ public class UserWantToNode implements NodeAction {
     public Map<String, Object> apply (OverAllState state){
         String userMessage = (String) state.value("userInput").orElse("");
         Long userId = (Long) state.value("userId").orElse(0L);
-        // 保存最新消息
-        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(userMessage));
+
+        // 查询历史消息
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 10);
         if (messageList.isEmpty()) {
             throw new BusinessException("用户输入读取失败");

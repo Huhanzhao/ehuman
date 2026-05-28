@@ -3,7 +3,10 @@ package com.bot.service.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.bot.service.bean.ChatClientFactory;
+import com.bot.service.common.config.LocalCache;
+import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.enums.NodeEnum;
+import com.bot.service.service.TbAiChatMemoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -25,6 +28,9 @@ public class ImageAnalysisNode implements NodeAction {
 
     @Autowired
     private ChatClientFactory chatClientFactory;
+
+    @Autowired
+    private TbAiChatMemoryService tbAiChatMemoryService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -51,6 +57,10 @@ public class ImageAnalysisNode implements NodeAction {
             String content = chatClient.prompt().messages(message).call().content();
             userInput = "<image: 这是一张图片，图片描述：" + content + ">";
             log.info("图片描述：" + content);
+
+            // 保存图片描述作为用户输入
+            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(content));
+            LocalCache.getLocalCache().remove(userId + "_image");
         }
         return Map.of("userInput",userInput);
     }

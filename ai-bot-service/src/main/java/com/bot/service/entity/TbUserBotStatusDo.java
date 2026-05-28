@@ -1,6 +1,7 @@
 package com.bot.service.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.bot.service.common.config.SqliteDateTypeHandler;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -67,7 +68,7 @@ public class TbUserBotStatusDo {
      *  创建时间
 
      */
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(fill = FieldFill.INSERT,typeHandler = SqliteDateTypeHandler.class)
     private Date createTime;
 
     /**
@@ -85,7 +86,7 @@ public class TbUserBotStatusDo {
      *  更新时间
 
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(fill = FieldFill.INSERT_UPDATE,typeHandler = SqliteDateTypeHandler.class)
     private Date updateTime;
 
     /**
