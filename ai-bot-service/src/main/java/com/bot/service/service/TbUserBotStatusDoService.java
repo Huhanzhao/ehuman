@@ -15,4 +15,6 @@ public interface TbUserBotStatusDoService extends IService<TbUserBotStatusDo> {
     void updateGraceByUserId(Long userId, Integer grace);
 
     void updateFamiliarityByUserId(Long userId, Integer familiarity);
+
+    void updateMoodByUserId(Long userId, Integer mood, String reason);
 }

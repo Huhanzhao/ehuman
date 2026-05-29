@@ -8,7 +8,7 @@ import lombok.Getter;
 public enum NodeEnum {
 
     WANT_TO("UserWantToNode",1),
-    GRACE("UserGracesNode",2),
+    MOOD("BotStatusSearchNode",2),
     GENERATE("MessageGenerateNode",3),
     IMAGE_ANALYSIS("ImageAnalysisNode",4);
 

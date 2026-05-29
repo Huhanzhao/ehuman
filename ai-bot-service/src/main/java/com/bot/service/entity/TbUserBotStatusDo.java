@@ -52,6 +52,9 @@ public class TbUserBotStatusDo {
      */
     private Integer mood;
 
+    // 心情原因
+    private String moodReason;
+
 
     /**
      * 创建人

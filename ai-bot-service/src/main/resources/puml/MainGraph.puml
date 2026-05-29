@@ -14,8 +14,10 @@ usecase "authNode"<<Node>>
 usecase "imageAnalysisNode"<<Node>>
 usecase "userWantToNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
+usecase "botStatusSearchNode"<<Node>>
+usecase "memoryVectorSearchNode"<<Node>>
+usecase "graphSearchNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
-hexagon "check state" as condition2<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
 "condition1" .down.> "__END__": "false"
@@ -23,10 +25,11 @@ hexagon "check state" as condition2<<Condition>>
 "condition1" .down.> "imageAnalysisNode": "true"
 '"authNode" .down.> "imageAnalysisNode": "true"
 "imageAnalysisNode" -down-> "userWantToNode"
-"userWantToNode" .down.> "condition2"
-"condition2" .down.> "messageGenerateNode": "next"
-'"userWantToNode" .down.> "messageGenerateNode": "next"
-"condition2" .down.> "__END__": "exit"
-'"userWantToNode" .down.> "__END__": "exit"
+"userWantToNode" -down-> "botStatusSearchNode"
+"userWantToNode" -down-> "memoryVectorSearchNode"
+"userWantToNode" -down-> "graphSearchNode"
+"botStatusSearchNode" -down-> "messageGenerateNode"
+"memoryVectorSearchNode" -down-> "messageGenerateNode"
+"graphSearchNode" -down-> "messageGenerateNode"
 "messageGenerateNode" -down-> "__END__"
 @enduml

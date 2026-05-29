@@ -28,6 +28,9 @@ public class MainGraph {
     private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
     private final ImageAnalysisNode imageAnalysisNode;
+    private final BotStatusSearchNode botStatusSearchNode;
+    private final MemoryVectorSearchNode memoryVectorSearchNode;
+    private final GraphSearchNode graphSearchNode;
 
     @Bean("qqBotMainGraph")
     public CompiledGraph qqBotMainGraph() {
@@ -47,6 +50,9 @@ public class MainGraph {
                     .addNode("imageAnalysisNode", node_async(imageAnalysisNode))
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
+                    .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
+                    .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
+                    .addNode("graphSearchNode", node_async(graphSearchNode))
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
@@ -54,9 +60,12 @@ public class MainGraph {
                     Map.of("true", "imageAnalysisNode",
                             "false", StateGraph.END))
                     .addEdge("imageAnalysisNode", "userWantToNode")
-                    .addConditionalEdges("userWantToNode", edge_async(UserWantToNode::nextNode),
-                    Map.of("next", "messageGenerateNode",
-                            "exit", StateGraph.END))
+                    .addEdge("userWantToNode", "botStatusSearchNode")
+                    .addEdge("userWantToNode", "memoryVectorSearchNode")
+                    .addEdge("userWantToNode", "graphSearchNode")
+                    .addEdge("botStatusSearchNode", "messageGenerateNode")
+                    .addEdge("memoryVectorSearchNode", "messageGenerateNode")
+                    .addEdge("graphSearchNode", "messageGenerateNode")
                     // todo bot状态节点？ 异步修改心情
                     .addEdge("messageGenerateNode", StateGraph.END);
 

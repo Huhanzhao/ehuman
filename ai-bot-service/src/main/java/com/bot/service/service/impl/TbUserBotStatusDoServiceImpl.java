@@ -37,6 +37,15 @@ public class TbUserBotStatusDoServiceImpl extends ServiceImpl<TbUserBotStatusDoM
                 .eq(TbUserBotStatusDo::getUserId, userId)
                 .update();
     }
+
+    @Override
+    public void updateMoodByUserId(Long userId, Integer mood, String moodReason) {
+        lambdaUpdate()
+                .set(TbUserBotStatusDo::getMood, mood)
+                .eq(TbUserBotStatusDo::getUserId, userId)
+                .set(TbUserBotStatusDo::getMoodReason, moodReason)
+                .update();
+    }
 }
 
 
