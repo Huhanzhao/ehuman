@@ -69,6 +69,8 @@ public class SendMessageJob implements Job {
             return;
         }
 
+        // todo 根据亲密度 好感度 概率进行消息发送 或者通过其他方式合理控制
+
         String lifeDetail = job.getJobDetail();
         Long botId = QQbotIdEnum.DEFAULT.getId();
 
@@ -87,6 +89,7 @@ public class SendMessageJob implements Job {
             long recentCount = tbAiChatMemoryService.count(
                     Wrappers.<TbAiChatMemoryDo>lambdaQuery()
                             .eq(TbAiChatMemoryDo::getMemoryId, userId)
+                            .eq(TbAiChatMemoryDo::getRole, "user")
                             .ge(TbAiChatMemoryDo::getCreateTime, threeDaysAgo)
             );
             if (recentCount == 0) {

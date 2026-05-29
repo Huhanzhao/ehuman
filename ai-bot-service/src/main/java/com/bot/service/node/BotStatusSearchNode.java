@@ -99,7 +99,7 @@ public class BotStatusSearchNode implements NodeAction {
 
             // 提取原因
             String reason = "";
-            if (moodCode != 0) {
+            if (moodCode != MoodEnum.CALM.getCode()) {
                 Matcher reasonMatcher = Pattern.compile("原因[:：]\\s*(.+)").matcher(content);
                 if (reasonMatcher.find()) {
                     reason = reasonMatcher.group(1).trim();
