@@ -6,8 +6,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.bot.service.entity.TbUserModelConfigDo;
-import com.bot.service.enums.QQbotIdEnum;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class ModelNameNode implements AsyncNodeActionWithConfig, InterruptableAction {
 
-    private final BotContainer botContainer;
+    private final SendMessageUtil sendMessageUtil;
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         // 正常节点逻辑：更新状态
@@ -45,8 +44,7 @@ public class ModelNameNode implements AsyncNodeActionWithConfig, InterruptableAc
         if (userInput.isEmpty()){
             InterruptionMetadata interruption = null;
             log.info("等待用户输入");
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(userId, "请输入model名称",false);
+            sendMessageUtil.sendChatMsg(userId, "请输入model名称");
 
             // 返回 InterruptionMetadata 来中断执行
             interruption = InterruptionMetadata.builder(nodeId, state)

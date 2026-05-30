@@ -4,11 +4,9 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.bot.service.entity.TbChatConfigDo;
 import com.bot.service.entity.TbUserModelConfigDo;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbChatConfigDoService;
 import com.bot.service.service.TbUserModelConfigDoService;
-import com.mikuac.shiro.core.Bot;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,16 +23,14 @@ public class AuthNode implements NodeAction {
 
     private final TbChatConfigDoService tbChatConfigDoService;
 
-    private final BotContainer botContainer;
+    private final SendMessageUtil sendMessageUtil;
     @Override
     public Map<String, Object> apply(OverAllState state){
         Long userId = state.value("userId",Long.class).orElse(0L);
 
         List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserId(userId);
         if (list.isEmpty()) {
-            Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
-            // 调用 Bot 对象方法
-            bot.sendPrivateMsg(userId, "请先配置apikey", false);
+            sendMessageUtil.sendChatMsg(userId, "请先配置apikey");
             return Map.of("auth",false);
         }
 

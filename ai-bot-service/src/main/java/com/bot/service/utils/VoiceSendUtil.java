@@ -7,8 +7,6 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserVoiceModelDo;
-import com.bot.service.enums.NodeEnum;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.service.TbUserVoiceModelDoService;
@@ -77,12 +75,12 @@ public class VoiceSendUtil {
 
             // 发送音频消息
             String build = MsgUtils.builder().voice(resultPath).build();
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId()).sendPrivateMsg(userId,build,false);
+            botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,build,false);
         }catch(Exception e){
             e.printStackTrace();
             // 失败了发送汉字
             log.info("失败发送文字消息");
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId()).sendPrivateMsg(userId,
+            botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,
                     message.replaceAll("<voice>","").replaceAll("</voice>",""),
                     false);
         }
@@ -171,7 +169,7 @@ public class VoiceSendUtil {
         TbUserVoiceModelDo tbUserVoiceModelDo = tbUserVoiceModelDoService.getVoiceModelByUserId(userId).getFirst();
 
         // 通过机器人账号取出 Bot 对象
-        Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
+        Bot bot = botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID")));
 
         List<String> taskIdList = new ArrayList<>();
         // 语音合成

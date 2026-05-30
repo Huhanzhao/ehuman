@@ -3,10 +3,9 @@ package com.bot.service.job.action;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserBotStatusDo;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserBotStatusDoService;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -32,7 +31,7 @@ public class FamiliarityUpdateJob implements Job {
     private TbAiChatMemoryService tbAiChatMemoryService;
 
     @Autowired
-    private BotContainer botContainer;
+    private SendMessageUtil sendMessageUtil;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -90,8 +89,7 @@ public class FamiliarityUpdateJob implements Job {
 
         log.info("亲密度定时任务执行完毕");
         try {
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "亲密度定时任务执行完毕", false);
+            sendMessageUtil.sendMegToSelf("亲密度定时任务执行完毕");
         } catch (Exception e) {
             log.error("发送消息失败", e);
         }

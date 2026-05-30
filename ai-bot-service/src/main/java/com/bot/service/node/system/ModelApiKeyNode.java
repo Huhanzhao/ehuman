@@ -6,9 +6,8 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.bot.service.entity.TbUserModelConfigDo;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbUserModelConfigDoService;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class ModelApiKeyNode implements AsyncNodeActionWithConfig, InterruptableAction {
 
-    private final BotContainer botContainer;
+    private final SendMessageUtil sendMessageUtil;
 
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
     @Override
@@ -35,7 +34,7 @@ public class ModelApiKeyNode implements AsyncNodeActionWithConfig, Interruptable
             modelConfigDo.setApiKey(userInput.trim());
             modelConfigDo.setUserId(userId);
             // 如果已经有 model，继续执行
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId()).sendPrivateMsg(userId, "设置成功",false);
+            sendMessageUtil.sendChatMsg(userId, "设置成功");
 
             // 把该节点的配置清空
             tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(userId, modelConfigDo.getNodeEnum().getNodeNum());
@@ -57,8 +56,7 @@ public class ModelApiKeyNode implements AsyncNodeActionWithConfig, Interruptable
         Long userId = Long.valueOf(state.value("userId", String.class).orElse(""));
 
         if (userInput.isEmpty()){
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(userId, "请输入apiKey",false);
+            sendMessageUtil.sendChatMsg(userId, "请输入apiKey");
             // 返回 InterruptionMetadata 来中断执行
             InterruptionMetadata interruption = InterruptionMetadata.builder(nodeId, state)
                     .addMetadata("message", "等待用户输入apiKey")

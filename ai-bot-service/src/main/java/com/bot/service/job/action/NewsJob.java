@@ -1,10 +1,7 @@
 package com.bot.service.job.action;
 
-import com.bot.service.bean.ChatClientFactory;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.tools.CommandTool;
-import com.mikuac.shiro.core.Bot;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -20,16 +17,12 @@ public class NewsJob implements Job {
     private CommandTool commandTool;
 
     @Autowired
-    private BotContainer botContainer;
-
-    @Autowired
-    private ChatClientFactory chatClientFactory;
+    private SendMessageUtil sendMessageUtil;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         System.out.println("Quartz任务执行: " + LocalDateTime.now());
         String news = commandTool.execCmd("tencent-news-cli hot");
-        Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
         CommandTool commandTool = new CommandTool();
         String content = commandTool.execCmd("tencent-news-cli hot ––limit 10");
         String[] contentSplit = content.split("\n");
@@ -45,6 +38,6 @@ public class NewsJob implements Job {
             }
         }
 
-        bot.sendPrivateMsg(2752662938L, sb.toString().trim(),false);
+//        sendMessageUtil.sendChatMsg(2752662938L, sb.toString().trim());
     }
 }

@@ -5,11 +5,10 @@ import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbBotLifeDetailDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.NodeEnum;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.job.JobManager;
 import com.bot.service.service.TbBotLifeDetailDoService;
 import com.bot.service.service.TbUserMessageSummaryDoService;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -43,12 +42,11 @@ public class BotLifeDetailCreateJob implements Job {
     private JobManager jobManager;
 
     @Autowired
-    private BotContainer botContainer;
+    private SendMessageUtil sendMessageUtil;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
-        Long botId = QQbotIdEnum.DEFAULT.getId();
-
+        Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         // 查询近三天的聊天记录总结
         LocalDate today = LocalDate.now();
         Date threeDaysAgo = Date.from(today.minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -113,8 +111,7 @@ public class BotLifeDetailCreateJob implements Job {
             log.error("生成生活细节失败", e);
         }
         try{
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "生活细节定时任务执行完毕",false);
+            sendMessageUtil.sendMegToSelf("生活细节定时任务执行完毕");
         }catch(Exception e){
             log.error("发送消息失败", e);
         }

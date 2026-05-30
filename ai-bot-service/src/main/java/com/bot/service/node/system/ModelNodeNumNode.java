@@ -7,8 +7,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.enums.NodeEnum;
-import com.bot.service.enums.QQbotIdEnum;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class ModelNodeNumNode implements AsyncNodeActionWithConfig, InterruptableAction {
 
-    private final BotContainer botContainer;
+    private final SendMessageUtil sendMessageUtil;
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         TbUserModelConfigDo modelConfigDo = state.value("modelConfig",TbUserModelConfigDo.class).orElse(null);
@@ -43,8 +42,7 @@ public class ModelNodeNumNode implements AsyncNodeActionWithConfig, Interruptabl
         Long userId = Long.valueOf(state.value("userId", String.class).orElse(""));
         if (userInput.isEmpty()) {
             InterruptionMetadata interruption = null;
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(userId, "请输入要设置的节点序号：\n1.意图识别节\n2.好感度控制节\n3.对话生成节点",false);
+            sendMessageUtil.sendChatMsg(userId, "请输入要设置的节点序号：\n1.意图识别节\n2.好感度控制节\n3.对话生成节点");
             // 返回 InterruptionMetadata 来中断执行
             interruption = InterruptionMetadata.builder(nodeId, state)
                     .addMetadata("message", "等待用户输入节点序号")
@@ -60,8 +58,7 @@ public class ModelNodeNumNode implements AsyncNodeActionWithConfig, Interruptabl
         try {
             isInvalid = Integer.parseInt(userInput.trim()) > 3 || Integer.parseInt(userInput.trim()) < 1;
         }catch (Exception e){
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(userId, "请输入正确的节点序号",false);
+            sendMessageUtil.sendChatMsg(userId, "请输入正确的节点序号");
             // 返回 InterruptionMetadata 来中断执行
             interruption = InterruptionMetadata.builder(nodeId, state)
                     .addMetadata("message", "等待用户输入正确的节点序号")
@@ -71,8 +68,7 @@ public class ModelNodeNumNode implements AsyncNodeActionWithConfig, Interruptabl
         }
 
         if (isInvalid){
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(userId, "请输入正确的节点序号",false);
+            sendMessageUtil.sendChatMsg(userId, "请输入正确的节点序号");
             // 返回 InterruptionMetadata 来中断执行
             interruption = InterruptionMetadata.builder(nodeId, state)
                     .addMetadata("message", "等待用户输入正确的节点序号")

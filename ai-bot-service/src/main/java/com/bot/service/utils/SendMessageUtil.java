@@ -1,17 +1,13 @@
 package com.bot.service.utils;
 
 import com.bot.service.entity.TbAiChatMemoryDo;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -26,6 +22,7 @@ public class SendMessageUtil {
 
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
+        Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         if (message.isEmpty()) {
             log.error("no message");
         }
@@ -46,15 +43,26 @@ public class SendMessageUtil {
             }
             String msg = MsgUtils.builder().text(splitMessage).build();
             // 通过机器人账号取出 Bot 对象
-            Bot bot = botContainer.robots.get(QQbotIdEnum.DEFAULT.getId());
+            Bot bot = botContainer.robots.get(botId);
 
             // 保持沉默的时候给自己发送
             if (splitMessage.startsWith("<silence>") && splitMessage.endsWith("</silence>")){
-                bot.sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(),msg,false);
+                sendMegToSelf(msg);
             }else{
                 bot.sendPrivateMsg(userId,msg,false);
             }
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessage));
         }
+    }
+
+    public void sendMegToSelf(String message) {
+        Long botId = Long.valueOf(System.getProperty("BOT_ID"));
+        if (message.isEmpty()) {
+            log.error("no message");
+        }
+
+        // 通过机器人账号取出 Bot 对象
+        Bot bot = botContainer.robots.get(botId);
+        bot.sendPrivateMsg(botId,message,false);
     }
 }

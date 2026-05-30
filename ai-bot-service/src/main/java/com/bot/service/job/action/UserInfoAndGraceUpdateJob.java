@@ -2,15 +2,10 @@ package com.bot.service.job.action;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.bean.ChatClientFactory;
-import com.bot.service.entity.TbAiChatMemoryDo;
-import com.bot.service.entity.TbUpdateGraceHistoryDo;
-import com.bot.service.entity.TbUserBotStatusDo;
-import com.bot.service.entity.TbUserInfoDo;
-import com.bot.service.entity.TbUserMessageSummaryDo;
+import com.bot.service.entity.*;
 import com.bot.service.enums.NodeEnum;
-import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.*;
-import com.mikuac.shiro.core.BotContainer;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -49,7 +44,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
     private ChatClientFactory chatClientFactory;
 
     @Autowired
-    private BotContainer botContainer;
+    private SendMessageUtil sendMessageUtil;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -134,8 +129,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
             log.info("用户{}好感度更新: {} -> {} (delta={})", userId, currentGrace, newGrace, delta);
         }
         try{
-            botContainer.robots.get(QQbotIdEnum.DEFAULT.getId())
-                    .sendPrivateMsg(QQbotIdEnum.DEFAULT.getId(), "好感度定时任务执行完毕",false);
+            sendMessageUtil.sendMegToSelf("好感度定时任务执行完毕");
         }catch(Exception e){
             log.error("发送消息失败", e);
         }
