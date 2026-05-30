@@ -18,9 +18,9 @@ public class TbBotPromptDoServiceImpl extends ServiceImpl<TbBotPromptDoMapper, T
     implements TbBotPromptDoService{
 
     @Override
-    public String getBotRoleContext() {
+    public String getContext(PromptTypeEnum promptTypeEnum) {
         return lambdaQuery()
-                .eq(TbBotPromptDo::getPromptTypeEnum, PromptTypeEnum.BOT_ROLE)
+                .eq(TbBotPromptDo::getPromptTypeEnum, promptTypeEnum)
                 .oneOpt()
                 .map(TbBotPromptDo::getContent)
                 .orElse(null);

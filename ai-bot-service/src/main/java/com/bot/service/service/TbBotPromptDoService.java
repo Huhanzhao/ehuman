@@ -2,6 +2,7 @@ package com.bot.service.service;
 
 import com.bot.service.entity.TbBotPromptDo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.bot.service.enums.PromptTypeEnum;
 
 /**
 * @author Lenovo
@@ -10,5 +11,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbBotPromptDoService extends IService<TbBotPromptDo> {
 
-    String getBotRoleContext();
+    String getContext(PromptTypeEnum promptTypeEnum);
 }

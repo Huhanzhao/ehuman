@@ -8,7 +8,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum PromptTypeEnum {
     BOT_ROLE(0),
-    SYSTEM_PROMPT(2),
+    TARGET(1),
     ASSISTANT_PROMPT(3);
 
     @EnumValue

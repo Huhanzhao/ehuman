@@ -14,6 +14,7 @@ import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.FamiliarityEnum;
 import com.bot.service.enums.MoodEnum;
 import com.bot.service.enums.NodeEnum;
+import com.bot.service.enums.PromptTypeEnum;
 import com.bot.service.service.*;
 import com.bot.service.utils.MemoryCastUtils;
 import com.bot.service.utils.SendMessageUtil;
@@ -159,10 +160,13 @@ public class MessageGenerateNode implements NodeAction {
         );
         String yesterdayChatSummary = yesterdaySummary != null ? yesterdaySummary.getSummary() : "无";
 
-        String botRole = tbBotPromptDoService.getBotRoleContext();
+        String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
+
+        String target = tbBotPromptDoService.getContext(PromptTypeEnum.TARGET);
 
         return Map.of(
                 "botRole",botRole,
+                "target",target,
                 "mood", moodPrompt,
                 "familiarity", familiarityPrompt,
                 "grace", gracePrompt,
