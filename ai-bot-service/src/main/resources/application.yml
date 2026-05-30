@@ -9,11 +9,11 @@ spring:
   application:
     name: ai-bot-service
   profiles:
-    active: dev
+    active: local
   config:
     import:
-      - optional:ai-bot-service.yml
-      - optional:ai-bot-service-${spring.profiles.active}.yml
+      - optional:application.yml
+      - optional:application-${spring.profiles.active}.yml
   ai:
     anthropic:
       api-key: sdfs
@@ -38,7 +38,7 @@ shiro:
     server:
       enable: true
       url: "/ws"   # websocket服务端地址 napCat需要在webui页面配置ws客户端 ws://localhost:8081/ws
-    access-token: huhanzhao
+    access-token: qqBot
   plugin-list:
    - com.bot.service.plugin.TestPlugin
    - com.bot.service.plugin.SystemPlugin
