@@ -2,6 +2,7 @@ package com.bot.service.service;
 
 import com.bot.service.entity.TbUserBotStatusDo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.bot.service.enums.MoodEnum;
 
 /**
 * @author Lenovo
@@ -16,5 +17,5 @@ public interface TbUserBotStatusDoService extends IService<TbUserBotStatusDo> {
 
     void updateFamiliarityByUserId(Long userId, Integer familiarity);
 
-    void updateMoodByUserId(Long userId, Integer mood, String reason);
+    void updateMoodByUserId(Long userId, MoodEnum newMood, String reason);
 }

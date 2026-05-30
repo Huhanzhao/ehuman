@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.bot.service.entity.TbUserModelConfigDo;
+import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.QQbotIdEnum;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +27,8 @@ public class ModelNodeNumNode implements AsyncNodeActionWithConfig, Interruptabl
         TbUserModelConfigDo modelConfigDo = state.value("modelConfig",TbUserModelConfigDo.class).orElse(null);
         String userInput = state.value("userInput",String.class).orElse("");
         // 正常节点逻辑：更新状态
-        if (modelConfigDo != null && modelConfigDo.getNodeNum() == null) {
-            modelConfigDo.setNodeNum(Integer.parseInt(userInput.trim()));
+        if (modelConfigDo != null && modelConfigDo.getNodeEnum() == null) {
+            modelConfigDo.setNodeEnum(NodeEnum.fromCode(Integer.parseInt(userInput.trim())));
             state.updateState(Map.of("modelConfig", modelConfigDo,"userInput", ""));
         }
         return CompletableFuture.completedFuture(Map.of("modelConfigSetStatus", "numNodeSuccess"));

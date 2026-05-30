@@ -2,6 +2,7 @@ package com.bot.service.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bot.service.entity.TbUserBotStatusDo;
+import com.bot.service.enums.MoodEnum;
 import com.bot.service.service.TbUserBotStatusDoService;
 import com.bot.service.mapper.TbUserBotStatusDoMapper;
 import org.springframework.stereotype.Service;
@@ -39,9 +40,9 @@ public class TbUserBotStatusDoServiceImpl extends ServiceImpl<TbUserBotStatusDoM
     }
 
     @Override
-    public void updateMoodByUserId(Long userId, Integer mood, String moodReason) {
+    public void updateMoodByUserId(Long userId, MoodEnum newMood, String moodReason) {
         lambdaUpdate()
-                .set(TbUserBotStatusDo::getMood, mood)
+                .set(TbUserBotStatusDo::getMoodEnum, newMood)
                 .eq(TbUserBotStatusDo::getUserId, userId)
                 .set(TbUserBotStatusDo::getMoodReason, moodReason)
                 .update();

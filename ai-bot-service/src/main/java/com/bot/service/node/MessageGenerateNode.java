@@ -14,11 +14,7 @@ import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.FamiliarityEnum;
 import com.bot.service.enums.MoodEnum;
 import com.bot.service.enums.NodeEnum;
-import com.bot.service.service.TbAiChatMemoryService;
-import com.bot.service.service.TbBotLifeDetailDoService;
-import com.bot.service.service.TbUserBotStatusDoService;
-import com.bot.service.service.TbUserInfoDoService;
-import com.bot.service.service.TbUserMessageSummaryDoService;
+import com.bot.service.service.*;
 import com.bot.service.utils.MemoryCastUtils;
 import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
@@ -42,11 +38,18 @@ import java.util.*;
 public class MessageGenerateNode implements NodeAction {
 
     private final ChatClientFactory chatClientFactory;
+
     private final TbAiChatMemoryService tbAiChatMemoryService;
+
     private final TbUserInfoDoService tbUserInfoDoService;
+
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
+
     private final TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
+
     private final SendMessageUtil sendMessageUtil;
+
+    private final TbBotPromptDoService tbBotPromptDoService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -156,7 +159,10 @@ public class MessageGenerateNode implements NodeAction {
         );
         String yesterdayChatSummary = yesterdaySummary != null ? yesterdaySummary.getSummary() : "无";
 
+        String botRole = tbBotPromptDoService.getBotRoleContext();
+
         return Map.of(
+                "botRole",botRole,
                 "mood", moodPrompt,
                 "familiarity", familiarityPrompt,
                 "grace", gracePrompt,

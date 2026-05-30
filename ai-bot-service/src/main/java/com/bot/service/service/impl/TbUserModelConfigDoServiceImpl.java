@@ -3,9 +3,11 @@ package com.bot.service.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bot.service.entity.TbUserModelConfigDo;
+import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.mapper.TbUserModelConfigDoMapper;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Node;
 
 import java.util.List;
 
@@ -25,7 +27,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
                 .eq(modelConfigDo.getModel() != null,TbUserModelConfigDo::getModel,modelConfigDo.getModel())
                 .eq(modelConfigDo.getCategory() != null,TbUserModelConfigDo::getCategory,modelConfigDo.getCategory())
                 .eq(modelConfigDo.getNeedProxy() != null,TbUserModelConfigDo::getNeedProxy,modelConfigDo.getNeedProxy())
-                .eq(modelConfigDo.getNodeNum() != null,TbUserModelConfigDo::getNodeNum,modelConfigDo.getNodeNum())
+                .eq(modelConfigDo.getNodeEnum() != null,TbUserModelConfigDo::getNodeEnum,modelConfigDo.getNodeEnum())
                 .eq(modelConfigDo.getId() != null,TbUserModelConfigDo::getId,modelConfigDo.getId())
                 .eq(modelConfigDo.getApiKey() != null,TbUserModelConfigDo::getApiKey,modelConfigDo.getApiKey())
                 .eq(modelConfigDo.getBaseUrl() != null,TbUserModelConfigDo::getBaseUrl,modelConfigDo.getBaseUrl())
@@ -36,13 +38,14 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, Integer nodeNum) {
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getNodeNum, nodeNum)
+                .eq(TbUserModelConfigDo::getNodeEnum, NodeEnum.fromCode(nodeNum))
                 .one();
     }
 
     @Override
     public List<TbUserModelConfigDo> getByUserId(Long userId) {
         return lambdaQuery()
+                .isNotNull(TbUserModelConfigDo::getNodeEnum)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .list();
     }
@@ -51,17 +54,17 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId) {
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .ne(TbUserModelConfigDo::getNodeNum, 0)
-                .orderByAsc(TbUserModelConfigDo::getNodeNum)
+                .isNotNull(TbUserModelConfigDo::getNodeEnum)
+                .orderByAsc(TbUserModelConfigDo::getNodeEnum)
                 .list();
     }
 
     @Override
     public void clearNodeNumByUserIdAndNodeNum(Long userId, Integer nodeNum) {
         lambdaUpdate()
-                .set(TbUserModelConfigDo::getNodeNum, 0)
+                .set(TbUserModelConfigDo::getNodeEnum, null)
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getNodeNum, nodeNum)
+                .eq(TbUserModelConfigDo::getNodeEnum, NodeEnum.fromCode(nodeNum))
                 .update();
     }
 
@@ -69,6 +72,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize) {
         Page<TbUserModelConfigDo> page = new Page<>(pageNum, pageSize);
         return lambdaQuery()
+                .isNotNull(TbUserModelConfigDo::getNodeEnum)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .page(page);
     }

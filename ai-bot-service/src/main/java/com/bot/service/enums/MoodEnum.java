@@ -1,5 +1,6 @@
 package com.bot.service.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,6 +14,7 @@ public enum MoodEnum {
     ANGRY(3, "愤怒"),
     IRRITABLE(4, "烦躁");
 
+    @EnumValue
     private final int code;
     private final String desc;
 

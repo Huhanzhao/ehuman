@@ -108,7 +108,7 @@ public class SendMessageJob implements Job {
                 continue;
             }
 
-            MoodEnum mood = MoodEnum.fromCode(status.getMood() != null ? status.getMood() : 0);
+            MoodEnum mood = status.getMoodEnum();
             Integer grace = status.getGrace() != null ? status.getGrace() : 0;
             FamiliarityEnum familiarity = FamiliarityEnum.fromScore(status.getFamiliarity() != null ? status.getFamiliarity() : 0);
 

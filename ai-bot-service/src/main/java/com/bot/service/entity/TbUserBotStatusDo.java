@@ -2,6 +2,7 @@ package com.bot.service.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.bot.service.common.config.SqliteDateTypeHandler;
+import com.bot.service.enums.MoodEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -50,7 +51,8 @@ public class TbUserBotStatusDo {
      * bot心情
      *  bot心情
      */
-    private Integer mood;
+    @TableField("mood")
+    private MoodEnum moodEnum;
 
     // 心情原因
     private String moodReason;

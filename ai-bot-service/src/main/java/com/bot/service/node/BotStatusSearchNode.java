@@ -53,10 +53,10 @@ public class BotStatusSearchNode implements NodeAction {
         // 获取当前心情
         TbUserBotStatusDo statusDo = tbUserBotStatusDoService.getByUserId(userId);
         if (statusDo == null) {
-            statusDo = new TbUserBotStatusDo().setUserId(userId).setMood(0).setGrace(0).setFamiliarity(0);
+            statusDo = new TbUserBotStatusDo().setUserId(userId).setMoodEnum(MoodEnum.CALM).setGrace(0).setFamiliarity(0);
             tbUserBotStatusDoService.save(statusDo);
         }
-        MoodEnum currentMood = MoodEnum.fromCode(statusDo.getMood() != null ? statusDo.getMood() : 0);
+        MoodEnum currentMood = statusDo.getMoodEnum();
 
         String prompt = "你是一个心情分析专家，负责分析情绪陪伴机器人当前应该处于什么心情。\n\n" +
                 "## 心情选项\n" +
@@ -107,7 +107,7 @@ public class BotStatusSearchNode implements NodeAction {
             }
 
             MoodEnum newMood = MoodEnum.fromCode(moodCode);
-            tbUserBotStatusDoService.updateMoodByUserId(userId, moodCode,reason);
+            tbUserBotStatusDoService.updateMoodByUserId(userId, newMood,reason);
             log.info("用户{}心情更新: {} -> {} {}", userId, currentMood.getDesc(), newMood.getDesc(),
                     reason.isEmpty() ? "" : "原因: " + reason);
 

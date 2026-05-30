@@ -38,7 +38,7 @@ public class ModelApiKeyNode implements AsyncNodeActionWithConfig, Interruptable
             botContainer.robots.get(QQbotIdEnum.DEFAULT.getId()).sendPrivateMsg(userId, "设置成功",false);
 
             // 把该节点的配置清空
-            tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(userId, modelConfigDo.getNodeNum());
+            tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(userId, modelConfigDo.getNodeEnum().getNodeNum());
 
             // 插入数据
             tbUserModelConfigDoService.save(modelConfigDo);

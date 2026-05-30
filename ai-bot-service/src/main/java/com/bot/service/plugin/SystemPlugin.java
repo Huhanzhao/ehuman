@@ -194,7 +194,7 @@ public class SystemPlugin extends BotPlugin {
             List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserIdNodeNumNotZero(event.getUserId());
             StringBuilder msg = new StringBuilder();
             for (TbUserModelConfigDo tbUserModelConfigDo : list) {
-                msg.append(NodeEnum.getByNameNodeNum(tbUserModelConfigDo.getNodeNum()))
+                msg.append(NodeEnum.getByNameNodeNum(tbUserModelConfigDo.getNodeEnum().getNodeNum()))
                         .append(":")
                         .append(tbUserModelConfigDo.getModel())
                         .append("\n");

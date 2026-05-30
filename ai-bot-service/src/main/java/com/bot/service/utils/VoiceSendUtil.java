@@ -7,6 +7,7 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserVoiceModelDo;
+import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.QQbotIdEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
@@ -25,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.bot.service.enums.NodeEnum.TTS;
 
 @Component
 @RequiredArgsConstructor
@@ -46,7 +49,7 @@ public class VoiceSendUtil {
                 new TbUserModelConfigDo()
                         .setUserId(userId)
                         .setCategory("tts")
-                        .setNodeNum(9999));
+                        .setNodeEnum(TTS));
         if (modelList.size() == 0){
             throw new BusinessException("语音消息生成失败，没有查询到声音模型");
         }
