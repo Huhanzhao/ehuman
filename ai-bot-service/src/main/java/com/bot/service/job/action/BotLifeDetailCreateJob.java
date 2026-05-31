@@ -5,8 +5,10 @@ import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbBotLifeDetailDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.NodeEnum;
+import com.bot.service.enums.PromptTypeEnum;
 import com.bot.service.job.JobManager;
 import com.bot.service.service.TbBotLifeDetailDoService;
+import com.bot.service.service.TbBotPromptDoService;
 import com.bot.service.service.TbUserMessageSummaryDoService;
 import com.bot.service.utils.SendMessageUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +46,9 @@ public class BotLifeDetailCreateJob implements Job {
     @Autowired
     private SendMessageUtil sendMessageUtil;
 
+    @Autowired
+    private TbBotPromptDoService tbBotPromptDoService;
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
@@ -71,14 +76,18 @@ public class BotLifeDetailCreateJob implements Job {
         String todayStr = today.getYear() + "年" + today.getMonthValue() + "月" + today.getDayOfMonth() + "日";
         String weekDay = getWeekDay(today.getDayOfWeek().getValue() - 1);
 
+        // 获取bot角色设定
+        String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
+
         // 调用AI生成今天的生活细节
         String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的详细生活安排。\n\n" +
                 "## 角色信息\n" +
-                "张若馨，单身 24岁女大学生，身高168，体重110斤，性格温柔克制，有点小傲娇。\n\n" +
+                botRole +
+                "\n\n" +
                 "## 近三天的聊天记录总结\n" + summaryText +
                 "\n## 要求\n" +
                 "1. 生成一整天24小时的生活细节，从00:00到24:00\n" +
-                "2. 每个时间段要具体、真实、贴近女大学生的日常生活（睡觉、起床、上课、吃饭、自习、逛街、刷手机、和朋友聊天等）\n" +
+                "2. 每个时间段要具体、真实、贴近角色的日常生活 （比如吃饭 睡觉 玩手机 和朋友聊天等）\n" +
                 "3. 根据近期聊天内容适当融入相关情节（比如聊到过的话题、用户提到的事情等）\n" +
                 "4. 时间段要细致划分，一天至少15-20条记录，覆盖全天\n" +
                 "5. 每条描述简洁生动，15-30字\n\n" +

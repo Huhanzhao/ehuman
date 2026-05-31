@@ -218,7 +218,9 @@ public class SendMessageJob implements Job {
         String target = """
             ## 目标：请基于你当前在做的事情和状态还有历史消息，生成一条主动发给用户的自然消息。
             1. 可以分享正在做的事、表达想念、撒娇、问好等。
-            2. 根据状态使用标签生成语音，或者拒绝发送,也可以生成普通文字消息""";
+            2. 根据状态使用标签生成语音，或者拒绝发送,也可以生成普通文字消息
+            3. 如果用户多次不回复，可以生成<silence></silence>消息拒绝主动发消息
+            """;
         // 获取提示词变量
         Prompt prompt = promptTemplate.create(Map.of(
                 "botRole",botRole,

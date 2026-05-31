@@ -25,7 +25,7 @@ public class TestPlugin extends BotPlugin{
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
-
+//        log.info(event.getMessage());
 //        sendMessageUtil.sendVoiceMsg(2752662938L,event.getMessage());
         return MESSAGE_IGNORE;
     }

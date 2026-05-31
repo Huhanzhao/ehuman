@@ -20,10 +20,10 @@ usecase "graphSearchNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
-"condition1" .down.> "imageAnalysisNode": "true"
-'"authNode" .down.> "imageAnalysisNode": "true"
 "condition1" .down.> "__END__": "false"
 '"authNode" .down.> "__END__": "false"
+"condition1" .down.> "imageAnalysisNode": "true"
+'"authNode" .down.> "imageAnalysisNode": "true"
 "imageAnalysisNode" -down-> "userWantToNode"
 "userWantToNode" -down-> "botStatusSearchNode"
 "userWantToNode" -down-> "memoryVectorSearchNode"
