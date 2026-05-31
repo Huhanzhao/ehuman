@@ -50,6 +50,8 @@ minio_data/**
 /ai-bot-service/src/main/resources/application-local.yml
 /ai-bot-service/sqlite/aiBot-local.db
 /sqlite/aiBot-local.db
-/plugin/classes/**/*.class
-/plugin/**/VoxCpm2.java
-/plugin/TTS/voice/output/*
+/qq-bot-plugin/src/main/java/com/bot/plugin/VoxCpm2.java
+/qq-bot-plugin/plugin/TTS/audio/output/*
+/qq-bot-plugin/plugin/classes/*
+/qq-bot-plugin/plugin/TTS/audio/*.m4a
+/qq-bot-plugin/plugin/TTS/VoxCpm2.java

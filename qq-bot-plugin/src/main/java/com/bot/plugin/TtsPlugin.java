@@ -1,4 +1,4 @@
-package com.bot.service.tts;
+package com.bot.plugin;
 
 import java.util.Map;
 

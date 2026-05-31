@@ -1,4 +1,4 @@
-package com.bot.service.tts;
+package com.bot.plugin;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -26,16 +26,16 @@ import java.util.stream.Stream;
 public class PluginManager {
 
     // 配置：插件源码目录
-    private String pluginSourceDir = "./plugin/TTS";
+    private String pluginSourceDir = "./qq-bot-plugin/plugin/TTS";
     
     // 配置：编译输出目录
-    private String pluginClassDir = "./plugin/classes";
+    private String pluginClassDir = "./qq-bot-plugin/plugin/classes";
 
     // 配置：插件输出音频路径
-    private String pluginOurputDir = "./plugin/TTS/audio/output";
+    private String pluginOurputDir = "./qq-bot-plugin/plugin/TTS/audio/output";
 
     // 配置：插件参考音频路径
-    private String pluginReferAudioDir = "./plugin/TTS/audio";
+    private String pluginReferAudioDir = "./qq-bot-plugin/plugin/TTS/audio";
 
     
     // 存储所有已加载的插件
@@ -49,7 +49,10 @@ public class PluginManager {
         log.info("========== 插件管理器初始化 ==========");
         log.info("插件源码目录: {}", Paths.get(pluginSourceDir).toAbsolutePath());
         log.info("插件编译目录: {}", Paths.get(pluginClassDir).toAbsolutePath());
-        
+
+        // 先清理上次插件编译文件
+        cleanClassDirectory();
+
         // 1. 创建目录
         createDirectories();
         
@@ -81,84 +84,80 @@ public class PluginManager {
         }
 
         String content = """
-        import cn.hutool.core.io.FileUtil;
         import cn.hutool.http.HttpRequest;
         import cn.hutool.http.HttpResponse;
         import com.alibaba.fastjson2.JSON;
-        import com.bot.service.tts.TtsPlugin;
         import lombok.extern.slf4j.Slf4j;
         
-        import java.net.InetSocketAddress;
-        import java.net.Proxy;
         import java.util.HashMap;
         import java.util.Map;
         
         @Slf4j
         public class IndexTTS2 implements TtsPlugin {
         
-            @Override
-            public String getName() {
-                return "IndexTTS2";
-            }
+         @Override
+         public String getName() {
+             return "IndexTTS2";
+         }
         
-            @Override
-            public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey) throws Exception {
-                // 提交任务
-                String taskId = submitTask(text, referVoicePath,apiKey);
+         @Override
+         public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey) throws Exception {
+             // 提交任务
+             String taskId = submitTask(text, referVoicePath,apiKey);
         
-                // 获取结果
-                String resultPath = getResult(taskId,apiKey);
+             // 获取结果
+             String resultPath = getResult(taskId,apiKey);
         
-                // 本地录音 path传文件名（包括后缀）url传空字符串  公网url url传链接 path传空字符串
-                return Map.of("path","","url",resultPath);
-            }
+             // 本地录音 path传文件名（包括后缀）url传空字符串  公网url url传链接 path传空字符串
+             return Map.of("path","","url",resultPath);
+         }
         
-            public String submitTask(String message, String voice,String apiKey) throws Exception {
-                Map<String,Object> paramMap = new HashMap();
-                paramMap.put("text", message);
-                paramMap.put("speaker_audio_url",voice);
-                paramMap.put("emotion_audio_url", voice);
-                paramMap.put("emotion_alpha", 1);
+         public String submitTask(String message, String voice,String apiKey) throws Exception {
+             Map<String,Object> paramMap = new HashMap();
+             paramMap.put("text", message);
+             paramMap.put("speaker_audio_url",voice);
+             paramMap.put("emotion_audio_url", voice);
+             paramMap.put("emotion_alpha", 1);
         
-                HttpResponse taskResponse = HttpRequest.post("https://api.302ai.com/302/index_tts2/task")
-                        .header("Authorization", "Bearer " + apiKey)
-                        .body(JSON.toJSONString(paramMap)).execute();
-                log.info("taskResponse: {}", taskResponse.body());
-                Map<String,String> taskMap = (Map<String, String>) JSON.parse(taskResponse.body());
-                String taskId = taskMap.get("task_id");
-                log.info("消息：{} 语音合成任务发送成功 taskId: {}",message, taskId);
-                return taskId;
-            }
+             HttpResponse taskResponse = HttpRequest.post("https://api.302ai.com/302/index_tts2/task")
+                     .header("Authorization", "Bearer " + apiKey)
+                     .body(JSON.toJSONString(paramMap)).execute();
+             log.info("taskResponse: {}", taskResponse.body());
+             Map<String,String> taskMap = (Map<String, String>) JSON.parse(taskResponse.body());
+             String taskId = taskMap.get("task_id");
+             log.info("消息：{} 语音合成任务发送成功 taskId: {}",message, taskId);
+             return taskId;
+         }
         
-            public String getResult(String taskId,String apiKey) throws Exception {
-                Map<String,String> resultMap = null;
-                for (int i = 0; i < 30; i++){
-                    HttpResponse response = HttpRequest
-                            .get("https://api.302ai.com/302/index_tts2/task")
-                            .header("Authorization", "Bearer " + apiKey)
-                            .form("task_id", taskId)
-                            .execute();
-                    log.info("taskId:{} 查询执行完毕 responseBody:{}", taskId,response.body());
+         public String getResult(String taskId,String apiKey) throws Exception {
+             Map<String,String> resultMap = null;
+             for (int i = 0; i < 30; i++){
+                 HttpResponse response = HttpRequest
+                         .get("https://api.302ai.com/302/index_tts2/task")
+                         .header("Authorization", "Bearer " + apiKey)
+                         .form("task_id", taskId)
+                         .execute();
+                 log.info("taskId:{} 查询执行完毕 responseBody:{}", taskId,response.body());
         
-                    resultMap = (Map<String, String>) JSON.parse(response.body());
-                    if (!resultMap.get("state").equals("SUCCESS")){
-                        if (resultMap.get("state").equals("FAILURE")){
-                            log.info("语音合成失败：{}", resultMap.get("message"));
-                            break;
-                        }
-                        log.info("taskId：{} 语音合成中 状态：{}", taskId, resultMap.get("state"));
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }else {
-                        log.info("taskId：{} 语音合成成功", taskId);
-                        break;
-                    }
-                }
-                return (String)resultMap.get("audio_url");
-            }
+                 resultMap = (Map<String, String>) JSON.parse(response.body());
+                 if (!resultMap.get("state").equals("SUCCESS")){
+                     if (resultMap.get("state").equals("FAILURE")){
+                         log.info("语音合成失败：{}", resultMap.get("message"));
+                         break;
+                     }
+                     log.info("taskId：{} 语音合成中 状态：{}", taskId, resultMap.get("state"));
+                     try {
+                         Thread.sleep(2000);
+                     } catch (InterruptedException e) {
+                         throw new RuntimeException(e);
+                     }
+                 }else {
+                     log.info("taskId：{} 语音合成成功", taskId);
+                     break;
+                 }
+             }
+             return (String)resultMap.get("audio_url");
+         }
         }
         """;
         Files.writeString(examplePath, content, StandardCharsets.UTF_8);
@@ -402,6 +401,41 @@ public class PluginManager {
             return Optional.of(sourcePath);
         }
         return Optional.empty();
+    }
+
+    /**
+     * 清理编译输出目录中的所有 class 文件
+     */
+    private void cleanClassDirectory() throws IOException {
+        Path classDir = Paths.get(pluginClassDir);
+        if (!Files.exists(classDir)) {
+            log.info("编译目录不存在，无需清理: {}", classDir);
+            return;
+        }
+
+        log.info("开始清理编译目录: {}", classDir.toAbsolutePath());
+
+        // 统计删除的文件数量
+        long deletedCount = 0;
+
+        try (Stream<Path> stream = Files.walk(classDir)) {
+            List<Path> classFiles = stream
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".class"))
+                    .collect(Collectors.toList());
+
+            for (Path classFile : classFiles) {
+                try {
+                    Files.delete(classFile);
+                    deletedCount++;
+                    log.debug("删除 class 文件: {}", classFile);
+                } catch (IOException e) {
+                    log.warn("删除文件失败: {}", classFile, e);
+                }
+            }
+        }
+
+        log.info("清理完成，共删除 {} 个 class 文件", deletedCount);
     }
 
 }

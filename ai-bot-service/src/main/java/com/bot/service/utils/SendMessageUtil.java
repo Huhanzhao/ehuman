@@ -1,6 +1,7 @@
 package com.bot.service.utils;
 
 import ch.qos.logback.core.util.StringUtil;
+import com.bot.plugin.PluginManager;
 import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
@@ -9,7 +10,6 @@ import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.service.TbUserReferAudioDoService;
-import com.bot.service.tts.PluginManager;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.common.utils.OneBotMedia;
 import com.mikuac.shiro.core.Bot;
@@ -36,7 +36,7 @@ public class SendMessageUtil {
 
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
-    private final String referAudioPath = "../../../plugin/TTS/audio/";
+    private final String referAudioPath = "../../../qq-bot-plugin/plugin/TTS/audio/";
 
     private final String outputPath = "/app/audio/output/";
 
@@ -104,7 +104,7 @@ public class SendMessageUtil {
                     enableAudioList.getFirst().getReferAudioUrl();
             resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,path,ttsModel.getApiKey());
         } catch (Exception e) {
-            throw new BusinessException("语音合成失败");
+            throw new BusinessException("语音合成失败" + e.getMessage());
         }
 
         String path = resultMap.get("path");

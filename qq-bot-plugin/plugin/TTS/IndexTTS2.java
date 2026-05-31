@@ -1,14 +1,10 @@
+package com.bot.plugin;
 
-
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson2.JSON;
-import com.bot.service.tts.TtsPlugin;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
