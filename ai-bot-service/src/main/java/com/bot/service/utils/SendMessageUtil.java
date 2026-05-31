@@ -53,7 +53,7 @@ public class SendMessageUtil {
             if (splitMessage.isEmpty()) continue;
             splitMessage  = splitMessage.replaceAll("。", "").trim();
             if (splitMessage.startsWith("<voice>") && splitMessage.endsWith("</voice>")){
-                sendVoiceMsg(userId,splitMessage.replaceAll("<voice>","").replaceAll("</voice>",""));
+                sendVoiceMsg(userId,splitMessage);
                 continue;
             }
             try {
