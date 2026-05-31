@@ -6,6 +6,7 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserReferAudioDo;
+import com.bot.service.enums.CustomActionPath;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
@@ -124,5 +125,12 @@ public class SendMessageUtil {
         // 发送消息 保存历史记录
         botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,build,false);
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(message));
+    }
+
+    public void forwardMsg(Long userId, String messageId){
+        // 通过机器人账号取出 Bot 对象
+        Long botId = Long.valueOf(System.getProperty("BOT_ID"));
+        Bot bot = botContainer.robots.get(botId);
+        bot.customRequest(CustomActionPath.FORWARD_MSG, Map.of("message_id",messageId,"user_id",userId));
     }
 }

@@ -5,6 +5,7 @@ import com.bot.service.utils.SendMessageUtil;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.core.Bot;
+import com.mikuac.shiro.core.BotContainer;
 import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +22,16 @@ public class TestPlugin extends BotPlugin{
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
+
+    @Autowired
+    private BotContainer botContainer;
+
     @PrivateMessageHandler
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
 //        log.info(event.getMessage());
-//        sendMessageUtil.sendVoiceMsg(2752662938L,event.getMessage());
+//        sendMessageUtil.forwardMsg(2752662938L,event.getMessage());
         return MESSAGE_IGNORE;
     }
 }
