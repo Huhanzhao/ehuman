@@ -34,7 +34,7 @@ public class ChatClientFactory {
     private TbChatConfigDoService tbChatConfigDoService;
 
     public ChatClient createChatClient(Long userId, NodeEnum nodeEnum) {
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, nodeEnum.getNodeNum());
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, nodeEnum);
         // 没有配置某节点模型 随便取一个模型
         if (modelConfigDo == null){
             List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);

@@ -37,7 +37,7 @@ public class ModelApiKeyNode implements AsyncNodeActionWithConfig, Interruptable
             sendMessageUtil.sendChatMsg(userId, "设置成功");
 
             // 把该节点的配置清空
-            tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(userId, modelConfigDo.getNodeEnum().getNodeNum());
+            tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(userId, modelConfigDo.getNodeEnum());
 
             // 插入数据
             tbUserModelConfigDoService.save(modelConfigDo);

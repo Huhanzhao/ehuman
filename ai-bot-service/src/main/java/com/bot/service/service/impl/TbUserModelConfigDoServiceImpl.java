@@ -4,10 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.enums.NodeEnum;
-import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.mapper.TbUserModelConfigDoMapper;
+import com.bot.service.service.TbUserModelConfigDoService;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Node;
 
 import java.util.List;
 
@@ -35,10 +34,10 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     }
 
     @Override
-    public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, Integer nodeNum) {
+    public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, NodeEnum nodeEnum) {
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getNodeEnum, NodeEnum.fromCode(nodeNum))
+                .eq(TbUserModelConfigDo::getNodeEnum, nodeEnum)
                 .one();
     }
 
@@ -60,11 +59,11 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     }
 
     @Override
-    public void clearNodeNumByUserIdAndNodeNum(Long userId, Integer nodeNum) {
+    public void clearNodeNumByUserIdAndNodeNum(Long userId,  NodeEnum nodeEnum) {
         lambdaUpdate()
                 .set(TbUserModelConfigDo::getNodeEnum, null)
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getNodeEnum, NodeEnum.fromCode(nodeNum))
+                .eq(TbUserModelConfigDo::getNodeEnum,  nodeEnum)
                 .update();
     }
 

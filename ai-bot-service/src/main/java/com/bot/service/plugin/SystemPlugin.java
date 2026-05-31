@@ -9,13 +9,13 @@ import com.bot.service.bean.SystemGraph;
 import com.bot.service.entity.TbChatConfigDo;
 import com.bot.service.entity.TbUserBotStatusDo;
 import com.bot.service.entity.TbUserModelConfigDo;
-import com.bot.service.entity.TbUserVoiceModelDo;
+import com.bot.service.entity.TbUserReferAudioDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbChatConfigDoService;
 import com.bot.service.service.TbUserBotStatusDoService;
 import com.bot.service.service.TbUserModelConfigDoService;
-import com.bot.service.service.TbUserVoiceModelDoService;
+import com.bot.service.service.TbUserReferAudioDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.common.utils.MsgUtils;
@@ -50,7 +50,7 @@ public class SystemPlugin extends BotPlugin {
     private  TbUserModelConfigDoService tbUserModelConfigDoService;
 
     @Autowired
-    private TbUserVoiceModelDoService tbUserVoiceModelDoService;
+    private TbUserReferAudioDoService tbUserReferAudioDoService;
 
     @Autowired
     private SystemGraph systemGraph;
@@ -95,7 +95,7 @@ public class SystemPlugin extends BotPlugin {
             String param = userInput.replace("#声音", "").trim();
             // 切换声音
             if (!param.isEmpty()) {
-                boolean success = tbUserVoiceModelDoService.switchVoiceModel(event.getUserId(), param);
+                boolean success = tbUserReferAudioDoService.switchVoiceModel(event.getUserId(), param);
                 if (success) {
                     bot.sendPrivateMsg(event.getUserId(), "已切换到声音模型：" + param, false);
                 } else {
@@ -104,14 +104,14 @@ public class SystemPlugin extends BotPlugin {
                 return MESSAGE_BLOCK;
             }
             // 查询声音列表
-            List<TbUserVoiceModelDo> voiceModels = tbUserVoiceModelDoService.getByUserId(event.getUserId());
+            List<TbUserReferAudioDo> voiceModels = tbUserReferAudioDoService.getByUserId(event.getUserId());
             if (voiceModels.isEmpty()) {
                 bot.sendPrivateMsg(event.getUserId(), "暂无声音模型", false);
                 return MESSAGE_BLOCK;
             }
             StringBuilder msg = new StringBuilder();
-            for (TbUserVoiceModelDo model : voiceModels) {
-                msg.append(model.getVoiceModelName());
+            for (TbUserReferAudioDo model : voiceModels) {
+                msg.append(model.getReferAudioName());
                 if (Boolean.TRUE.equals(model.getEnable())) {
                     msg.append(" [当前启用]");
                 }

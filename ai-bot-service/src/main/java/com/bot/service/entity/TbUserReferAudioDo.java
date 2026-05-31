@@ -1,19 +1,18 @@
 package com.bot.service.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-
-import java.util.Date;
-
 import com.bot.service.common.config.SqliteDateTypeHandler;
 import lombok.Data;
 
+import java.util.Date;
+
 /**
  * 
- * @TableName tb_user_voice_model
+ * @TableName tb_user_refer_audio
  */
-@TableName(value ="tb_user_voice_model")
+@TableName(value ="tb_user_refer_audio")
 @Data
-public class TbUserVoiceModelDo {
+public class TbUserReferAudioDo {
     /**
      * 主键
      */
@@ -26,14 +25,14 @@ public class TbUserVoiceModelDo {
     private Long userId;
 
     /**
-     * 声音模型id
+     * 声音模型url
      */
-    private String voiceModelUrl;
+    private String referAudioUrl;
 
     /**
      * 声音模型名字
      */
-    private String voiceModelName;
+    private String referAudioName;
 
     /**
      * 创建时间

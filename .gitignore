@@ -52,3 +52,4 @@ minio_data/**
 /sqlite/aiBot-local.db
 /plugin/classes/**/*.class
 /plugin/**/VoxCpm2.java
+/plugin/TTS/voice/output/*

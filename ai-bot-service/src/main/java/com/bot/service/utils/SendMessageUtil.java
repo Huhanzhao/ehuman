@@ -1,15 +1,24 @@
 package com.bot.service.utils;
 
+import ch.qos.logback.core.util.StringUtil;
+import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
+import com.bot.service.entity.TbUserModelConfigDo;
+import com.bot.service.entity.TbUserReferAudioDo;
+import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
+import com.bot.service.service.TbUserModelConfigDoService;
+import com.bot.service.service.TbUserReferAudioDoService;
 import com.bot.service.tts.PluginManager;
 import com.mikuac.shiro.common.utils.MsgUtils;
+import com.mikuac.shiro.common.utils.OneBotMedia;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -22,6 +31,10 @@ public class SendMessageUtil {
     private final PluginManager pluginManager;
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
+
+    private final TbUserModelConfigDoService tbUserModelConfigDoService;
+
+    private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
@@ -70,28 +83,41 @@ public class SendMessageUtil {
     }
 
     public void sendVoiceMsg(Long userId, String message){
-        // todo 查询当前启用的插件和声音url 如果插件返回的是本地目录，直接发送本地文件
+        // 查询当前启用的插件名字和参考声音url
+        TbUserModelConfigDo ttsModel = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.TTS);
+        List<TbUserReferAudioDo> enableAudioList = tbUserReferAudioDoService.getEnableReferAudioByUserId(userId);
+        if (enableAudioList.isEmpty()) {
+            log.error("no enable audio");
+            return;
+        }
+
         String splitMessage = "";
         splitMessage = message.replaceAll("<voice>","").replaceAll("</voice>","");
         Map<String,String> resultMap = null;
         try {
-//            resultMap = pluginManager.textToSpeech("IndexTTS2",message,"https://qq-bot-hhz.oss-cn-beijing.aliyuncs.com/%E5%A4%B9%E5%AD%90%E9%9F%B3%E9%9F%B3%E9%87%8F%E5%A2%9E%E5%BC%BA%E7%89%88.m4a","sk-GXqCEbErJlwrUYDwhMzrKhv4AxnIvpvSvEIkb1XBdkx3Ct2m");
-            resultMap = pluginManager.textToSpeech("VoxCpm2",message,"../../../plugin/TTS/voice/茉莉导航.m4a","sk-GXqCEbErJlwrUYDwhMzrKhv4AxnIvpvSvEIkb1XBdkx3Ct2m");
+            String path = StringUtil.isNullOrEmpty(enableAudioList.getFirst().getReferAudioUrl())?
+                    "../../../plugin/TTS/voice/" + enableAudioList.getFirst().getReferAudioName() :
+                    enableAudioList.getFirst().getReferAudioUrl();
+            resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,path,ttsModel.getApiKey());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new BusinessException("语音合成失败");
         }
-        String type = resultMap.get("type");
-        String result = resultMap.get("url");
-        String build = null;
-        if (type.equals("remote")){
-            build = MsgUtils.builder().voice(result).build();
-            // todo 加载本地路径
 
+        String path = resultMap.get("path");
+        String url = resultMap.get("url");
+        String build = null;
+        if (url != null && !url.isEmpty()){
+            build = MsgUtils.builder().voice(url).build();
+        }else if(path != null && !path.isEmpty()){
+            // 加载本地路径
+            build = MsgUtils.builder()
+                .voice(OneBotMedia.builder()
+                .file("file:///app/voice/output/" + path)).build();
         }else{
-            //        String  build = MsgUtils.builder()
-//                .voice(OneBotMedia.builder()
-//                        .file("file:///app/aaa.png")).build();
+            throw new BusinessException("插件输出错误");
         }
+
+        // 发送消息 保存历史记录
         botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,build,false);
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(message));
     }
