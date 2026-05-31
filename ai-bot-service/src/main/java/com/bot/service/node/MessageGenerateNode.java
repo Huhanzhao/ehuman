@@ -4,11 +4,10 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.util.DateUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.bot.service.common.entity.BusinessException;
 import com.bot.service.bean.ChatClientFactory;
+import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbBotLifeDetailDo;
-import com.bot.service.entity.TbUserBotStatusDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.FamiliarityEnum;
@@ -25,13 +24,14 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StopWatch;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -64,7 +64,7 @@ public class MessageGenerateNode implements NodeAction {
 
         String template = null;
         try {
-            template = Files.readString(Paths.get("ai-bot-service/md/MainPrompt.md"));
+            template = Files.readString(Paths.get("./md/MainPrompt.md"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

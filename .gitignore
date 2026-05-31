@@ -49,3 +49,6 @@ minio_data/**
 /ai-helper-user/cache/validator.bin
 /ai-bot-service/src/main/resources/application-local.yml
 /ai-bot-service/sqlite/aiBot-local.db
+/sqlite/aiBot-local.db
+/plugin/classes/**/*.class
+/plugin/**/VoxCpm2.java

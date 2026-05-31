@@ -1,7 +1,7 @@
 spring:
   datasource:
     # SQLite 数据库连接配置
-    url: jdbc:sqlite:ai-bot-service/sqlite/aiBot.db
+    url: jdbc:sqlite:./sqlite/aiBot.db
     driver-class-name: org.sqlite.JDBC
     # SQLite 不需要用户名和密码
     username:

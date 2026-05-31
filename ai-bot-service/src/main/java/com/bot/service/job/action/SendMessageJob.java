@@ -209,7 +209,7 @@ public class SendMessageJob implements Job {
 
         String template = null;
         try {
-            template = Files.readString(Paths.get("ai-bot-service/md/MainPrompt.md"));
+            template = Files.readString(Paths.get("./md/MainPrompt.md"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
