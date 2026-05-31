@@ -36,6 +36,10 @@ public class SendMessageUtil {
 
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
+    private final String referAudioPath = "../../../plugin/TTS/audio/";
+
+    private final String outputPath = "/app/audio/output/";
+
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
@@ -96,7 +100,7 @@ public class SendMessageUtil {
         Map<String,String> resultMap = null;
         try {
             String path = StringUtil.isNullOrEmpty(enableAudioList.getFirst().getReferAudioUrl())?
-                    "../../../plugin/TTS/voice/" + enableAudioList.getFirst().getReferAudioName() :
+                    referAudioPath + enableAudioList.getFirst().getReferAudioName() :
                     enableAudioList.getFirst().getReferAudioUrl();
             resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,path,ttsModel.getApiKey());
         } catch (Exception e) {
@@ -112,7 +116,7 @@ public class SendMessageUtil {
             // 加载本地路径
             build = MsgUtils.builder()
                 .voice(OneBotMedia.builder()
-                .file("file:///app/voice/output/" + path)).build();
+                .file("file://" + outputPath + path)).build();
         }else{
             throw new BusinessException("插件输出错误");
         }

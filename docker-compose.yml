@@ -1,17 +1,29 @@
 version: "3.9"
 services:
 
-  ai-bot-service:
-    build:
-      context: ./ai-bot-service
-      dockerfile: Dockerfile
-    container_name: ai-bot-service
+#  ai-bot-service:
+#    build:
+#      context: ./ai-bot-service
+#      dockerfile: Dockerfile
+#    container_name: ai-bot-service
+#    restart: always
+#    ports:
+#      - "8081:8081"
+#    volumes:
+#      - D:\Workspace\ideaspace\qq-ai-bot\plugin:/app/plugin
+
+  napcat:
+    image: mlikiowa/napcat-docker:latest
+    container_name: napcat
     restart: always
     ports:
-      - "8081:8081"
-#    depends_on:
-#      - redis
+      - "3000:3000"      # HTTP API
+      - "3001:3001"      # WebSocket
+      - "16099:6099"     # WebUI
+    volumes:
+      - D:\Workspace\ideaspace\qq-ai-bot\plugin\TTS\audio\output:/app/audio/output
+      # 【重要】建议添加以下持久化目录，避免每次重启重新登录
+      - napcat_config:/app/napcat/config         # NapCat 配置
 
-#volumes:
-#  mysql_data:
-#  redis_data:
+volumes:
+  napcat_config:

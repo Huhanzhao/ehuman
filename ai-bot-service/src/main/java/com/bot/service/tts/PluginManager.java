@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +30,13 @@ public class PluginManager {
     
     // 配置：编译输出目录
     private String pluginClassDir = "./plugin/classes";
+
+    // 配置：插件输出音频路径
+    private String pluginOurputDir = "./plugin/TTS/audio/output";
+
+    // 配置：插件参考音频路径
+    private String pluginReferAudioDir = "./plugin/TTS/audio";
+
     
     // 存储所有已加载的插件
     private final Map<String, TtsPlugin> plugins = new ConcurrentHashMap<>();
@@ -45,8 +53,8 @@ public class PluginManager {
         // 1. 创建目录
         createDirectories();
         
-        // todo 2. 创建示例插件
-//        createExamplePlugin();
+        // 2. 创建示例插件
+        createExamplePlugin();
         
         // 3. 加载所有插件
         loadAllPlugins();
@@ -60,55 +68,102 @@ public class PluginManager {
     private void createDirectories() throws IOException {
         Files.createDirectories(Paths.get(pluginSourceDir));
         Files.createDirectories(Paths.get(pluginClassDir));
+        Files.createDirectories(Paths.get(pluginOurputDir));
     }
     
     /**
      * 创建示例插件文件
      */
-//    private void createExamplePlugin() throws IOException {
-//        Path examplePath = Paths.get(pluginSourceDir, "ExamplePlugin.java");
-//        if (Files.exists(examplePath)) {
-//            return;
-//        }
-//
-//        String content = """
-//package com.user.plugins;
-//
-//import com.qqrobot.plugin.TtsPlugin;
-//
-//public class ExamplePlugin implements TtsPlugin {
-//
-//    @Override
-//    public String getName() {
-//        return "example";
-//    }
-//
-//    @Override
-//    public String submitTask(String text, String voice) throws Exception {
-//        System.out.println("【示例插件】提交任务: text=\"%s\", voice=\"%s\"".formatted(text, voice));
-//        // TODO: 在这里实现你的提交逻辑
-//        return "task_" + System.currentTimeMillis();
-//    }
-//
-//    @Override
-//    public String queryStatus(String taskId) throws Exception {
-//        System.out.println("【示例插件】查询状态: taskId=\"%s\"".formatted(taskId));
-//        // TODO: 在这里实现你的查询逻辑
-//        // 返回: "SUCCESS", "PROCESSING", "FAILED"
-//        return "SUCCESS";
-//    }
-//
-//    @Override
-//    public byte[] getAudio(String taskId) throws Exception {
-//        System.out.println("【示例插件】获取音频: taskId=\"%s\"".formatted(taskId));
-//        // TODO: 在这里实现你的获取音频逻辑
-//        return new byte[0];
-//    }
-//}
-//""";
-//        Files.writeString(examplePath, content, StandardCharsets.UTF_8);
-//        log.info("已创建示例插件: {}", examplePath.toAbsolutePath());
-//    }
+    private void createExamplePlugin() throws IOException {
+        Path examplePath = Paths.get(pluginSourceDir, "IndexTTS2.java");
+        if (Files.exists(examplePath)) {
+            return;
+        }
+
+        String content = """
+        import cn.hutool.core.io.FileUtil;
+        import cn.hutool.http.HttpRequest;
+        import cn.hutool.http.HttpResponse;
+        import com.alibaba.fastjson2.JSON;
+        import com.bot.service.tts.TtsPlugin;
+        import lombok.extern.slf4j.Slf4j;
+        
+        import java.net.InetSocketAddress;
+        import java.net.Proxy;
+        import java.util.HashMap;
+        import java.util.Map;
+        
+        @Slf4j
+        public class IndexTTS2 implements TtsPlugin {
+        
+            @Override
+            public String getName() {
+                return "IndexTTS2";
+            }
+        
+            @Override
+            public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey) throws Exception {
+                // 提交任务
+                String taskId = submitTask(text, referVoicePath,apiKey);
+        
+                // 获取结果
+                String resultPath = getResult(taskId,apiKey);
+        
+                // 本地录音 path传文件名（包括后缀）url传空字符串  公网url url传链接 path传空字符串
+                return Map.of("path","","url",resultPath);
+            }
+        
+            public String submitTask(String message, String voice,String apiKey) throws Exception {
+                Map<String,Object> paramMap = new HashMap();
+                paramMap.put("text", message);
+                paramMap.put("speaker_audio_url",voice);
+                paramMap.put("emotion_audio_url", voice);
+                paramMap.put("emotion_alpha", 1);
+        
+                HttpResponse taskResponse = HttpRequest.post("https://api.302ai.com/302/index_tts2/task")
+                        .header("Authorization", "Bearer " + apiKey)
+                        .body(JSON.toJSONString(paramMap)).execute();
+                log.info("taskResponse: {}", taskResponse.body());
+                Map<String,String> taskMap = (Map<String, String>) JSON.parse(taskResponse.body());
+                String taskId = taskMap.get("task_id");
+                log.info("消息：{} 语音合成任务发送成功 taskId: {}",message, taskId);
+                return taskId;
+            }
+        
+            public String getResult(String taskId,String apiKey) throws Exception {
+                Map<String,String> resultMap = null;
+                for (int i = 0; i < 30; i++){
+                    HttpResponse response = HttpRequest
+                            .get("https://api.302ai.com/302/index_tts2/task")
+                            .header("Authorization", "Bearer " + apiKey)
+                            .form("task_id", taskId)
+                            .execute();
+                    log.info("taskId:{} 查询执行完毕 responseBody:{}", taskId,response.body());
+        
+                    resultMap = (Map<String, String>) JSON.parse(response.body());
+                    if (!resultMap.get("state").equals("SUCCESS")){
+                        if (resultMap.get("state").equals("FAILURE")){
+                            log.info("语音合成失败：{}", resultMap.get("message"));
+                            break;
+                        }
+                        log.info("taskId：{} 语音合成中 状态：{}", taskId, resultMap.get("state"));
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }else {
+                        log.info("taskId：{} 语音合成成功", taskId);
+                        break;
+                    }
+                }
+                return (String)resultMap.get("audio_url");
+            }
+        }
+        """;
+        Files.writeString(examplePath, content, StandardCharsets.UTF_8);
+        log.info("已创建示例插件: {}", examplePath.toAbsolutePath());
+    }
     
     /**
      * 加载所有插件
