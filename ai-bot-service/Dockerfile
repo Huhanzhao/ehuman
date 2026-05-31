@@ -1,7 +1,4 @@
 FROM eclipse-temurin:21-jdk
-RUN apt-get update && apt-get install -y unzip
-RUN apt-get update && apt-get install -y unzip p7zip-full
-
 
 WORKDIR /app
 
