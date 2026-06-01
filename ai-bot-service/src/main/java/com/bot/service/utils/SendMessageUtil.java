@@ -69,8 +69,8 @@ public class SendMessageUtil {
             // 保持沉默的时候给自己发送
             if (splitMessage.startsWith("<silence>") && splitMessage.endsWith("</silence>")){
                 sendMegToSelf(msg);
-            }else{
-                bot.sendPrivateMsg(userId,msg,false);
+            }else if (splitMessage.startsWith("<text>") && splitMessage.endsWith("</text>")){
+                bot.sendPrivateMsg(userId,msg.replaceAll("<text>","").replaceAll("</text>",""),false);
             }
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessage));
         }

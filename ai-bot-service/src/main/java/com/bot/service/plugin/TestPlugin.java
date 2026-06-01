@@ -1,11 +1,9 @@
 package com.bot.service.plugin;
 
-import com.bot.service.bean.ChatClientFactory;
-import com.bot.service.utils.SendMessageUtil;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.core.Bot;
-import com.mikuac.shiro.core.BotContainer;
 import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +16,7 @@ import org.springframework.stereotype.Component;
 public class TestPlugin extends BotPlugin{
 
     @Autowired
-    private ChatClientFactory chatClientFactory;
-
-    @Autowired
-    private SendMessageUtil sendMessageUtil;
-
-    @Autowired
-    private BotContainer botContainer;
+    private CompiledGraph sendMessageCompiledGraph;
 
     @PrivateMessageHandler
     @MessageHandlerFilter
@@ -32,6 +24,7 @@ public class TestPlugin extends BotPlugin{
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
 //        log.info(event.getMessage());
 //        sendMessageUtil.forwardMsg(2752662938L,event.getMessage());
+
         return MESSAGE_IGNORE;
     }
 }

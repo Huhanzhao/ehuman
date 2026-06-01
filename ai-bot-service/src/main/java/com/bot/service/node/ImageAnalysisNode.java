@@ -10,7 +10,9 @@ import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserStickerMsgDo;
 import com.bot.service.enums.CustomActionPath;
 import com.bot.service.enums.NodeEnum;
+import com.bot.service.enums.PromptTypeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
+import com.bot.service.service.TbBotPromptDoService;
 import com.bot.service.service.TbUserStickerMsgDoService;
 import com.mikuac.shiro.core.BotContainer;
 import com.mikuac.shiro.dto.action.common.ActionData;
@@ -45,6 +47,9 @@ public class ImageAnalysisNode implements NodeAction {
 
     @Autowired
     private BotContainer botContainer;
+
+    @Autowired
+    private TbBotPromptDoService tbBotPromptDoService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -109,7 +114,8 @@ public class ImageAnalysisNode implements NodeAction {
                 LocalCache.getLocalCache().remove(userId + "_image");
             }
         }
-        return Map.of("userInput",userInput);
+        String target = tbBotPromptDoService.getContext(PromptTypeEnum.TARGET);
+        return Map.of("userInput",userInput,"target",target);
     }
 
     private String getImageMsgId(Long userId) {

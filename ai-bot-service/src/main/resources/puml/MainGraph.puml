@@ -12,19 +12,16 @@ circle start<<input>> as __START__
 circle stop as __END__
 usecase "authNode"<<Node>>
 usecase "imageAnalysisNode"<<Node>>
+package sendMessageCompiledGraph [
+{{
+circle " " as __START__
+circle exit as __END__
 usecase "userWantToNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
 usecase "botStatusSearchNode"<<Node>>
 usecase "memoryVectorSearchNode"<<Node>>
 usecase "graphSearchNode"<<Node>>
-hexagon "check state" as condition1<<Condition>>
-"__START__" -down-> "authNode"
-"authNode" .down.> "condition1"
-"condition1" .down.> "__END__": "false"
-'"authNode" .down.> "__END__": "false"
-"condition1" .down.> "imageAnalysisNode": "true"
-'"authNode" .down.> "imageAnalysisNode": "true"
-"imageAnalysisNode" -down-> "userWantToNode"
+"__START__" -down-> "userWantToNode"
 "userWantToNode" -down-> "botStatusSearchNode"
 "userWantToNode" -down-> "memoryVectorSearchNode"
 "userWantToNode" -down-> "graphSearchNode"
@@ -32,4 +29,15 @@ hexagon "check state" as condition1<<Condition>>
 "memoryVectorSearchNode" -down-> "messageGenerateNode"
 "graphSearchNode" -down-> "messageGenerateNode"
 "messageGenerateNode" -down-> "__END__"
+}}
+]
+hexagon "check state" as condition1<<Condition>>
+"__START__" -down-> "authNode"
+"authNode" .down.> "condition1"
+"condition1" .down.> "__END__": "false"
+'"authNode" .down.> "__END__": "false"
+"condition1" .down.> "imageAnalysisNode": "true"
+'"authNode" .down.> "imageAnalysisNode": "true"
+"imageAnalysisNode" -down-> "sendMessageCompiledGraph"
+"sendMessageCompiledGraph" -down-> "__END__"
 @enduml

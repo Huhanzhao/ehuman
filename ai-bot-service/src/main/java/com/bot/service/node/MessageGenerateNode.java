@@ -5,7 +5,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.fastjson2.util.DateUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.bean.ChatClientFactory;
-import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbBotLifeDetailDo;
 import com.bot.service.entity.TbUserInfoDo;
@@ -57,9 +56,6 @@ public class MessageGenerateNode implements NodeAction {
         Long userId = (Long)state.value("userId").orElse(0L);
         List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
                 tbAiChatMemoryService.getMessageList(userId, 15));
-        if (messageList.isEmpty()){
-            throw new BusinessException("用户输入读取失败");
-        }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
         String template = null;
@@ -73,6 +69,7 @@ public class MessageGenerateNode implements NodeAction {
         // 获取提示词变量
         Prompt prompt = promptTemplate.create(getPromptVariables(state));
 
+        log.info("提示词：{}" , prompt);
         String content = chatClient.prompt(prompt)
                     .messages(messageList).call().content();
         log.info("结果输出：{}" , content);
@@ -84,6 +81,7 @@ public class MessageGenerateNode implements NodeAction {
         // 获取bot状态
         Integer moodCode = (Integer)state.value("mood").orElse(0);
         Integer grace = (Integer)state.value("grace").orElse(0);
+        String target = (String) state.value("target").orElse("");
         String moodReason = (String)state.value("moodReason").orElse("");
         Integer familiarityScore = (Integer)state.value("familiarity").orElse(0);
         Long userId = (Long)state.value("userId").orElse(0L);
@@ -161,8 +159,6 @@ public class MessageGenerateNode implements NodeAction {
         String yesterdayChatSummary = yesterdaySummary != null ? yesterdaySummary.getSummary() : "无";
 
         String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
-
-        String target = tbBotPromptDoService.getContext(PromptTypeEnum.TARGET);
 
         return Map.of(
                 "botRole",botRole,

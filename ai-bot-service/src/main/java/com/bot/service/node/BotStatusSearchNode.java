@@ -59,7 +59,7 @@ public class BotStatusSearchNode implements NodeAction {
         MoodEnum currentMood = statusDo.getMoodEnum();
 
         String prompt = "你是一个心情分析专家，负责分析情绪陪伴机器人当前应该处于什么心情。\n\n" +
-                "## 心情选项\n" +
+                "## 心情选项\n" +  // todo 用户和你现在的关系
                 "0 - 平静：日常状态，没有明显情绪波动\n" +
                 "1 - 开心：遇到好事、收到关心、有趣的话题\n" +
                 "2 - 悲伤：受到委屈、想念、感伤的话题\n" +

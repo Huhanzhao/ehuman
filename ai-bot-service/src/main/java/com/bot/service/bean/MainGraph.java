@@ -5,7 +5,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.bot.service.node.*;
+import com.bot.service.node.AuthNode;
+import com.bot.service.node.ImageAnalysisNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -24,14 +25,9 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @RequiredArgsConstructor
 @Slf4j
 public class MainGraph {
-    private final MessageGenerateNode messageGenerateNode;
-    private final UserWantToNode userWantToNode;
     private final AuthNode authNode;
     private final ImageAnalysisNode imageAnalysisNode;
-    private final BotStatusSearchNode botStatusSearchNode;
-    private final MemoryVectorSearchNode memoryVectorSearchNode;
-    private final GraphSearchNode graphSearchNode;
-
+    private final CompiledGraph sendMessageCompiledGraph;
     @Bean("qqBotMainGraph")
     public CompiledGraph qqBotMainGraph() {
         // 配置 KeyStrategyFactory
@@ -48,26 +44,16 @@ public class MainGraph {
             stateGraph
                     .addNode("authNode", node_async(authNode))
                     .addNode("imageAnalysisNode", node_async(imageAnalysisNode))
-                    .addNode("userWantToNode", node_async(userWantToNode))
-                    .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
-                    .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
-                    .addNode("graphSearchNode", node_async(graphSearchNode))
+                    .addNode("sendMessageCompiledGraph", sendMessageCompiledGraph)
 
                     .addEdge(StateGraph.START, "authNode")
                     .addConditionalEdges("authNode", edge_async(state -> {
                                 return String.valueOf(state.value("auth", Boolean.class).orElse(false));}),
                     Map.of("true", "imageAnalysisNode",
                             "false", StateGraph.END))
-                    .addEdge("imageAnalysisNode", "userWantToNode")
-                    .addEdge("userWantToNode", "botStatusSearchNode")
-                    .addEdge("userWantToNode", "memoryVectorSearchNode")
-                    .addEdge("userWantToNode", "graphSearchNode")
-                    .addEdge("botStatusSearchNode", "messageGenerateNode")
-                    .addEdge("memoryVectorSearchNode", "messageGenerateNode")
-                    .addEdge("graphSearchNode", "messageGenerateNode")
+                    .addEdge("imageAnalysisNode", "sendMessageCompiledGraph")
                     // todo bot状态节点？ 异步修改心情
-                    .addEdge("messageGenerateNode", StateGraph.END);
+                    .addEdge("sendMessageCompiledGraph", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();

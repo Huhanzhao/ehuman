@@ -9,6 +9,7 @@ import com.bot.service.enums.PromptTypeEnum;
 import com.bot.service.job.JobManager;
 import com.bot.service.service.TbBotLifeDetailDoService;
 import com.bot.service.service.TbBotPromptDoService;
+import com.bot.service.service.TbUserBotStatusDoService;
 import com.bot.service.service.TbUserMessageSummaryDoService;
 import com.bot.service.utils.SendMessageUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,9 @@ public class BotLifeDetailCreateJob implements Job {
 
     @Autowired
     private TbBotPromptDoService tbBotPromptDoService;
+
+    @Autowired
+    private TbUserBotStatusDoService tbUserBotStatusDoService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
@@ -139,7 +143,7 @@ public class BotLifeDetailCreateJob implements Job {
 
         String evalPrompt = "你是一个情绪陪伴暧昧机器人的生活规划助手。\n" +
                 "以下是你今天的虚拟生活细节安排：\n" + detailList +
-                "\n请判断每条生活细节是否适合主动给用户发消息分享（分享日常、简单问好、表达想念等都算）。\n" +
+                "\n请选出最多 5 条最适合主动给用户发消息的生活细节分享（分享日常、简单问好、表达想念等都算）。避免太早或者太晚的时间\n" +
                 "判断标准：\n" +
                 "- 适合分享的日常（做饭、出门、有趣的活动、吃饭、学习等）\n" +
                 "- 太私密或无聊的细节不适合分享（睡觉、上厕所、发呆等）\n\n" +
