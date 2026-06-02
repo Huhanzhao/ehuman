@@ -8,6 +8,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum NodeEnum {
 
+    DISABLE("disable",0),
     WANT_TO("UserWantToNode",1),
     MOOD("BotStatusSearchNode",2),
     GENERATE("MessageGenerateNode",3),

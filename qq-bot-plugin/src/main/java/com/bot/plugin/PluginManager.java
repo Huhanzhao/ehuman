@@ -31,9 +31,6 @@ public class PluginManager {
     // 配置：编译输出目录
     private String pluginClassDir = "./qq-bot-plugin/plugin/classes";
 
-    // 配置：插件输出音频路径
-    private String pluginOurputDir = "./qq-bot-plugin/plugin/TTS/audio/output";
-
     // 配置：插件参考音频路径
     private String pluginReferAudioDir = "./qq-bot-plugin/plugin/TTS/audio";
 
@@ -71,7 +68,7 @@ public class PluginManager {
     private void createDirectories() throws IOException {
         Files.createDirectories(Paths.get(pluginSourceDir));
         Files.createDirectories(Paths.get(pluginClassDir));
-        Files.createDirectories(Paths.get(pluginOurputDir));
+        Files.createDirectories(Paths.get(pluginReferAudioDir));
     }
     
     /**

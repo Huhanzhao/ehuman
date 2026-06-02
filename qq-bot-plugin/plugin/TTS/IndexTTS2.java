@@ -24,8 +24,8 @@ public class IndexTTS2 implements TtsPlugin {
         // 获取结果
         String resultPath = getResult(taskId,apiKey);
 
-        // 本地录音 path传文件名（包括后缀）url传空字符串  公网url url传链接 path传空字符串
-        return Map.of("path","","url",resultPath);
+        // 公网url url传链接 base64传空字符串
+        return Map.of("base64","","url",resultPath);
     }
 
     public String submitTask(String message, String voice,String apiKey) throws Exception {

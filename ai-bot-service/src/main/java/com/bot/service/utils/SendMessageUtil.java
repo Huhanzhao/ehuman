@@ -20,6 +20,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -52,7 +54,7 @@ public class SendMessageUtil {
         for (String splitMessage : splitMessages) {
             if (splitMessage.isEmpty()) continue;
             splitMessage  = splitMessage.replaceAll("。", "").trim();
-            if (splitMessage.startsWith("<voice>") && splitMessage.endsWith("</voice>")){
+            if (splitMessage.startsWith("<voice") && splitMessage.endsWith("</voice>")){
                 sendVoiceMsg(userId,splitMessage);
                 continue;
             }
@@ -95,8 +97,17 @@ public class SendMessageUtil {
             return;
         }
 
-        String splitMessage = "";
-        splitMessage = message.replaceAll("<voice>","").replaceAll("</voice>","");
+        String splitMessage = message;
+        // 匹配 <voice tone="xxx">content</voice>
+        Pattern pattern = Pattern.compile("<voice\\s+tone=\"([^\"]+)\">(.*?)</voice>");
+        Matcher matcher = pattern.matcher(message);
+        if (matcher.find()) {
+            splitMessage = matcher.group(2);
+            if (ttsModel.getModel().equals("MimoTTS")) {
+                splitMessage = "(" + matcher.group(1) + ")" +matcher.group(2);
+            }
+        }
+
         Map<String,String> resultMap = null;
         try {
             resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,enableAudioList.getFirst().getReferAudioUrl(),ttsModel.getApiKey(),referAudioPath + enableAudioList.getFirst().getReferAudioName());
@@ -104,16 +115,16 @@ public class SendMessageUtil {
             throw new BusinessException("语音合成失败" + e.getMessage());
         }
 
-        String path = resultMap.get("path");
+        String base64 = resultMap.get("base64");
         String url = resultMap.get("url");
         String build = null;
         if (url != null && !url.isEmpty()){
             build = MsgUtils.builder().voice(url).build();
-        }else if(path != null && !path.isEmpty()){
+        }else if(base64 != null && !base64.isEmpty()){
             // 加载本地路径
             build = MsgUtils.builder()
                 .voice(OneBotMedia.builder()
-                .file("file://" + outputPath + path)).build();
+                .file("base64://" + base64)).build();
         }else{
             throw new BusinessException("插件输出错误");
         }

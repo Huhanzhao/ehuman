@@ -21,7 +21,6 @@ services:
       - "3001:3001"      # WebSocket
       - "16099:6099"     # WebUI
     volumes:
-      - D:\Workspace\ideaspace\qq-ai-bot\qq-bot-plugin\plugin\TTS\audio\output:/app/audio/output
       # 【重要】建议添加以下持久化目录，避免每次重启重新登录
       - napcat_config:/app/napcat/config         # NapCat 配置
 
