@@ -1,6 +1,5 @@
 package com.bot.service.utils;
 
-import ch.qos.logback.core.util.StringUtil;
 import com.bot.plugin.PluginManager;
 import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
@@ -100,10 +99,7 @@ public class SendMessageUtil {
         splitMessage = message.replaceAll("<voice>","").replaceAll("</voice>","");
         Map<String,String> resultMap = null;
         try {
-            String path = StringUtil.isNullOrEmpty(enableAudioList.getFirst().getReferAudioUrl())?
-                    referAudioPath + enableAudioList.getFirst().getReferAudioName() :
-                    enableAudioList.getFirst().getReferAudioUrl();
-            resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,path,ttsModel.getApiKey());
+            resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,enableAudioList.getFirst().getReferAudioUrl(),ttsModel.getApiKey(),referAudioPath + enableAudioList.getFirst().getReferAudioName());
         } catch (Exception e) {
             throw new BusinessException("语音合成失败" + e.getMessage());
         }

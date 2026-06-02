@@ -54,6 +54,7 @@ public class MessageGenerateNode implements NodeAction {
     @Override
     public Map<String, Object> apply(OverAllState state) {
         Long userId = (Long)state.value("userId").orElse(0L);
+        Boolean initiative = (Boolean)state.value("initiative").orElse(false);
         List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
                 tbAiChatMemoryService.getMessageList(userId, 15));
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
@@ -70,8 +71,14 @@ public class MessageGenerateNode implements NodeAction {
         Prompt prompt = promptTemplate.create(getPromptVariables(state));
 
         log.info("提示词：{}" , prompt);
-        String content = chatClient.prompt(prompt)
-                    .messages(messageList).call().content();
+        ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt(prompt)
+                .messages(messageList);
+        String content = null;
+        if ( initiative){
+            content = chatClientRequestSpec.user("请根据提示生成消息").call().content();
+        }else{
+            content = chatClientRequestSpec.call().content();
+        }
         log.info("结果输出：{}" , content);
         sendMessageUtil.sendChatMsg(userId,content);
         return Map.of();

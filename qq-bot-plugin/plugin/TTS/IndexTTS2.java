@@ -17,7 +17,7 @@ public class IndexTTS2 implements TtsPlugin {
     }
 
     @Override
-    public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey) throws Exception {
+    public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey,String localPath) throws Exception {
         // 提交任务
         String taskId = submitTask(text, referVoicePath,apiKey);
 

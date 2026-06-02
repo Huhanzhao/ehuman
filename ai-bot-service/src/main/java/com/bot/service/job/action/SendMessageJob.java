@@ -51,7 +51,7 @@ public class SendMessageJob implements Job {
         }
 
         Date threeDaysAgo = Date.from(LocalDate.now().minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date tenMinutesAgo = new Date(System.currentTimeMillis() - 10 * 60 * 1000);
+//        Date tenMinutesAgo = new Date(System.currentTimeMillis() - 10 * 60 * 1000);
 
         for (TbUserBotStatusDo status : allStatus) {
             Long userId = status.getUserId();
@@ -69,23 +69,22 @@ public class SendMessageJob implements Job {
             }
 
             // 十分钟内有对话则跳过
-            long recentTenMinCount = tbAiChatMemoryService.count(
-                    Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                            .eq(TbAiChatMemoryDo::getMemoryId, userId)
-                            .ge(TbAiChatMemoryDo::getCreateTime, tenMinutesAgo)
-            );
-            if (recentTenMinCount > 0) {
-                log.info("用户{}十分钟内有对话，跳过主动消息", userId);
-                continue;
-            }
+//            long recentTenMinCount = tbAiChatMemoryService.count(
+//                    Wrappers.<TbAiChatMemoryDo>lambdaQuery()
+//                            .eq(TbAiChatMemoryDo::getMemoryId, userId)
+//                            .ge(TbAiChatMemoryDo::getCreateTime, tenMinutesAgo)
+//            );
+//            if (recentTenMinCount > 0) {
+//                log.info("用户{}十分钟内有对话，跳过主动消息", userId);
+//                continue;
+//            }
 
             String target = """
             ## 目标：请基于你当前在做的事情和状态还有历史消息，生成一条主动发给用户的自然消息,一行或者两行。
+            不要太突兀，要与上下文相和谐
             1. 可以分享正在做的事、表达想念、撒娇、问好等。
-            2. 根据状态使用标签生成语音，或者拒绝发送,也可以生成普通文字消息
-            3. 如果用户多次不回复，可以生成<silence></silence>消息拒绝主动发消息
             """;
-            sendMessageCompiledGraph.invoke(Map.of("userId", userId, "target", target));
+            sendMessageCompiledGraph.invoke(Map.of("userId", userId, "target", target, "initiative", true));
         }
 
         // 执行完毕删除任务

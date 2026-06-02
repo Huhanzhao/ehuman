@@ -314,10 +314,10 @@ public class PluginManager {
     /**
      * 调用插件方法 - 提交任务
      */
-    public Map<String, String> textToSpeech(String pluginName, String text, String voice,String apiKey) throws Exception {
+    public Map<String, String> textToSpeech(String pluginName, String text, String voice,String apiKey,String localPath) throws Exception {
         TtsPlugin plugin = getPlugin(pluginName);
         log.info("调用插件 [{}].submitTask: text={}", pluginName, text);
-        return plugin.textToSpeech(text, voice,apiKey);
+        return plugin.textToSpeech(text, voice,apiKey,localPath);
     }
 
     /**
