@@ -119,7 +119,7 @@ public class BotLifeDetailCreateJob implements Job {
                 log.info("已保存{}条生活细节", details.size());
 
                 // 评估哪些生活细节值得主动分享给用户
-                evaluateAndScheduleMessages(botId, details);
+                evaluateAndScheduleMessages(userId, details);
             }
         } catch (Exception e) {
             log.error("生成生活细节失败", e);
@@ -131,7 +131,7 @@ public class BotLifeDetailCreateJob implements Job {
         }
     }
 
-    private void evaluateAndScheduleMessages(Long botId, List<TbBotLifeDetailDo> details) {
+    private void evaluateAndScheduleMessages(Long userId, List<TbBotLifeDetailDo> details) {
         StringBuilder detailList = new StringBuilder();
         for (int i = 0; i < details.size(); i++) {
             TbBotLifeDetailDo d = details.get(i);
@@ -152,7 +152,7 @@ public class BotLifeDetailCreateJob implements Job {
                 "不要输出其他内容。";
 
         try {
-            ChatClient evalClient = chatClientFactory.createChatClient(botId, NodeEnum.WANT_TO);
+            ChatClient evalClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
             String evalResult = evalClient.prompt(evalPrompt).call().content();
             log.info("生活细节主动消息评估结果:\n{}", evalResult);
 
