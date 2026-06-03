@@ -106,8 +106,9 @@ public class BotLifeDetailCreateJob implements Job {
                 "08:00-08:30: 和室友去食堂吃早餐";
 
         try {
-            // 使用botId作为userId来获取chatClient
-            ChatClient chatClient = chatClientFactory.createChatClient(botId, NodeEnum.WANT_TO);
+            // 使用userId来获取chatClient
+            Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
+            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
             String content = chatClient.prompt(prompt).call().content();
             log.info("AI生成的生活细节:\n{}", content);
 
