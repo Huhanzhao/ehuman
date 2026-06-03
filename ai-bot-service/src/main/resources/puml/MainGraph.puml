@@ -18,6 +18,7 @@ circle " " as __START__
 circle exit as __END__
 usecase "userWantToNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
+usecase "transformTagMessageNode"<<Node>>
 usecase "botStatusSearchNode"<<Node>>
 usecase "memoryVectorSearchNode"<<Node>>
 usecase "graphSearchNode"<<Node>>
@@ -28,16 +29,17 @@ usecase "graphSearchNode"<<Node>>
 "botStatusSearchNode" -down-> "messageGenerateNode"
 "memoryVectorSearchNode" -down-> "messageGenerateNode"
 "graphSearchNode" -down-> "messageGenerateNode"
-"messageGenerateNode" -down-> "__END__"
+"messageGenerateNode" -down-> "transformTagMessageNode"
+"transformTagMessageNode" -down-> "__END__"
 }}
 ]
 hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
-"condition1" .down.> "imageAnalysisNode": "true"
-'"authNode" .down.> "imageAnalysisNode": "true"
 "condition1" .down.> "__END__": "false"
 '"authNode" .down.> "__END__": "false"
+"condition1" .down.> "imageAnalysisNode": "true"
+'"authNode" .down.> "imageAnalysisNode": "true"
 "imageAnalysisNode" -down-> "sendMessageCompiledGraph"
 "sendMessageCompiledGraph" -down-> "__END__"
 @enduml

@@ -151,7 +151,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
                 "评估维度：聊天频率、态度友好程度、话题积极性、互动质量。\n" +
                 "2. 聊天总结：用简洁的语言总结今天的聊天内容（100字左右），不要忽略主要情节，例如：与用户讨论电影情节...用户嫌弃ai太笨...晚上互道晚安然后睡觉。\n" +
                 "3. 用户画像更新：分析聊天记录中是否有值得补充的用户画像信息（如性格特点、兴趣爱好、职业、年龄、习惯偏好等）。" +
-                "如果已有画像信息，只输出需要新增或修改的部分；如果没有新信息则输出\"无\"。\n" +
+                "如果已有画像信息，把需要新增的画像信息和原来整理在一起；如果没有新信息则输出原来信息即可。\n" +
                 userInfoSection +
                 "\n今天用户的聊天记录如下：\n" + chatLog +
                 "\n请严格按以下格式输出，不要输出其他内容：\n" +
@@ -202,10 +202,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
         Pattern userInfoPattern = Pattern.compile("画像[:：]\\s*(.+)");
         Matcher userInfoMatcher = userInfoPattern.matcher(content);
         if (userInfoMatcher.find()) {
-            String raw = userInfoMatcher.group(1).trim();
-            if (!raw.equals("无")) {
-                userInfo = raw;
-            }
+            userInfo = userInfoMatcher.group(1).trim();
         }
 
         return new AiEvaluation(delta, reason, summary, userInfo);
@@ -214,9 +211,9 @@ public class UserInfoAndGraceUpdateJob implements Job {
     private void saveOrUpdateUserInfo(Long userId, String newInfo) {
         List<TbUserInfoDo> existingList = tbUserInfoDoService.getUserInfoByUserId(userId);
         if (existingList != null && !existingList.isEmpty()) {
-            // 已有记录，追加更新
+            // 已有记录，更新
             TbUserInfoDo existing = existingList.getFirst();
-            existing.setUserInfo(existing.getUserInfo() + "；" + newInfo);
+            existing.setUserInfo(newInfo);
             tbUserInfoDoService.updateById(existing);
         } else {
             // 新建记录

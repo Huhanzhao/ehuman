@@ -80,8 +80,7 @@ public class MessageGenerateNode implements NodeAction {
             content = chatClientRequestSpec.call().content();
         }
         log.info("结果输出：{}" , content);
-        sendMessageUtil.sendChatMsg(userId,content);
-        return Map.of();
+        return Map.of("generateMessage", content);
     }
 
     private Map getPromptVariables(OverAllState state) {
@@ -140,11 +139,11 @@ public class MessageGenerateNode implements NodeAction {
                         .eq(TbAiChatMemoryDo::getMemoryId, userId)
                         .eq(TbAiChatMemoryDo::getRole, "user")
                         .orderByDesc(TbAiChatMemoryDo::getCreateTime)
-                        .last("limit 1")
+                        .last("LIMIT 1 OFFSET 1")
         );
         String lastMessageTime = "";
         if (lastUserMessage != null && lastUserMessage.getCreateTime() != null) {
-            lastMessageTime = "用户最后一条消息是" + DateUtils.format(lastUserMessage.getCreateTime(), "MM月dd日 HH:mm");
+            lastMessageTime = "用户上一条消息是" + DateUtils.format(lastUserMessage.getCreateTime(), "MM月dd日 HH:mm");
         }
 
         // 构建时间信息

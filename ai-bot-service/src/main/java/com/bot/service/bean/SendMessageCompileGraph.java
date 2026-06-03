@@ -27,6 +27,7 @@ public class SendMessageCompileGraph {
     private final BotStatusSearchNode botStatusSearchNode;
     private final MemoryVectorSearchNode memoryVectorSearchNode;
     private final GraphSearchNode graphSearchNode;
+    private final TransformTagMessageNode transformTagMessageNode;
 
     @Bean("sendMessageCompiledGraph")
     public CompiledGraph getSendMessageGraph() {
@@ -44,6 +45,7 @@ public class SendMessageCompileGraph {
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
+                    .addNode("transformTagMessageNode", node_async(transformTagMessageNode))
                     .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(graphSearchNode))
@@ -56,7 +58,8 @@ public class SendMessageCompileGraph {
                     .addEdge("memoryVectorSearchNode", "messageGenerateNode")
                     .addEdge("graphSearchNode", "messageGenerateNode")
                     // todo bot状态节点？ 异步修改心情
-                    .addEdge("messageGenerateNode", StateGraph.END);
+                    .addEdge("messageGenerateNode", "transformTagMessageNode")
+                    .addEdge("transformTagMessageNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();
