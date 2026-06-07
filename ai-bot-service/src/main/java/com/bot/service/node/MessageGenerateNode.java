@@ -6,7 +6,6 @@ import com.alibaba.fastjson2.util.DateUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.entity.TbAiChatMemoryDo;
-import com.bot.service.entity.TbBotLifeDetailDo;
 import com.bot.service.entity.TbUserInfoDo;
 import com.bot.service.entity.TbUserMessageSummaryDo;
 import com.bot.service.enums.FamiliarityEnum;
@@ -116,13 +115,7 @@ public class MessageGenerateNode implements NodeAction {
 
         // 查询bot当前正在做的事
         Date now = new Date();
-        TbBotLifeDetailDo currentLife = tbBotLifeDetailDoService.getOne(
-                Wrappers.<TbBotLifeDetailDo>lambdaQuery()
-                        .le(TbBotLifeDetailDo::getStartTime, now)
-                        .ge(TbBotLifeDetailDo::getEndTime, now)
-                        .last("limit 1")
-        );
-        String lifeDetail = currentLife != null ? currentLife.getDetail() : "";
+        String lifeDetail = tbBotLifeDetailDoService.getCurrentActivity(Long.valueOf(System.getProperty("BOT_ID")));
 
         // 查询加上好友的天数（从第一条消息开始算）
         TbAiChatMemoryDo firstMessage = tbAiChatMemoryService.getOne(
