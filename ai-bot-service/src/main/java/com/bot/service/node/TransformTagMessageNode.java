@@ -48,6 +48,7 @@ public class TransformTagMessageNode implements NodeAction {
                 3. 语音和文本不要来回穿插太规律
                 4. 检查以上要求，如果格式符合要求不做修改。 不符合要求请转换成要求格式，超过三条只保留重点的三条
                 5. 只输出标签不要输出其他的
+                6. 标签里面的文本不能有换行符
                 """).build();
         Prompt prompt = promptTemplate.create(Map.of("generateMessage",generateMessage,"memoryString",memoryString));
         log.info("消息格式调整提示词：{}" , prompt);

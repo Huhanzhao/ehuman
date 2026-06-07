@@ -7,16 +7,21 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MemoryCastUtils {
 
     public static String memoryCastToString(List<TbAiChatMemoryDo> memoryDoList) {
         StringBuilder result = new StringBuilder();
+        List<TbAiChatMemoryDo> userMessages = memoryDoList.stream().filter(memoryDo -> "user".equals(memoryDo.getRole())).toList();
         memoryDoList.forEach(memoryDo -> {
             result.append("assistant".equals(memoryDo.getRole())? "ai" : "user").append(": ").append(memoryDo.getMessage())
                     .append(" sendTime:").append(DateUtils.format(memoryDo.getCreateTime(), "yyyy-MM-dd HH:mm:ss"))
                     .append("\n");
         });
+        if (userMessages.isEmpty()) {
+            result.append("system: 用户一直没有回复你的消息");
+        }
         return result.toString();
     }
 
@@ -29,6 +34,6 @@ public class MemoryCastUtils {
                 message =  new AssistantMessage(memoryDo.getMessage());
             }
             return message;
-        }).toList();
+        }). collect(Collectors.toList());
     }
 }

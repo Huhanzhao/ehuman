@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
@@ -57,6 +59,10 @@ public class MessageGenerateNode implements NodeAction {
         Boolean initiative = (Boolean)state.value("initiative").orElse(false);
         List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
                 tbAiChatMemoryService.getMessageList(userId, 15));
+        List<Message> userMessageList = messageList.stream().filter(message -> MessageType.USER.equals(message.getMessageType())).toList();
+        if (userMessageList.isEmpty()){
+            messageList.add(new SystemMessage("[旁白： 用户一直没有回复你的消息]"));
+        }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
         String template = null;
@@ -74,8 +80,8 @@ public class MessageGenerateNode implements NodeAction {
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt(prompt)
                 .messages(messageList);
         String content = null;
-        if ( initiative){
-            content = chatClientRequestSpec.user("请根据提示生成消息").call().content();
+        if (initiative){
+            content = chatClientRequestSpec.user("这条消息是你主动给用户发送的消息，不是用户主动给你发送的消息").call().content();
         }else{
             content = chatClientRequestSpec.call().content();
         }
