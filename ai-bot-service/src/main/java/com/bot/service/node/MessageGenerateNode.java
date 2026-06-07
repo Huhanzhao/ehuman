@@ -60,8 +60,9 @@ public class MessageGenerateNode implements NodeAction {
         List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
                 tbAiChatMemoryService.getMessageList(userId, 15));
         List<Message> userMessageList = messageList.stream().filter(message -> MessageType.USER.equals(message.getMessageType())).toList();
+        String userMessageStatusString = tbAiChatMemoryService.getLastUserMessage(userId);
         if (userMessageList.isEmpty()){
-            messageList.add(new SystemMessage("[旁白： 用户一直没有回复你的消息]"));
+            messageList.add(new SystemMessage("[旁白： 用户一直没有回复你的消息 " + userMessageStatusString + "]"));
         }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
@@ -140,22 +141,12 @@ public class MessageGenerateNode implements NodeAction {
         }
 
         // 查询最后一条用户消息的时间
-        TbAiChatMemoryDo lastUserMessage = tbAiChatMemoryService.getOne(
-                Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                        .eq(TbAiChatMemoryDo::getMemoryId, userId)
-                        .eq(TbAiChatMemoryDo::getRole, "user")
-                        .orderByDesc(TbAiChatMemoryDo::getCreateTime)
-                        .last("LIMIT 1 OFFSET 1")
-        );
-        String lastMessageTime = "";
-        if (lastUserMessage != null && lastUserMessage.getCreateTime() != null) {
-            lastMessageTime = "用户上一条消息是" + DateUtils.format(lastUserMessage.getCreateTime(), "MM月dd日 HH:mm");
-        }
+        String lastUserMessage = tbAiChatMemoryService.getLastUserMessage(userId);
 
         // 构建时间信息
         String currentTime = "今天是" + DateUtils.format(now, "yyyy年") + LocalDateTime.now().getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.CHINA)
                 + "，今天是" + DateUtils.format(now, "MM月dd日 HH:mm")
-                + (lastMessageTime.isEmpty() ? "" : "，" + lastMessageTime);
+                + lastUserMessage;
 
         // 查询昨天的聊天总结
         LocalDateTime yesterdayStart = LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
