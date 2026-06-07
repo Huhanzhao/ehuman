@@ -53,6 +53,8 @@ public class MessageGenerateNode implements NodeAction {
 
     private final TbBotPromptDoService tbBotPromptDoService;
 
+    private final TbUserStickerMsgDoService tbUserStickerMsgDoService;
+
     @Override
     public Map<String, Object> apply(OverAllState state) {
         Long userId = (Long)state.value("userId").orElse(0L);
@@ -163,6 +165,8 @@ public class MessageGenerateNode implements NodeAction {
             state.input(Map.of("reTry", 1));
         }
 
+        String stickerTypes = tbUserStickerMsgDoService.getAllStickerType(Long.valueOf(System.getProperty("BOT_ID")));
+
         Map<String, String> resultMap = new HashMap<>();
         resultMap.put("botRole", botRole);
         resultMap.put("target", target);
@@ -174,10 +178,11 @@ public class MessageGenerateNode implements NodeAction {
         resultMap.put("userInfo", userInfoList.isEmpty() ? "无" : userInfoList.getFirst());
         resultMap.put("yesterdayChatSummary", yesterdayChatSummary);
         resultMap.put("daysTogether", daysInfo);
+        resultMap.put("stickerTypes", stickerTypes);
         if (reTry > 0){
             resultMap.put("reTry", "系统信息：这是第" + (reTry + 1) + "次为本轮生成消息\n " +
                     "前面生成的消息审核失败的原因："
-                    + state.value("failReason").orElse("无")
+                    + state.value("failReason").orElse(null)
                     + "\n 请避免这些原因 按照要求重新为本次会话生成消息"
             );
         }else{

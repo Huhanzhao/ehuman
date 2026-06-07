@@ -10,4 +10,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbUserStickerMsgDoService extends IService<TbUserStickerMsgDo> {
 
+    String getAllStickerType(Long botId);
+
+    TbUserStickerMsgDo getStickerMsgId(String stickerType);
 }

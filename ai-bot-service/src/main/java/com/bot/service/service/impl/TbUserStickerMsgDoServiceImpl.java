@@ -2,9 +2,11 @@ package com.bot.service.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bot.service.entity.TbUserStickerMsgDo;
-import com.bot.service.service.TbUserStickerMsgDoService;
 import com.bot.service.mapper.TbUserStickerMsgDoMapper;
+import com.bot.service.service.TbUserStickerMsgDoService;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
 * @author Lenovo
@@ -15,6 +17,19 @@ import org.springframework.stereotype.Service;
 public class TbUserStickerMsgDoServiceImpl extends ServiceImpl<TbUserStickerMsgDoMapper, TbUserStickerMsgDo>
     implements TbUserStickerMsgDoService{
 
+    @Override
+    public String getAllStickerType(Long botId) {
+        List<String> list = lambdaQuery().list().stream().map(TbUserStickerMsgDo::getEmo).distinct().toList();
+        return String.join(",", list);
+    }
+
+    @Override
+    public TbUserStickerMsgDo getStickerMsgId(String stickerType) {
+        return lambdaQuery()
+                .eq(TbUserStickerMsgDo::getEmo, stickerType)
+                .last("ORDER BY RANDOM() LIMIT 1")
+                .one();
+    }
 }
 
 

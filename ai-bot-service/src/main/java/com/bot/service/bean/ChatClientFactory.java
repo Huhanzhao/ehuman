@@ -79,7 +79,8 @@ public class ChatClientFactory {
                 .model(modelConfigDo.getModel())
                 .temperature(chatConfigDo == null? 0.5:chatConfigDo.getTemperature())
                 .maxCompletionTokens(1024)
-                .extraBody(Map.of("chat_template_kwargs", Map.of("enable_thinking", false)))
+                .extraBody(Map.of("thinking", Map.of("type", "enabled")))
+                // {"thinking": {"type": "enabled/disabled"}}
 //                .topP(1.0) // 模型选词自由度
 //                .presencePenalty(1.0) // 模型换词、换说法
 //                .maxTokens(1024)

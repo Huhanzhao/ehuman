@@ -79,31 +79,31 @@ public class ImageAnalysisNode implements NodeAction {
                     本次消息的String格式：""" + userInput + """
                     
                     ## 要求：
-                       1. 简短描述图片内容，内容用<image></image> 标签包裹
-                       2. 判断图片是否为表情包，如果是表情包就给<image>标签加上属性 type:sticker, 不是表情包 type:image
-                       3. 如果是表情包，给标签加上要表达的意思的属性,不是表情包就不添加 也可以添加情绪 比如开心，伤心等
+                       1. 简短描述图片内容，内容用<image></image> 或者<emoji></emoji>标签包裹
+                       2. 判断图片是否为表情包，如果是表情包就给<emoji>标签加上属性 emo:xxx, 是普通图片就用image标签
                        
                        例如：
-                         <image type:sticker emo:吃瓜>一个熊猫穿着黄色衣服拿着西瓜</image>
-                         <image type:image>在高铁站的照片，有很多人</image>
+                         <emoji emo="吃瓜">一个熊猫穿着黄色衣服拿着西瓜</emoji>
+                         <image>在高铁站的照片，有很多人</image>
                     """;
                 String content = chatClient.prompt(systemPrompt).messages(message).call().content();
                 log.info("图片描述：" + content);
 
+                Pattern resultPattern = Pattern.compile(
+                        "<emoji\\s+emo=\"([^\"]+)\">(.*?)</emoji>"
+                );
+
+                Matcher resultMatcher = resultPattern.matcher(content);
+
                 // 如果是表情包 就查询消息id存到数据库
-                if (content.contains("type:sticker")){
+                if (resultMatcher.find()){
                     // 获取最近一条图片消息msgId
                     String msgId = getImageMsgId(userId);
-
-                    // 找到 "emo:" 的位置
-                    int emoStart = content.indexOf("emo:") + 4;
-                    // 找到 ">" 的位置
-                    int emoEnd = content.indexOf(">", emoStart);
                     // 保存
                     tbUserStickerMsgDoService.save(new TbUserStickerMsgDo()
                             .setStickerMsgId(msgId)
-                            .setEmo(content.substring(emoStart, emoEnd))
-                            .setDesc(content.substring(emoEnd + 1, content.length() - 8))
+                            .setEmo(resultMatcher.group(1))
+                            .setDesc(resultMatcher.group(2))
                             .setUserId(userId)
                     );
                 }

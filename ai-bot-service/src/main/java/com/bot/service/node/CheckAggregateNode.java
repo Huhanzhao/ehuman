@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -19,20 +20,24 @@ public class CheckAggregateNode implements NodeAction {
         String memoryCheckOutput = (String) state.value("memoryCheckOutput").orElse("");
         String roleReversalCheckOutput = (String) state.value("roleReversalCheckOutput").orElse("");
 
+        Map<String,Object> resultMap = new HashMap<>();
         boolean checkPass = true;
         if (!"通过".equals(memoryCheckOutput.trim())) {
             log.info("回复超出记忆，开始进行异常处理");
-            state.input(Map.of("failReason", memoryCheckOutput + "\n"));
+            resultMap.put("failReason", memoryCheckOutput);
             checkPass = false;
         }
 
         if (!"通过".equals(roleReversalCheckOutput.trim())) {
             log.info("角色混乱异常，开始进行异常处理");
-            state.input(Map.of("failReason", roleReversalCheckOutput + "\n"));
+            resultMap.put("failReason", roleReversalCheckOutput);
             checkPass = false;
         }
 
-        return Map.of("reTry", reTry + 1, "checkPass", checkPass );
+        resultMap.put("checkPass", checkPass);
+        resultMap.put("reTry", reTry + 1);
+
+        return resultMap;
     }
 
     public static String nextNode(OverAllState state) {

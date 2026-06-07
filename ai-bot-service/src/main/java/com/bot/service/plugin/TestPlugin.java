@@ -1,6 +1,8 @@
 package com.bot.service.plugin;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.bot.service.node.test.test1;
+import com.bot.service.node.test.test2;
 import com.bot.service.utils.SendMessageUtil;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
@@ -25,6 +27,10 @@ public class TestPlugin extends BotPlugin {
 
     @Autowired
     private BotContainer container;
+    @Autowired
+    private test1 test1;
+    @Autowired
+    private test2 test2;
 
 
     @PrivateMessageHandler
@@ -37,6 +43,42 @@ public class TestPlugin extends BotPlugin {
 //            """;
 //        sendMessageCompiledGraph.invoke(Map.of("userId", event.getUserId(), "target", target, "initiative", true));
 //        sendMessageUtil.sendVoiceMsg(event.getUserId(),event.getMessage());
+
+        // 配置 KeyStrategyFactory
+//        KeyStrategyFactory keyStrategyFactory = () -> {
+//            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+//            keyStrategyHashMap.put("test", new AppendStrategy());
+//            keyStrategyHashMap.put("failReason", new AppendStrategy());
+//            keyStrategyHashMap.put("human_feedback", new ReplaceStrategy());
+//            return keyStrategyHashMap;
+//        };
+//
+//        StateGraph stateGraph = new StateGraph(keyStrategyFactory);
+//
+//        try {
+//            stateGraph
+//                    .addNode("test1", node_async(test1))
+//                    .addNode("test2", node_async(test2))
+//
+//                    .addEdge(StateGraph.START, "test1")
+//                    .addEdge("test1", "test2")
+//                    .addEdge("test2", "test1")
+//                    .addEdge("test1", StateGraph.END);
+//
+//            // 配置内存保存器（用于状态持久化）
+//            var saver = new MemorySaver();
+//            var compileConfig = CompileConfig.builder()
+//                    .saverConfig(SaverConfig.builder()
+//                            .register(saver)
+//                            .build())
+//                    .build();
+//
+//            CompiledGraph compile = stateGraph.compile(compileConfig);
+//            compile.invoke(Map.of());
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+
         return MESSAGE_IGNORE;
     }
 }

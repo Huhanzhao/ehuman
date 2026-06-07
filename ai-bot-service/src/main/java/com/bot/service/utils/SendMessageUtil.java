@@ -5,11 +5,13 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserReferAudioDo;
+import com.bot.service.entity.TbUserStickerMsgDo;
 import com.bot.service.enums.CustomActionPath;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.service.TbUserReferAudioDoService;
+import com.bot.service.service.TbUserStickerMsgDoService;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.common.utils.OneBotMedia;
 import com.mikuac.shiro.core.Bot;
@@ -38,6 +40,8 @@ public class SendMessageUtil {
 
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
+    private final TbUserStickerMsgDoService tbUserStickerMsgDoService;
+
     private final String referAudioPath = "../../../qq-bot-plugin/plugin/TTS/audio/";
 
     private final String outputPath = "/app/audio/output/";
@@ -58,6 +62,11 @@ public class SendMessageUtil {
                 sendVoiceMsg(userId,splitMessage);
                 continue;
             }
+            if (splitMessage.startsWith("<emoji")){
+                sendStickerMsg(userId,splitMessage);
+                continue;
+            }
+
             try {
                 Thread.sleep(1000 + (int) (Math.random() * 1000));
             } catch (InterruptedException e) {
@@ -74,6 +83,30 @@ public class SendMessageUtil {
                 bot.sendPrivateMsg(userId,msg.replaceAll("<text>","").replaceAll("</text>",""),false);
             }
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessage));
+        }
+    }
+
+    private void sendStickerMsg(Long userId, String message) {
+
+        Pattern pattern = Pattern.compile("<emoji\\s+emo=\"([^\"]+)\"/>");
+        Matcher matcher = pattern.matcher(message);
+        TbUserStickerMsgDo tbUserStickerMsgDo = null;
+        if (matcher.find()) {
+            String stickerType = matcher.group(1);
+            tbUserStickerMsgDo = tbUserStickerMsgDoService.getStickerMsgId(stickerType);
+        }
+
+        if (tbUserStickerMsgDo != null){
+            // 发送消息 保存历史记录
+            forwardMsg(userId,tbUserStickerMsgDo.getStickerMsgId());
+            String saveMessage = "<emoji emo=\"" +
+                    tbUserStickerMsgDo.getEmo() +
+                    "\">" +
+                    tbUserStickerMsgDo.getDesc() +
+                    "</emoji>";
+            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(saveMessage));
+        }else{
+            log.info("没找表情包，跳过消息");
         }
     }
 
@@ -139,5 +172,6 @@ public class SendMessageUtil {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         Bot bot = botContainer.robots.get(botId);
         bot.customRequest(CustomActionPath.FORWARD_MSG, Map.of("message_id",messageId,"user_id",userId));
+        // todo 保存历史消息
     }
 }
