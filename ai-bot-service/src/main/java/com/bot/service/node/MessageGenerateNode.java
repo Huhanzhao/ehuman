@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +92,7 @@ public class MessageGenerateNode implements NodeAction {
 
     private Map getPromptVariables(OverAllState state) {
         // 获取bot状态
+        Integer reTry = (Integer)state.value("reTry").orElse(0);
         Integer moodCode = (Integer)state.value("mood").orElse(0);
         Integer grace = (Integer)state.value("grace").orElse(0);
         String target = (String) state.value("target").orElse("");
@@ -156,18 +158,32 @@ public class MessageGenerateNode implements NodeAction {
 
         String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
 
-        return Map.of(
-                "botRole",botRole,
-                "target",target,
-                "mood", moodPrompt,
-                "familiarity", familiarityPrompt,
-                "grace", gracePrompt,
-                "currentTime", currentTime,
-                "daysTogether", daysInfo,
-                "currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail,
-                "userInfo", userInfoList.isEmpty() ? "无" : userInfoList.getFirst(),
-                "yesterdayChatSummary", yesterdayChatSummary
-        );
+        // 查看当前是第几次生成消息
+        if (reTry == 0){
+            state.input(Map.of("reTry", 1));
+        }
+
+        Map<String, String> resultMap = new HashMap<>();
+        resultMap.put("botRole", botRole);
+        resultMap.put("target", target);
+        resultMap.put("mood", moodPrompt);
+        resultMap.put("familiarity", familiarityPrompt);
+        resultMap.put("grace", gracePrompt);
+        resultMap.put("currentTime", currentTime);
+        resultMap.put("currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail);
+        resultMap.put("userInfo", userInfoList.isEmpty() ? "无" : userInfoList.getFirst());
+        resultMap.put("yesterdayChatSummary", yesterdayChatSummary);
+        resultMap.put("daysTogether", daysInfo);
+        if (reTry > 0){
+            resultMap.put("reTry", "系统信息：这是第" + (reTry + 1) + "次为本轮生成消息\n " +
+                    "前面生成的消息审核失败的原因："
+                    + state.value("failReason").orElse("无")
+                    + "\n 请避免这些原因 按照要求重新为本次会话生成消息"
+            );
+        }else{
+            resultMap.put("reTry", "");
+        }
+        return resultMap;
     }
 
     /**

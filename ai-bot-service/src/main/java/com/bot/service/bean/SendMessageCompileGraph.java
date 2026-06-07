@@ -15,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
 
+import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @Component
@@ -28,6 +30,10 @@ public class SendMessageCompileGraph {
     private final MemoryVectorSearchNode memoryVectorSearchNode;
     private final GraphSearchNode graphSearchNode;
     private final TransformTagMessageNode transformTagMessageNode;
+    private final RoleReversalCheckNode roleReversalCheckNode;
+    private final MessageFabricateCheckNode messageFabricateCheckNode;
+    private final CheckAggregateNode checkAggregateNode;
+
 
     @Bean("sendMessageCompiledGraph")
     public CompiledGraph getSendMessageGraph() {
@@ -35,6 +41,7 @@ public class SendMessageCompileGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
             keyStrategyHashMap.put("messages", new ReplaceStrategy());
+            keyStrategyHashMap.put("failReason", new AppendStrategy());
             keyStrategyHashMap.put("human_feedback", new ReplaceStrategy());
             return keyStrategyHashMap;
         };
@@ -49,6 +56,9 @@ public class SendMessageCompileGraph {
                     .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(graphSearchNode))
+                    .addNode("roleReversalCheckNode", node_async(roleReversalCheckNode))
+                    .addNode("messageFabricateCheckNode", node_async(messageFabricateCheckNode))
+                    .addNode("checkAggregateNode", node_async(checkAggregateNode))
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
@@ -57,8 +67,16 @@ public class SendMessageCompileGraph {
                     .addEdge("botStatusSearchNode", "messageGenerateNode")
                     .addEdge("memoryVectorSearchNode", "messageGenerateNode")
                     .addEdge("graphSearchNode", "messageGenerateNode")
-                    // todo bot状态节点？ 异步修改心情
-                    .addEdge("messageGenerateNode", "transformTagMessageNode")
+
+                    // 审查
+                    .addEdge("messageGenerateNode", "messageFabricateCheckNode")
+                    .addEdge("messageGenerateNode", "roleReversalCheckNode")
+                    .addEdge("roleReversalCheckNode", "checkAggregateNode")
+                    .addEdge("messageFabricateCheckNode", "checkAggregateNode")
+
+                    .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
+                            Map.of("messageGenerateNode", "messageGenerateNode",
+                                    "transformTagMessageNode", "transformTagMessageNode"))
                     .addEdge("transformTagMessageNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）

@@ -22,6 +22,10 @@ usecase "transformTagMessageNode"<<Node>>
 usecase "botStatusSearchNode"<<Node>>
 usecase "memoryVectorSearchNode"<<Node>>
 usecase "graphSearchNode"<<Node>>
+usecase "roleReversalCheckNode"<<Node>>
+usecase "messageFabricateCheckNode"<<Node>>
+usecase "checkAggregateNode"<<Node>>
+hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "userWantToNode"
 "userWantToNode" -down-> "botStatusSearchNode"
 "userWantToNode" -down-> "memoryVectorSearchNode"
@@ -29,7 +33,15 @@ usecase "graphSearchNode"<<Node>>
 "botStatusSearchNode" -down-> "messageGenerateNode"
 "memoryVectorSearchNode" -down-> "messageGenerateNode"
 "graphSearchNode" -down-> "messageGenerateNode"
-"messageGenerateNode" -down-> "transformTagMessageNode"
+"messageGenerateNode" -down-> "messageFabricateCheckNode"
+"messageGenerateNode" -down-> "roleReversalCheckNode"
+"roleReversalCheckNode" -down-> "checkAggregateNode"
+"messageFabricateCheckNode" -down-> "checkAggregateNode"
+"checkAggregateNode" .down.> "condition1"
+"condition1" .down.> "transformTagMessageNode"
+'"checkAggregateNode" .down.> "transformTagMessageNode"
+"condition1" .down.> "messageGenerateNode"
+'"checkAggregateNode" .down.> "messageGenerateNode"
 "transformTagMessageNode" -down-> "__END__"
 }}
 ]
