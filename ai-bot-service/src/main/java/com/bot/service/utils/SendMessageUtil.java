@@ -85,7 +85,7 @@ public class SendMessageUtil {
         }
     }
 
-    private void sendStickerMsg(Long userId, String message) {
+    public void sendStickerMsg(Long userId, String message) {
 
         Pattern pattern = Pattern.compile("<emoji\\s+emo=\"([^\"]+)\"/>");
         Matcher matcher = pattern.matcher(message);

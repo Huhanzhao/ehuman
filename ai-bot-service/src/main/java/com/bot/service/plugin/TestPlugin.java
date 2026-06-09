@@ -79,7 +79,7 @@ public class TestPlugin extends BotPlugin {
 //
 //        bot.sendPrivateMsg(event.getUserId(), build,false);
 
-
+//        sendMessageUtil.sendStickerMsg(event.getUserId(), "<emoji emo=\"偷笑\"/>");
 
         return MESSAGE_IGNORE;
     }
