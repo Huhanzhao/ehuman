@@ -14,7 +14,6 @@ import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.PromptTypeEnum;
 import com.bot.service.service.*;
 import com.bot.service.utils.MemoryCastUtils;
-import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -49,8 +48,6 @@ public class MessageGenerateNode implements NodeAction {
 
     private final TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
 
-    private final SendMessageUtil sendMessageUtil;
-
     private final TbBotPromptDoService tbBotPromptDoService;
 
     private final TbUserStickerMsgDoService tbUserStickerMsgDoService;
@@ -63,7 +60,7 @@ public class MessageGenerateNode implements NodeAction {
                 tbAiChatMemoryService.getMessageList(userId, 15));
         List<Message> userMessageList = messageList.stream().filter(message -> MessageType.USER.equals(message.getMessageType())).toList();
         String userMessageStatusString = tbAiChatMemoryService.getLastUserMessage(userId);
-        if (userMessageList.isEmpty()){
+        if (userMessageList.isEmpty()){  // todo 时间间隔旁白
             messageList.add(new SystemMessage("[旁白： 用户一直没有回复你的消息 " + userMessageStatusString + "]"));
         }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
@@ -77,7 +74,8 @@ public class MessageGenerateNode implements NodeAction {
         PromptTemplate promptTemplate = PromptTemplate.builder().template(template).build();
 
         // 获取提示词变量
-        Prompt prompt = promptTemplate.create(getPromptVariables(state));
+        Map promptVariables = getPromptVariables(state);
+        Prompt prompt = promptTemplate.create(promptVariables);
 
         log.info("提示词：{}" , prompt);
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt(prompt)
@@ -89,7 +87,8 @@ public class MessageGenerateNode implements NodeAction {
             content = chatClientRequestSpec.call().content();
         }
         log.info("结果输出：{}" , content);
-        return Map.of("generateMessage", content);
+        String currentActivity = promptVariables.get("currentActivity").toString();
+        return Map.of("generateMessage", content,"currentActivity",currentActivity.isEmpty()? "无" : currentActivity.replace("你现在正在",""));
     }
 
     private Map getPromptVariables(OverAllState state) {
@@ -180,9 +179,10 @@ public class MessageGenerateNode implements NodeAction {
         resultMap.put("daysTogether", daysInfo);
         resultMap.put("stickerTypes", stickerTypes);
         if (reTry > 0){
+            List<String> failReasons = (List<String>) state.value("failReason").orElse(null);
             resultMap.put("reTry", "系统信息：这是第" + (reTry + 1) + "次为本轮生成消息\n " +
-                    "前面生成的消息审核失败的原因："
-                    + state.value("failReason").orElse(null)
+                    "**前面生成的消息审核失败的原因：**"
+                    +  String.join("\n", failReasons)
                     + "\n 请避免这些原因 按照要求重新为本次会话生成消息"
             );
         }else{

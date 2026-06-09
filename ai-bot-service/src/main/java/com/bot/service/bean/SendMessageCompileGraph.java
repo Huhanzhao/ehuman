@@ -33,6 +33,7 @@ public class SendMessageCompileGraph {
     private final RoleReversalCheckNode roleReversalCheckNode;
     private final MessageFabricateCheckNode messageFabricateCheckNode;
     private final CheckAggregateNode checkAggregateNode;
+    private final RealLifeInteractionCheckNode realLifeInteractionCheckNode;
 
 
     @Bean("sendMessageCompiledGraph")
@@ -59,6 +60,7 @@ public class SendMessageCompileGraph {
                     .addNode("roleReversalCheckNode", node_async(roleReversalCheckNode))
                     .addNode("messageFabricateCheckNode", node_async(messageFabricateCheckNode))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
+                    .addNode("realLifeInteractionCheckNode", node_async(realLifeInteractionCheckNode))
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
@@ -71,8 +73,10 @@ public class SendMessageCompileGraph {
                     // 审查
                     .addEdge("messageGenerateNode", "messageFabricateCheckNode")
                     .addEdge("messageGenerateNode", "roleReversalCheckNode")
+                    .addEdge("messageGenerateNode", "realLifeInteractionCheckNode")
                     .addEdge("roleReversalCheckNode", "checkAggregateNode")
                     .addEdge("messageFabricateCheckNode", "checkAggregateNode")
+                    .addEdge("realLifeInteractionCheckNode", "checkAggregateNode")
 
                     .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
                             Map.of("messageGenerateNode", "messageGenerateNode",

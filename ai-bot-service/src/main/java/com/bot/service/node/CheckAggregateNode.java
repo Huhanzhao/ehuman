@@ -19,6 +19,7 @@ public class CheckAggregateNode implements NodeAction {
         Integer reTry = (Integer)state.value("reTry").orElse(0);
         String memoryCheckOutput = (String) state.value("memoryCheckOutput").orElse("");
         String roleReversalCheckOutput = (String) state.value("roleReversalCheckOutput").orElse("");
+        String realLifeInteractionCheckOutput = (String) state.value("realLifeInteractionCheckOutput").orElse("");
 
         Map<String,Object> resultMap = new HashMap<>();
         boolean checkPass = true;
@@ -34,8 +35,19 @@ public class CheckAggregateNode implements NodeAction {
             checkPass = false;
         }
 
+        if (!"通过".equals(roleReversalCheckOutput.trim())) {
+            log.info("出现现实生活互动，开始进行异常处理");
+            resultMap.put("failReason", realLifeInteractionCheckOutput);
+            checkPass = false;
+        }
+
         resultMap.put("checkPass", checkPass);
         resultMap.put("reTry", reTry + 1);
+
+        if (reTry > 15){
+            log.info("消息生成出现了15轮重试，放弃");
+            resultMap.put("checkPass", true);
+        }
 
         return resultMap;
     }

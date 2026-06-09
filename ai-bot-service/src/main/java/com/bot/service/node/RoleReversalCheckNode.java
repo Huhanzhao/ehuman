@@ -24,6 +24,7 @@ public class RoleReversalCheckNode implements NodeAction {
         Long userId = (Long)state.value("userId").orElse(0L);
         String generateMessage = (String)state.value("generateMessage").orElse("");
         String memoryString = state.value("memoryString", String.class).orElse("");
+        String currentActivity = state.value("currentActivity", String.class).orElse("");
 
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.GENERATE);
 
@@ -33,7 +34,9 @@ public class RoleReversalCheckNode implements NodeAction {
                 例子1：历史对话里面是用户没有搭理ai，ai却说自己没有搭理用户
                 例子2：历史对话里面是ai说以后不要再理用户了，但是ai生成的消息却说："你刚刚说不理我...."
                 
-                历史消息：{memoryString}
+                本轮对话记忆包括：
+                1. **历史消息**：{memoryString}
+                2. **ai当前虚拟生活细节**：{currentActivity}
                 
                 准备回复的消息：{generateMessage}
                 
@@ -42,7 +45,11 @@ public class RoleReversalCheckNode implements NodeAction {
                 2. 如果存在角色混乱的问题，就输出 不通过 原因：xxx （例如：不正常 角色混乱，生成的消息ai认错说不应该不理用户，但是历史记录中是用户不理ai）
                 3. 输出不要超过五十字
                 """).build();
-        Prompt prompt = promptTemplate.create(Map.of("generateMessage",generateMessage,"memoryString",memoryString));
+        Prompt prompt = promptTemplate.create(Map.of("generateMessage",generateMessage,
+                "memoryString",memoryString,
+                "currentActivity",currentActivity
+                )
+        );
         log.info("角色混乱审核提示词：{}" , prompt);
         String roleReversalCheckOutput = chatClient.prompt(prompt)
                 .call().content();

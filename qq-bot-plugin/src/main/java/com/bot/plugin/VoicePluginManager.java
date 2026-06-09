@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  */
 @Component
 @Slf4j
-public class PluginManager {
+public class VoicePluginManager {
 
     // 配置：插件源码目录
     private String pluginSourceDir = "./qq-bot-plugin/plugin/TTS";

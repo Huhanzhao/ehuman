@@ -25,6 +25,7 @@ usecase "graphSearchNode"<<Node>>
 usecase "roleReversalCheckNode"<<Node>>
 usecase "messageFabricateCheckNode"<<Node>>
 usecase "checkAggregateNode"<<Node>>
+usecase "realLifeInteractionCheckNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "userWantToNode"
 "userWantToNode" -down-> "botStatusSearchNode"
@@ -35,23 +36,25 @@ hexagon "check state" as condition1<<Condition>>
 "graphSearchNode" -down-> "messageGenerateNode"
 "messageGenerateNode" -down-> "messageFabricateCheckNode"
 "messageGenerateNode" -down-> "roleReversalCheckNode"
+"messageGenerateNode" -down-> "realLifeInteractionCheckNode"
 "roleReversalCheckNode" -down-> "checkAggregateNode"
 "messageFabricateCheckNode" -down-> "checkAggregateNode"
+"realLifeInteractionCheckNode" -down-> "checkAggregateNode"
 "checkAggregateNode" .down.> "condition1"
-"condition1" .down.> "messageGenerateNode"
-'"checkAggregateNode" .down.> "messageGenerateNode"
 "condition1" .down.> "transformTagMessageNode"
 '"checkAggregateNode" .down.> "transformTagMessageNode"
+"condition1" .down.> "messageGenerateNode"
+'"checkAggregateNode" .down.> "messageGenerateNode"
 "transformTagMessageNode" -down-> "__END__"
 }}
 ]
 hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
-"condition1" .down.> "imageAnalysisNode": "true"
-'"authNode" .down.> "imageAnalysisNode": "true"
 "condition1" .down.> "__END__": "false"
 '"authNode" .down.> "__END__": "false"
+"condition1" .down.> "imageAnalysisNode": "true"
+'"authNode" .down.> "imageAnalysisNode": "true"
 "imageAnalysisNode" -down-> "sendMessageCompiledGraph"
 "sendMessageCompiledGraph" -down-> "__END__"
 @enduml

@@ -26,7 +26,7 @@ public class UserWantToNode implements NodeAction {
         Long userId = (Long) state.value("userId").orElse(0L);
         // todo 会话结束后不发送消息
         // 查询历史消息
-        List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 10);
+        List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
         List<TbAiChatMemoryDo> userMessageList = messageList.stream().filter(memoryDo -> "user".equals(memoryDo.getRole())).toList();
         if (userMessageList.isEmpty()){

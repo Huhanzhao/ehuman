@@ -1,5 +1,6 @@
 package com.bot.service.plugin;
 
+import cn.hutool.http.HttpResponse;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.bot.service.node.test.test1;
 import com.bot.service.node.test.test2;
@@ -44,41 +45,65 @@ public class TestPlugin extends BotPlugin {
 //        sendMessageCompiledGraph.invoke(Map.of("userId", event.getUserId(), "target", target, "initiative", true));
 //        sendMessageUtil.sendVoiceMsg(event.getUserId(),event.getMessage());
 
-        // 配置 KeyStrategyFactory
-//        KeyStrategyFactory keyStrategyFactory = () -> {
-//            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-//            keyStrategyHashMap.put("test", new AppendStrategy());
-//            keyStrategyHashMap.put("failReason", new AppendStrategy());
-//            keyStrategyHashMap.put("human_feedback", new ReplaceStrategy());
-//            return keyStrategyHashMap;
-//        };
-//
-//        StateGraph stateGraph = new StateGraph(keyStrategyFactory);
-//
+//        byte[] bytes = new byte[0];
 //        try {
-//            stateGraph
-//                    .addNode("test1", node_async(test1))
-//                    .addNode("test2", node_async(test2))
+//            // todo 获取图片链接，保存bytes 到数据库
+//            HttpResponse response = HttpRequest.get("https://multimedia.nt.qq.com.cn/download?appid=1406&fileid=EhTmzzmDzQn3FVkgxf2p1PWWo7sDKRjsViD-Cii50LS08veUAzIEcHJvZFCAuy9aEP06sXaHgBqsnxdh-H7J1vd6AoGAggECbmo&rkey=CAISMEjqu1yUtfmpNgZJJp9Zxpjo3NJKfxV0jnGH6hxndS_z3VDlvxLgddHKoOySls9MaQ").execute();
+//             bytes = response.bodyBytes();
+//            // 2. 确定文件后缀（从 Content-Type 或 URL 中获取）
+//            String suffix = getFileSuffix(response);
 //
-//                    .addEdge(StateGraph.START, "test1")
-//                    .addEdge("test1", "test2")
-//                    .addEdge("test2", "test1")
-//                    .addEdge("test1", StateGraph.END);
+//            // 3. 创建目录
+//            String emojiDir = "./emoji/开心/";
+//            File dir = new File(emojiDir);
+//            if (!dir.exists()) {
+//                dir.mkdirs();  // 创建多级目录
+//            }
 //
-//            // 配置内存保存器（用于状态持久化）
-//            var saver = new MemorySaver();
-//            var compileConfig = CompileConfig.builder()
-//                    .saverConfig(SaverConfig.builder()
-//                            .register(saver)
-//                            .build())
-//                    .build();
+//            // 4. 生成文件名（避免重名）
+//            String fileName = System.currentTimeMillis() + suffix;
+//            File outputFile = new File(dir, fileName);
 //
-//            CompiledGraph compile = stateGraph.compile(compileConfig);
-//            compile.invoke(Map.of());
+//            // 5. 写入文件
+//            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+//                fos.write(bytes);
+//            }
+//
+//
+//            // todo 文件夹直接分类放图片
+//            bytes = Files.readAllBytes(Paths.get("./emoji/开心/一只卡通兔子表情，下面写着开心.gif"));
 //        } catch (Exception e) {
 //            throw new RuntimeException(e);
 //        }
+//        String build = MsgUtils.builder().img(bytes).build();
+//
+//        bot.sendPrivateMsg(event.getUserId(), build,false);
+
+
 
         return MESSAGE_IGNORE;
+    }
+
+    /**
+     * 获取文件后缀
+     */
+    private String getFileSuffix(HttpResponse response) {
+        // 方法1：从 Content-Type 获取
+        String contentType = response.header("Content-Type");
+        if (contentType != null) {
+            switch (contentType) {
+                case "image/png": return ".png";
+                case "image/jpeg": return ".jpg";
+                case "image/jpg": return ".jpg";
+                case "image/gif": return ".gif";
+                case "image/webp": return ".webp";
+                case "image/bmp": return ".bmp";
+            }
+        }
+
+        // 方法2：从 URL 中提取
+        // 如果有文件扩展名，可以从 URL 获取
+        // 默认返回 .png
+        return ".png";
     }
 }

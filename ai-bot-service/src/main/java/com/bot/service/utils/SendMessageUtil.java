@@ -1,12 +1,11 @@
 package com.bot.service.utils;
 
-import com.bot.plugin.PluginManager;
+import com.bot.plugin.VoicePluginManager;
 import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserReferAudioDo;
 import com.bot.service.entity.TbUserStickerMsgDo;
-import com.bot.service.enums.CustomActionPath;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
@@ -32,7 +31,7 @@ public class SendMessageUtil {
 
     private final BotContainer botContainer;
 
-    private final PluginManager pluginManager;
+    private final VoicePluginManager voicePluginManager;
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
@@ -98,7 +97,9 @@ public class SendMessageUtil {
 
         if (tbUserStickerMsgDo != null){
             // 发送消息 保存历史记录
-            forwardMsg(userId,tbUserStickerMsgDo.getStickerMsgId());
+            String msg = MsgUtils.builder().forward(tbUserStickerMsgDo.getStickerMsgId()).build();
+            botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID")))
+                    .sendPrivateMsg(userId, msg,false);
             String saveMessage = "<emoji emo=\"" +
                     tbUserStickerMsgDo.getEmo() +
                     "\">" +
@@ -143,7 +144,7 @@ public class SendMessageUtil {
 
         Map<String,String> resultMap = null;
         try {
-            resultMap = pluginManager.textToSpeech(ttsModel.getModel(),splitMessage,enableAudioList.getFirst().getReferAudioUrl(),ttsModel.getApiKey(),referAudioPath + enableAudioList.getFirst().getReferAudioName());
+            resultMap = voicePluginManager.textToSpeech(ttsModel.getModel(),splitMessage,enableAudioList.getFirst().getReferAudioUrl(),ttsModel.getApiKey(),referAudioPath + enableAudioList.getFirst().getReferAudioName());
         } catch (Exception e) {
             throw new BusinessException("语音合成失败" + e.getMessage());
         }
@@ -165,13 +166,5 @@ public class SendMessageUtil {
         // 发送消息 保存历史记录
         botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,build,false);
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(message));
-    }
-
-    public void forwardMsg(Long userId, String messageId){
-        // 通过机器人账号取出 Bot 对象
-        Long botId = Long.valueOf(System.getProperty("BOT_ID"));
-        Bot bot = botContainer.robots.get(botId);
-        bot.customRequest(CustomActionPath.FORWARD_MSG, Map.of("message_id",messageId,"user_id",userId));
-        // todo 保存历史消息
     }
 }
