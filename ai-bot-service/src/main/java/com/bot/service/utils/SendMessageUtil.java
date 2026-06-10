@@ -44,10 +44,6 @@ public class SendMessageUtil {
 
     private final SystemPath systemPath;
 
-//    private final String referAudioPath = systemPath.getAudioPath();
-
-//    private final String emojiBasePath = systemPath.getEmojiBasePath();
-
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));

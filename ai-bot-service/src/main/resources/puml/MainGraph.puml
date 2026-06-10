@@ -26,7 +26,9 @@ usecase "roleReversalCheckNode"<<Node>>
 usecase "messageFabricateCheckNode"<<Node>>
 usecase "checkAggregateNode"<<Node>>
 usecase "realLifeInteractionCheckNode"<<Node>>
+usecase "dispatchToChecks"<<Node>>
 hexagon "check state" as condition1<<Condition>>
+hexagon "check state" as condition2<<Condition>>
 "__START__" -down-> "userWantToNode"
 "userWantToNode" -down-> "botStatusSearchNode"
 "userWantToNode" -down-> "memoryVectorSearchNode"
@@ -34,16 +36,21 @@ hexagon "check state" as condition1<<Condition>>
 "botStatusSearchNode" -down-> "messageGenerateNode"
 "memoryVectorSearchNode" -down-> "messageGenerateNode"
 "graphSearchNode" -down-> "messageGenerateNode"
-"messageGenerateNode" -down-> "messageFabricateCheckNode"
-"messageGenerateNode" -down-> "roleReversalCheckNode"
-"messageGenerateNode" -down-> "realLifeInteractionCheckNode"
+"messageGenerateNode" .down.> "condition1"
+"condition1" .down.> "dispatchToChecks": "next"
+'"messageGenerateNode" .down.> "dispatchToChecks": "next"
+"condition1" .down.> "__END__": "end"
+'"messageGenerateNode" .down.> "__END__": "end"
+"dispatchToChecks" -down-> "messageFabricateCheckNode"
+"dispatchToChecks" -down-> "roleReversalCheckNode"
+"dispatchToChecks" -down-> "realLifeInteractionCheckNode"
 "roleReversalCheckNode" -down-> "checkAggregateNode"
 "messageFabricateCheckNode" -down-> "checkAggregateNode"
 "realLifeInteractionCheckNode" -down-> "checkAggregateNode"
-"checkAggregateNode" .down.> "condition1"
-"condition1" .down.> "messageGenerateNode"
+"checkAggregateNode" .down.> "condition2"
+"condition2" .down.> "messageGenerateNode"
 '"checkAggregateNode" .down.> "messageGenerateNode"
-"condition1" .down.> "transformTagMessageNode"
+"condition2" .down.> "transformTagMessageNode"
 '"checkAggregateNode" .down.> "transformTagMessageNode"
 "transformTagMessageNode" -down-> "__END__"
 }}

@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>ai-bot-service</module>
+        <module>qq-bot-plugin</module>
     </modules>
 
     <properties>

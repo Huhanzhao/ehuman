@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.bot.service.node.*;
+import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -34,6 +36,7 @@ public class SendMessageCompileGraph {
     private final MessageFabricateCheckNode messageFabricateCheckNode;
     private final CheckAggregateNode checkAggregateNode;
     private final RealLifeInteractionCheckNode realLifeInteractionCheckNode;
+    private final SendMessageUtil sendMessageUtil;
 
 
     @Bean("sendMessageCompiledGraph")
@@ -61,6 +64,7 @@ public class SendMessageCompileGraph {
                     .addNode("messageFabricateCheckNode", node_async(messageFabricateCheckNode))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
                     .addNode("realLifeInteractionCheckNode", node_async(realLifeInteractionCheckNode))
+                    .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来触发并发
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
@@ -71,9 +75,19 @@ public class SendMessageCompileGraph {
                     .addEdge("graphSearchNode", "messageGenerateNode")
 
                     // 审查
-                    .addEdge("messageGenerateNode", "messageFabricateCheckNode")
-                    .addEdge("messageGenerateNode", "roleReversalCheckNode")
-                    .addEdge("messageGenerateNode", "realLifeInteractionCheckNode")
+                    .addConditionalEdges("messageGenerateNode", state ->{
+                        String generateMessage = (String) state.value("generateMessage").orElse("");
+
+                        if (generateMessage.startsWith("<silence>") && generateMessage.endsWith("</silence>")){
+                            sendMessageUtil.sendMegToSelf(generateMessage);
+                            return CompletableFuture.completedFuture("end");
+                        }
+                        return CompletableFuture.completedFuture("next");
+                    }, Map.of("end", StateGraph.END,"next","dispatchToChecks"))
+
+                    .addEdge("dispatchToChecks", "messageFabricateCheckNode")
+                    .addEdge("dispatchToChecks", "roleReversalCheckNode")
+                    .addEdge("dispatchToChecks", "realLifeInteractionCheckNode")
                     .addEdge("roleReversalCheckNode", "checkAggregateNode")
                     .addEdge("messageFabricateCheckNode", "checkAggregateNode")
                     .addEdge("realLifeInteractionCheckNode", "checkAggregateNode")

@@ -29,16 +29,6 @@ public class VoicePluginManager {
     @Autowired
     private SystemPath systemPath;
 
-    // 配置：插件源码目录
-//    private final String pluginSourceDir = systemPath.getVoicePluginSourcePath();
-
-    // 配置：编译输出目录
-//    private final String pluginClassDir = systemPath.getVoicePluginClassesPath();
-
-    // 配置：插件参考音频路径
-//    private final String pluginReferAudioDir = systemPath.getAudioPath();
-
-    
     // 存储所有已加载的插件
     private final Map<String, TtsPlugin> plugins = new ConcurrentHashMap<>();
     
