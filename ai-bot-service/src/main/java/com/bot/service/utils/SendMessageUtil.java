@@ -5,7 +5,6 @@ import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserReferAudioDo;
-import com.bot.service.entity.TbUserStickerMsgDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
