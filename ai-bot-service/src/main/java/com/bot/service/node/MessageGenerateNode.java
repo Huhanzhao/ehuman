@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -51,6 +52,8 @@ public class MessageGenerateNode implements NodeAction {
     private final TbBotPromptDoService tbBotPromptDoService;
 
     private final TbUserStickerMsgDoService tbUserStickerMsgDoService;
+
+    private final String emojiBasePath = "./emoji/";
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -164,7 +167,16 @@ public class MessageGenerateNode implements NodeAction {
             state.input(Map.of("reTry", 1));
         }
 
-        String stickerTypes = tbUserStickerMsgDoService.getAllStickerType(Long.valueOf(System.getProperty("BOT_ID")));
+        String stickerTypes = null;
+
+        try {
+            stickerTypes = Files.list(Paths.get(emojiBasePath))
+                    .toList().stream()
+                    .map(path -> path.getFileName().toString())
+                    .toList().toString();
+        } catch (IOException e) {
+            stickerTypes = "无";
+        }
 
         Map<String, String> resultMap = new HashMap<>();
         resultMap.put("botRole", botRole);

@@ -1,21 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.bot.service.mapper.TbUserStickerMsgDoMapper">
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<!DOCTYPE mapper-->
+<!--        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"-->
+<!--        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">-->
+<!--<mapper namespace="com.bot.service.mapper.TbUserStickerMsgDoMapper">-->
 
-    <resultMap id="BaseResultMap" type="com.bot.service.entity.TbUserStickerMsgDo">
-            <id property="id" column="id" />
-            <result property="userId" column="user_id" />
-            <result property="stickerMsgId" column="sticker_msg_id" />
-            <result property="emo" column="emo" />
-            <result property="desc" column="desc" />
-            <result property="createTime" column="create_time" />
-            <result property="updateTime" column="update_time" />
-    </resultMap>
+<!--    <resultMap id="BaseResultMap" type="com.bot.service.entity.TbUserStickerMsgDo">-->
+<!--            <id property="id" column="id" />-->
+<!--            <result property="userId" column="user_id" />-->
+<!--            <result property="stickerMsgId" column="sticker_msg_id" />-->
+<!--            <result property="emo" column="emo" />-->
+<!--            <result property="desc" column="desc" />-->
+<!--            <result property="createTime" column="create_time" />-->
+<!--            <result property="updateTime" column="update_time" />-->
+<!--    </resultMap>-->
 
-    <sql id="Base_Column_List">
-        id,user_id,sticker_msg_id,emo,desc,create_time,
-        update_time
-    </sql>
-</mapper>
+<!--    <sql id="Base_Column_List">-->
+<!--        id,user_id,sticker_msg_id,emo,desc,create_time,-->
+<!--        update_time-->
+<!--    </sql>-->
+<!--</mapper>-->

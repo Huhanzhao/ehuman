@@ -1,21 +1,17 @@
 package com.bot.service.node;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
 import com.bot.service.bean.ChatClientFactory;
 import com.bot.service.common.config.LocalCache;
 import com.bot.service.entity.TbAiChatMemoryDo;
-import com.bot.service.entity.TbUserStickerMsgDo;
-import com.bot.service.enums.CustomActionPath;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.PromptTypeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbBotPromptDoService;
-import com.bot.service.service.TbUserStickerMsgDoService;
 import com.mikuac.shiro.core.BotContainer;
-import com.mikuac.shiro.dto.action.common.ActionData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -25,8 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -42,8 +42,8 @@ public class ImageAnalysisNode implements NodeAction {
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
 
-    @Autowired
-    private TbUserStickerMsgDoService tbUserStickerMsgDoService;
+//    @Autowired
+//    private TbUserStickerMsgDoService tbUserStickerMsgDoService;
 
     @Autowired
     private BotContainer botContainer;
@@ -95,17 +95,12 @@ public class ImageAnalysisNode implements NodeAction {
 
                 Matcher resultMatcher = resultPattern.matcher(content);
 
-                // 如果是表情包 就查询消息id存到数据库
+                // 如果是表情包 就查询消息id存到数据库  todo 保存到emoji目录
                 if (resultMatcher.find()){
-                    // 获取最近一条图片消息msgId
-                    String msgId = getImageMsgId(userId);
-                    // 保存
-                    tbUserStickerMsgDoService.save(new TbUserStickerMsgDo()
-                            .setStickerMsgId(msgId)
-                            .setEmo(resultMatcher.group(1))
-                            .setDesc(resultMatcher.group(2))
-                            .setUserId(userId)
-                    );
+                    String emo = resultMatcher.group(1);
+                    String fileName = resultMatcher.group(2);
+
+                    downloadAndSaveImage(path,emo,fileName);
                 }
 
                 // 保存图片描述作为用户输入
@@ -118,24 +113,51 @@ public class ImageAnalysisNode implements NodeAction {
         return Map.of("userInput",userInput,"target",target);
     }
 
-    private String getImageMsgId(Long userId) {
-        ActionData actionData = botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID")))
-                .customRequest(CustomActionPath.GET_FRIEND_MSG_HISTORY,
-                        Map.of("user_id", userId.toString(),
-                                "message_seq", 0,
-                                "count", 5,
-                                "reverse_order", true)
-                );
-        List<Object> imageList = JSON.parseObject(actionData.getData().toString())
-//                .getJSONObject("data")
-                .getJSONArray("messages").stream().filter(item -> {
-                    JSONArray messageArray = JSON.parseObject(item.toString()).getJSONArray("message");
-                    String type = messageArray.getJSONObject(0).getString("type");
-                    return "image".equals(type);
-                }).toList();
-        if (imageList.isEmpty()){
-            return null;
-        }
-        return JSON.parseObject(imageList.getFirst().toString()).getLong("message_id").toString();
+    public void downloadAndSaveImage(String imageUrl,String emo, String customName) throws IOException {
+        // 1. 下载图片
+        HttpResponse response = HttpRequest.get(imageUrl)
+                .execute();
+        byte[] imageBytes = response.bodyBytes();
+
+        // 2. 获取 Content-Type 来判断图片格式
+        String contentType = response.header("Content-Type");
+
+        // 3. 根据 Content-Type 获取文件扩展名
+        String extension = getExtensionFromContentType(contentType);
+
+        // 4. 构建保存路径
+        String fileName = customName + "." + extension;
+        Path savePath = Paths.get("./emoji/" + emo + "/", fileName);
+
+        // 5. 确保目录存在
+        Files.createDirectories(savePath.getParent());
+
+        // 6. 保存文件
+        Files.write(savePath, imageBytes);
+
+        log.info("表情包已保存: " + savePath);
     }
+
+    private String getExtensionFromContentType(String contentType) {
+        if (contentType == null) return "png"; // 默认格式
+
+        switch (contentType.toLowerCase()) {
+            case "image/jpeg":
+            case "image/jpg":
+                return "jpg";
+            case "image/png":
+                return "png";
+            case "image/gif":
+                return "gif";
+            case "image/webp":
+                return "webp";
+            case "image/bmp":
+                return "bmp";
+            case "image/svg+xml":
+                return "svg";
+            default:
+                return "png"; // 默认
+        }
+    }
+
 }

@@ -17,10 +17,16 @@ import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.codehaus.plexus.util.FileUtils;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,6 +48,8 @@ public class SendMessageUtil {
     private final TbUserStickerMsgDoService tbUserStickerMsgDoService;
 
     private final String referAudioPath = "../../../qq-bot-plugin/plugin/TTS/audio/";
+
+    private final String emojiBasePath = "../../../emoji/";
 
     private final String outputPath = "/app/audio/output/";
 
@@ -85,32 +93,56 @@ public class SendMessageUtil {
         }
     }
 
+
+    // 发送表情包消息
     private void sendStickerMsg(Long userId, String message) {
 
         Pattern pattern = Pattern.compile("<emoji\\s+emo=\"([^\"]+)\"/>");
         Matcher matcher = pattern.matcher(message);
-        TbUserStickerMsgDo tbUserStickerMsgDo = null;
+        String emojiPath = null;
+        String stickerType = null;
         if (matcher.find()) {
-            String stickerType = matcher.group(1);
-            tbUserStickerMsgDo = tbUserStickerMsgDoService.getStickerMsgId(stickerType);
+            stickerType = matcher.group(1);
+            // 拼接表情包路径
+            emojiPath = emojiBasePath + stickerType + "/";
         }
 
-        if (tbUserStickerMsgDo != null){
-            // 发送消息 保存历史记录
-            String msg = MsgUtils.builder().forward(tbUserStickerMsgDo.getStickerMsgId()).build();
-            botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID")))
-                    .sendPrivateMsg(userId, msg,false);
-            String saveMessage = "<emoji emo=\"" +
-                    tbUserStickerMsgDo.getEmo() +
-                    "\">" +
-                    tbUserStickerMsgDo.getDesc() +
-                    "</emoji>";
-            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(saveMessage));
+        // 判断emojiPath是否存在
+        if (emojiPath != null && Files.exists(Paths.get(emojiPath))){
+            // 存在随机获取一个表情文件
+            try {
+                List<Path> emojiList = Files.list(Paths.get(emojiPath)).toList();
+                if (emojiList.isEmpty()) return;
+
+                // 创建 Random 对象
+                Random random = new Random();
+                // 生成随机索引
+                int randomIndex = random.nextInt(emojiList.size());
+                Path path = emojiList.get(randomIndex);
+                Path fileName = path.getFileName();
+                byte[] bytes = Files.readAllBytes(path);
+
+                // 发送消息 保存历史记录
+                String msg = MsgUtils.builder().img(bytes).build();
+                botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID")))
+                        .sendPrivateMsg(userId, msg,false);
+
+
+                String saveMessage = "<emoji emo=\"" +
+                        stickerType +
+                        "\">" +
+                        fileName +
+                        "</emoji>";
+                tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(saveMessage));
+            } catch (IOException e) {
+                log.info("获取文件异常，跳过表情消息");
+            }
         }else{
             log.info("没找表情包，跳过消息");
         }
     }
 
+    // 给自己发送给消息
     public void sendMegToSelf(String message) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         if (message.isEmpty()) {
@@ -122,6 +154,7 @@ public class SendMessageUtil {
         bot.sendPrivateMsg(botId,message,false);
     }
 
+    // 发送语音消息
     public void sendVoiceMsg(Long userId, String message){
         // 查询当前启用的插件名字和参考声音url
         TbUserModelConfigDo ttsModel = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.TTS);
