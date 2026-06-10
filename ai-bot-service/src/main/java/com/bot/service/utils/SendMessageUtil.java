@@ -9,14 +9,12 @@ import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.bot.service.service.TbUserModelConfigDoService;
 import com.bot.service.service.TbUserReferAudioDoService;
-import com.bot.service.service.TbUserStickerMsgDoService;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.common.utils.OneBotMedia;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.codehaus.plexus.util.FileUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,13 +42,9 @@ public class SendMessageUtil {
 
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
-    private final TbUserStickerMsgDoService tbUserStickerMsgDoService;
-
     private final String referAudioPath = "../../../qq-bot-plugin/plugin/TTS/audio/";
 
-    private final String emojiBasePath = "../../../emoji/";
-
-    private final String outputPath = "/app/audio/output/";
+    private final String emojiBasePath = "./emoji/";
 
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
@@ -94,9 +88,9 @@ public class SendMessageUtil {
 
 
     // 发送表情包消息
-    private void sendStickerMsg(Long userId, String message) {
+    public void sendStickerMsg(Long userId, String message) {
 
-        Pattern pattern = Pattern.compile("<emoji\\s+emo=\"([^\"]+)\"/>");
+        Pattern pattern = Pattern.compile("emo=\"([^\"]+)\"");
         Matcher matcher = pattern.matcher(message);
         String emojiPath = null;
         String stickerType = null;

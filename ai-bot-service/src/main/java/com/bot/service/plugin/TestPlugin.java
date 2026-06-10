@@ -70,7 +70,7 @@ public class TestPlugin extends BotPlugin {
 //            }
 //
 //
-//            // todo 文件夹直接分类放图片
+//            // 文件夹直接分类放图片
 //            bytes = Files.readAllBytes(Paths.get("./emoji/开心/一只卡通兔子表情，下面写着开心.gif"));
 //        } catch (Exception e) {
 //            throw new RuntimeException(e);
