@@ -25,13 +25,9 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-#tavily:
-#  api-key: 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
-
 logging:
   level:
     com.bot.service.config: info
-
 
 shiro:
   ws:
@@ -43,3 +39,9 @@ shiro:
    - com.bot.service.plugin.TestPlugin
    - com.bot.service.plugin.SystemPlugin
    - com.bot.service.plugin.QQBotPlugin
+
+bot:
+  audio-path: ../../../qq-bot-plugin/plugin/TTS/audio/
+  emoji-base-path: ./emoji/
+  voice-plugin-source-path: ./qq-bot-plugin/plugin/TTS
+  voice-plugin-classes-path: ./qq-bot-plugin/plugin/classes

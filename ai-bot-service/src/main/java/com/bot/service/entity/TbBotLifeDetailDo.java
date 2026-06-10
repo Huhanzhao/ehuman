@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.util.Date;
 
-import com.bot.service.common.config.SqliteDateTypeHandler;
+import com.bot.service.config.SqliteDateTypeHandler;
 import lombok.Data;
 
 /**

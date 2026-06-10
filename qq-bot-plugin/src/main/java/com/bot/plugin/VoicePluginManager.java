@@ -2,6 +2,7 @@ package com.bot.plugin;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.tools.*;
@@ -25,14 +26,17 @@ import java.util.stream.Stream;
 @Slf4j
 public class VoicePluginManager {
 
+    @Autowired
+    private SystemPath systemPath;
+
     // 配置：插件源码目录
-    private String pluginSourceDir = "./qq-bot-plugin/plugin/TTS";
-    
+//    private final String pluginSourceDir = systemPath.getVoicePluginSourcePath();
+
     // 配置：编译输出目录
-    private String pluginClassDir = "./qq-bot-plugin/plugin/classes";
+//    private final String pluginClassDir = systemPath.getVoicePluginClassesPath();
 
     // 配置：插件参考音频路径
-    private String pluginReferAudioDir = "./qq-bot-plugin/plugin/TTS/audio";
+//    private final String pluginReferAudioDir = systemPath.getAudioPath();
 
     
     // 存储所有已加载的插件
@@ -44,8 +48,8 @@ public class VoicePluginManager {
     @PostConstruct
     public void init() throws Exception {
         log.info("========== 插件管理器初始化 ==========");
-        log.info("插件源码目录: {}", Paths.get(pluginSourceDir).toAbsolutePath());
-        log.info("插件编译目录: {}", Paths.get(pluginClassDir).toAbsolutePath());
+        log.info("插件源码目录: {}", Paths.get(systemPath.getVoicePluginSourcePath()).toAbsolutePath());
+        log.info("插件编译目录: {}", Paths.get(systemPath.getVoicePluginClassesPath()).toAbsolutePath());
 
         // 先清理上次插件编译文件
         cleanClassDirectory();
@@ -66,16 +70,16 @@ public class VoicePluginManager {
      * 创建必要的目录
      */
     private void createDirectories() throws IOException {
-        Files.createDirectories(Paths.get(pluginSourceDir));
-        Files.createDirectories(Paths.get(pluginClassDir));
-        Files.createDirectories(Paths.get(pluginReferAudioDir));
+        Files.createDirectories(Paths.get(systemPath.getVoicePluginSourcePath()));
+        Files.createDirectories(Paths.get(systemPath.getVoicePluginClassesPath()));
+        Files.createDirectories(Paths.get(systemPath.getAudioPath()));
     }
     
     /**
      * 创建示例插件文件
      */
     private void createExamplePlugin() throws IOException {
-        Path examplePath = Paths.get(pluginSourceDir, "IndexTTS2.java");
+        Path examplePath = Paths.get(systemPath.getVoicePluginSourcePath(), "IndexTTS2.java");
         if (Files.exists(examplePath)) {
             return;
         }
@@ -172,7 +176,7 @@ public class VoicePluginManager {
         pluginSourcePaths.clear();
         
         // 2. 查找所有Java文件
-        List<Path> javaFiles = findJavaFiles(Paths.get(pluginSourceDir));
+        List<Path> javaFiles = findJavaFiles(Paths.get(systemPath.getVoicePluginSourcePath()));
         if (javaFiles.isEmpty()) {
             log.warn("未找到任何插件文件");
             return;
@@ -216,7 +220,7 @@ public class VoicePluginManager {
         String classpath = buildClasspath();
         
         List<String> options = Arrays.asList(
-            "-d", pluginClassDir,
+            "-d", systemPath.getVoicePluginClassesPath(),
             "-cp", classpath,
             "-encoding", "UTF-8"
         );
@@ -253,7 +257,7 @@ public class VoicePluginManager {
      * 加载编译后的类
      */
     private void loadCompiledClasses() throws Exception {
-        Path classDir = Paths.get(pluginClassDir);
+        Path classDir = Paths.get(systemPath.getVoicePluginClassesPath());
         if (!Files.exists(classDir)) {
             return;
         }
@@ -393,7 +397,7 @@ public class VoicePluginManager {
      */
     private Optional<Path> findSourceFileForClass(String className) {
         String simpleName = className.substring(className.lastIndexOf('.') + 1);
-        Path sourcePath = Paths.get(pluginSourceDir, simpleName + ".java");
+        Path sourcePath = Paths.get(systemPath.getVoicePluginSourcePath(), simpleName + ".java");
         if (Files.exists(sourcePath)) {
             return Optional.of(sourcePath);
         }
@@ -404,7 +408,7 @@ public class VoicePluginManager {
      * 清理编译输出目录中的所有 class 文件
      */
     private void cleanClassDirectory() throws IOException {
-        Path classDir = Paths.get(pluginClassDir);
+        Path classDir = Paths.get(systemPath.getVoicePluginClassesPath());
         if (!Files.exists(classDir)) {
             log.info("编译目录不存在，无需清理: {}", classDir);
             return;

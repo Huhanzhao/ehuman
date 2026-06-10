@@ -1,7 +1,7 @@
 package com.bot.service.plugin;
 
 import com.alibaba.cloud.ai.graph.*;
-import com.bot.service.common.config.LocalCache;
+import com.bot.service.config.LocalCache;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
@@ -19,7 +19,6 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @Slf4j

@@ -41,20 +41,20 @@ hexagon "check state" as condition1<<Condition>>
 "messageFabricateCheckNode" -down-> "checkAggregateNode"
 "realLifeInteractionCheckNode" -down-> "checkAggregateNode"
 "checkAggregateNode" .down.> "condition1"
-"condition1" .down.> "transformTagMessageNode"
-'"checkAggregateNode" .down.> "transformTagMessageNode"
 "condition1" .down.> "messageGenerateNode"
 '"checkAggregateNode" .down.> "messageGenerateNode"
+"condition1" .down.> "transformTagMessageNode"
+'"checkAggregateNode" .down.> "transformTagMessageNode"
 "transformTagMessageNode" -down-> "__END__"
 }}
 ]
 hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
-"condition1" .down.> "__END__": "false"
-'"authNode" .down.> "__END__": "false"
 "condition1" .down.> "imageAnalysisNode": "true"
 '"authNode" .down.> "imageAnalysisNode": "true"
+"condition1" .down.> "__END__": "false"
+'"authNode" .down.> "__END__": "false"
 "imageAnalysisNode" -down-> "sendMessageCompiledGraph"
 "sendMessageCompiledGraph" -down-> "__END__"
 @enduml

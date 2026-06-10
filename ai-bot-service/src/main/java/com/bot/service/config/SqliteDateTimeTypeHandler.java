@@ -1,4 +1,4 @@
-package com.bot.service.common.config;
+package com.bot.service.config;
 
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;

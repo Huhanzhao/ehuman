@@ -1,6 +1,5 @@
 package com.bot.service.plugin;
 
-import com.bot.service.common.config.LocalCache;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.CoreEvent;
 import org.springframework.context.annotation.Primary;

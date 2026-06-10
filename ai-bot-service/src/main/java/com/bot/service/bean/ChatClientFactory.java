@@ -1,12 +1,13 @@
 package com.bot.service.bean;
 
-import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbChatConfigDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.enums.ChatModelEnum;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.service.TbChatConfigDoService;
 import com.bot.service.service.TbUserModelConfigDoService;
+import com.bot.service.utils.SendMessageUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class ChatClientFactory {
 
     @Autowired
@@ -33,12 +35,19 @@ public class ChatClientFactory {
     @Autowired
     private TbChatConfigDoService tbChatConfigDoService;
 
+    @Autowired
+    private SendMessageUtil sendMessageUtil;
+
     public ChatClient createChatClient(Long userId, NodeEnum nodeEnum) {
         TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, nodeEnum);
         // 没有配置某节点模型 随便取一个模型
         if (modelConfigDo == null){
             List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);
-            if (modelConfigDos.isEmpty()) throw new BusinessException("请先配置apikey",userId);
+            if (modelConfigDos.isEmpty()){
+                log.warn("请先配置apikey");
+                sendMessageUtil.sendMegToSelf("请先配置apikey");
+                throw new RuntimeException("请先配置apikey");
+            }
             modelConfigDo = modelConfigDos.getFirst();
         }
 
@@ -52,7 +61,9 @@ public class ChatClientFactory {
         }else if (ChatModelEnum.CLAUDE_SONNET_4_5.getCategory().equals(modelConfigDo.getCategory())){
             return createClaudeChatClient(modelConfigDo,chatConfigDo);
         }else {
-            throw new BusinessException("不支持的模型",userId);
+            log.error("不支持的模型");
+            sendMessageUtil.sendMegToSelf("不支持的模型");
+            throw new RuntimeException("不支持的模型");
         }
     }
     public ChatClient createOpenAiChatClient(TbUserModelConfigDo modelConfigDo,TbChatConfigDo chatConfigDo) {

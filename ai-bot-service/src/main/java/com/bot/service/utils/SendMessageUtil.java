@@ -1,7 +1,7 @@
 package com.bot.service.utils;
 
+import com.bot.plugin.SystemPath;
 import com.bot.plugin.VoicePluginManager;
-import com.bot.service.common.entity.BusinessException;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserModelConfigDo;
 import com.bot.service.entity.TbUserReferAudioDo;
@@ -42,9 +42,11 @@ public class SendMessageUtil {
 
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
-    private final String referAudioPath = "../../../qq-bot-plugin/plugin/TTS/audio/";
+    private final SystemPath systemPath;
 
-    private final String emojiBasePath = "./emoji/";
+//    private final String referAudioPath = systemPath.getAudioPath();
+
+//    private final String emojiBasePath = systemPath.getEmojiBasePath();
 
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
@@ -97,7 +99,7 @@ public class SendMessageUtil {
         if (matcher.find()) {
             stickerType = matcher.group(1);
             // 拼接表情包路径
-            emojiPath = emojiBasePath + stickerType + "/";
+            emojiPath = systemPath.getEmojiBasePath() + stickerType + "/";
         }
 
         // 判断emojiPath是否存在
@@ -170,9 +172,14 @@ public class SendMessageUtil {
 
         Map<String,String> resultMap = null;
         try {
-            resultMap = voicePluginManager.textToSpeech(ttsModel.getModel(),splitMessage,enableAudioList.getFirst().getReferAudioUrl(),ttsModel.getApiKey(),referAudioPath + enableAudioList.getFirst().getReferAudioName());
+            resultMap = voicePluginManager.textToSpeech(ttsModel.getModel(),
+                    splitMessage,
+                    enableAudioList.getFirst().getReferAudioUrl(),
+                    ttsModel.getApiKey(),
+                    systemPath.getAudioPath() + enableAudioList.getFirst().getReferAudioName());
         } catch (Exception e) {
-            throw new BusinessException("语音合成失败" + e.getMessage());
+            log.error("语音合成失败{}",e.getMessage());
+            sendMegToSelf("语音合成失败" + e.getMessage());
         }
 
         String base64 = resultMap.get("base64");
@@ -186,7 +193,8 @@ public class SendMessageUtil {
                 .voice(OneBotMedia.builder()
                 .file("base64://" + base64)).build();
         }else{
-            throw new BusinessException("插件输出错误");
+            log.error("插件输出错误");
+            sendMegToSelf("插件输出错误");
         }
 
         // 发送消息 保存历史记录

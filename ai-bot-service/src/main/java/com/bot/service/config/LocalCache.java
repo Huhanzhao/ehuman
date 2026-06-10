@@ -1,4 +1,4 @@
-package com.bot.service.common.config;
+package com.bot.service.config;
 
 import lombok.Data;
 import lombok.Getter;

@@ -1,7 +1,7 @@
 package com.bot.service.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.bot.service.common.config.SqliteDateTypeHandler;
+import com.bot.service.config.SqliteDateTypeHandler;
 import lombok.Data;
 import java.util.Date;
 

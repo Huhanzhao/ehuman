@@ -1,4 +1,4 @@
-package com.bot.service.common.config;
+package com.bot.service.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.injector.DefaultSqlInjector;

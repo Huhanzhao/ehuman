@@ -1,7 +1,6 @@
-package com.bot.service.common.config;
+package com.bot.service.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import com.bot.service.common.utils.UserContext;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 
@@ -15,11 +14,6 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
      */
     @Override
     public void insertFill(MetaObject metaObject) {
-        String userId = UserContext.getUserId();
-        if (userId != null &&!userId.isEmpty()){
-            this.setFieldValByName("createBy", userId, metaObject);
-            this.setFieldValByName("updateBy", userId, metaObject);
-        }
         this.setFieldValByName("createTime", new Date(), metaObject);
         this.setFieldValByName("updateTime", new Date(), metaObject);
     }
@@ -30,10 +24,6 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
      */
     @Override
     public void updateFill(MetaObject metaObject) {
-        String userId = UserContext.getUserId();
-        if (userId != null && !userId.isEmpty()){
-            this.setFieldValByName("updateBy", userId, metaObject);
-        }
         this.setFieldValByName("updateTime", new Date(), metaObject);
     }
 }
