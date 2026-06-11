@@ -59,14 +59,14 @@ public class SendMessageCompileGraph {
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("formatOutPutNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT,NodeEnum.WANT_TO)))
+                    .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT,NodeEnum.WANT_TO)))
                     .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(graphSearchNode))
-                    .addNode("roleReversalCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO)))
-                    .addNode("memoryCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO)))
+                    .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO)))
+                    .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO)))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
-                    .addNode("interactionCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO)))
+                    .addNode("interactionCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO)))
                     .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
                     .addNode("sendMessageNode", node_async(state -> {
                         sendMessageUtil.sendChatMsg(
@@ -96,17 +96,17 @@ public class SendMessageCompileGraph {
                         return CompletableFuture.completedFuture("next");
                     }, Map.of("end", StateGraph.END,"next","dispatchToChecks"))
 
-                    .addEdge("dispatchToChecks", "memoryCheckNode")
-                    .addEdge("dispatchToChecks", "roleReversalCheckNode")
-                    .addEdge("dispatchToChecks", "interactionCheckNode")
-                    .addEdge("roleReversalCheckNode", "checkAggregateNode")
-                    .addEdge("memoryCheckNode", "checkAggregateNode")
-                    .addEdge("interactionCheckNode", "checkAggregateNode")
+                    .addEdge("dispatchToChecks", "memoryCheckLlmNode")
+                    .addEdge("dispatchToChecks", "roleReversalCheckLlmNode")
+                    .addEdge("dispatchToChecks", "interactionCheckLlmNode")
+                    .addEdge("roleReversalCheckLlmNode", "checkAggregateNode")
+                    .addEdge("memoryCheckLlmNode", "checkAggregateNode")
+                    .addEdge("interactionCheckLlmNode", "checkAggregateNode")
 
                     .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
                             Map.of("messageGenerateNode", "messageGenerateNode",
-                                    "transformTagMessageNode", "formatOutPutNode"))
-                    .addEdge("formatOutPutNode", "sendMessageNode")
+                                    "transformTagMessageNode", "formatOutPutLlmNode"))
+                    .addEdge("formatOutPutLlmNode", "sendMessageNode")
                     .addEdge("sendMessageNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）

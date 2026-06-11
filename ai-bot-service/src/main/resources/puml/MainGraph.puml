@@ -18,14 +18,14 @@ circle " " as __START__
 circle exit as __END__
 usecase "userWantToNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
-usecase "formatOutPutNode"<<Node>>
+usecase "formatOutPutLlmNode"<<Node>>
 usecase "botStatusSearchNode"<<Node>>
 usecase "memoryVectorSearchNode"<<Node>>
 usecase "graphSearchNode"<<Node>>
-usecase "roleReversalCheckNode"<<Node>>
-usecase "memoryCheckNode"<<Node>>
+usecase "roleReversalCheckLlmNode"<<Node>>
+usecase "memoryCheckLlmNode"<<Node>>
 usecase "checkAggregateNode"<<Node>>
-usecase "interactionCheckNode"<<Node>>
+usecase "interactionCheckLlmNode"<<Node>>
 usecase "dispatchToChecks"<<Node>>
 usecase "sendMessageNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
@@ -42,28 +42,28 @@ hexagon "check state" as condition2<<Condition>>
 '"messageGenerateNode" .down.> "__END__": "end"
 "condition1" .down.> "dispatchToChecks": "next"
 '"messageGenerateNode" .down.> "dispatchToChecks": "next"
-"dispatchToChecks" -down-> "memoryCheckNode"
-"dispatchToChecks" -down-> "roleReversalCheckNode"
-"dispatchToChecks" -down-> "interactionCheckNode"
-"roleReversalCheckNode" -down-> "checkAggregateNode"
-"memoryCheckNode" -down-> "checkAggregateNode"
-"interactionCheckNode" -down-> "checkAggregateNode"
+"dispatchToChecks" -down-> "memoryCheckLlmNode"
+"dispatchToChecks" -down-> "roleReversalCheckLlmNode"
+"dispatchToChecks" -down-> "interactionCheckLlmNode"
+"roleReversalCheckLlmNode" -down-> "checkAggregateNode"
+"memoryCheckLlmNode" -down-> "checkAggregateNode"
+"interactionCheckLlmNode" -down-> "checkAggregateNode"
 "checkAggregateNode" .down.> "condition2"
+"condition2" .down.> "formatOutPutLlmNode": "transformTagMessageNode"
+'"checkAggregateNode" .down.> "formatOutPutLlmNode": "transformTagMessageNode"
 "condition2" .down.> "messageGenerateNode"
 '"checkAggregateNode" .down.> "messageGenerateNode"
-"condition2" .down.> "formatOutPutNode": "transformTagMessageNode"
-'"checkAggregateNode" .down.> "formatOutPutNode": "transformTagMessageNode"
-"formatOutPutNode" -down-> "sendMessageNode"
+"formatOutPutLlmNode" -down-> "sendMessageNode"
 "sendMessageNode" -down-> "__END__"
 }}
 ]
 hexagon "check state" as condition1<<Condition>>
 "__START__" -down-> "authNode"
 "authNode" .down.> "condition1"
-"condition1" .down.> "imageAnalysisNode": "true"
-'"authNode" .down.> "imageAnalysisNode": "true"
 "condition1" .down.> "__END__": "false"
 '"authNode" .down.> "__END__": "false"
+"condition1" .down.> "imageAnalysisNode": "true"
+'"authNode" .down.> "imageAnalysisNode": "true"
 "imageAnalysisNode" -down-> "sendMessageCompiledGraph"
 "sendMessageCompiledGraph" -down-> "__END__"
 @enduml
