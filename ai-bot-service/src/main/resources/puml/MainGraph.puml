@@ -18,7 +18,7 @@ circle " " as __START__
 circle exit as __END__
 usecase "userWantToNode"<<Node>>
 usecase "messageGenerateNode"<<Node>>
-usecase "transformTagMessageNode"<<Node>>
+usecase "formatOutPutNode"<<Node>>
 usecase "botStatusSearchNode"<<Node>>
 usecase "memoryVectorSearchNode"<<Node>>
 usecase "graphSearchNode"<<Node>>
@@ -27,6 +27,7 @@ usecase "memoryCheckNode"<<Node>>
 usecase "checkAggregateNode"<<Node>>
 usecase "interactionCheckNode"<<Node>>
 usecase "dispatchToChecks"<<Node>>
+usecase "sendMessageNode"<<Node>>
 hexagon "check state" as condition1<<Condition>>
 hexagon "check state" as condition2<<Condition>>
 "__START__" -down-> "userWantToNode"
@@ -50,9 +51,10 @@ hexagon "check state" as condition2<<Condition>>
 "checkAggregateNode" .down.> "condition2"
 "condition2" .down.> "messageGenerateNode"
 '"checkAggregateNode" .down.> "messageGenerateNode"
-"condition2" .down.> "transformTagMessageNode"
-'"checkAggregateNode" .down.> "transformTagMessageNode"
-"transformTagMessageNode" -down-> "__END__"
+"condition2" .down.> "formatOutPutNode": "transformTagMessageNode"
+'"checkAggregateNode" .down.> "formatOutPutNode": "transformTagMessageNode"
+"formatOutPutNode" -down-> "sendMessageNode"
+"sendMessageNode" -down-> "__END__"
 }}
 ]
 hexagon "check state" as condition1<<Condition>>

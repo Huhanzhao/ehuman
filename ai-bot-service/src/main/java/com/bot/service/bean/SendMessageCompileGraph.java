@@ -36,8 +36,6 @@ public class SendMessageCompileGraph {
     private final BotStatusSearchNode botStatusSearchNode;
     private final MemoryVectorSearchNode memoryVectorSearchNode;
     private final GraphSearchNode graphSearchNode;
-    private final TransformTagMessageNode transformTagMessageNode;
-    private final RoleReversalCheckNode roleReversalCheckNode;
     private final CheckAggregateNode checkAggregateNode;
     private final SendMessageUtil sendMessageUtil;
 
@@ -61,15 +59,23 @@ public class SendMessageCompileGraph {
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("transformTagMessageNode", node_async(transformTagMessageNode))
+                    .addNode("formatOutPutNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT,NodeEnum.WANT_TO)))
                     .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(graphSearchNode))
-                    .addNode("roleReversalCheckNode", node_async(roleReversalCheckNode))
+                    .addNode("roleReversalCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO)))
                     .addNode("memoryCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO)))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
                     .addNode("interactionCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO)))
                     .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
+                    .addNode("sendMessageNode", node_async(state -> {
+                        sendMessageUtil.sendChatMsg(
+                                (Long) state.value("userId",Long.class).get(),
+                                (String) state.value("formatOutPut").orElse("")
+                        );
+                        return Map.of();
+                    }
+                    ))
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
@@ -99,8 +105,9 @@ public class SendMessageCompileGraph {
 
                     .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
                             Map.of("messageGenerateNode", "messageGenerateNode",
-                                    "transformTagMessageNode", "transformTagMessageNode"))
-                    .addEdge("transformTagMessageNode", StateGraph.END);
+                                    "transformTagMessageNode", "formatOutPutNode"))
+                    .addEdge("formatOutPutNode", "sendMessageNode")
+                    .addEdge("sendMessageNode", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();

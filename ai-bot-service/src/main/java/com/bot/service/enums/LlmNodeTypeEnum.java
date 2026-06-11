@@ -14,6 +14,8 @@ import lombok.Getter;
 public enum LlmNodeTypeEnum {
 
     MEMORY_CHECK("memoryCheck", "./md/MemoryCheckPrompt.md", "memoryCheckOutput"),
+    FORMAT_OUTPUT("formatOutPut", "./md/FormatOutPutPrompt.md", "formatOutPut"),
+    ROLE_REVERSAL_CHECK("roleReversalCheck", "./md/RoleReversalCheckPrompt.md", "roleReversalCheckOutput"),
     INTERACTION_CHECK("interactionCheckOutput", "./md/InteractionCheckPrompt.md", "interactionCheckOutput");
 
     private final String nodeName;

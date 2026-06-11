@@ -84,7 +84,7 @@ public class MessageGenerateNode implements NodeAction {
         }
         log.info("结果输出：{}" , content);
         String currentActivity = promptVariables.get("currentActivity").toString();
-        return Map.of("generateMessage", content,"currentActivity",currentActivity.isEmpty()? "无" : currentActivity.replace("你现在正在",""));
+        return Map.of("generateMessage", content,"currentActivity",currentActivity.isEmpty()? "无" : currentActivity.replace("你现在正在","ai当前正在"));
     }
 
     private Map getPromptVariables(OverAllState state) {

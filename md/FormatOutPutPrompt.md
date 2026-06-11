@@ -4,7 +4,7 @@
 
 历史消息：{memoryString}
 
-当前agent虚拟生活正在{lifeDetail}
+当前agent虚拟生活正在{currentActivity}
 
 准备回复的消息：{generateMessage}
 
