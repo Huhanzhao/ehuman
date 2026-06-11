@@ -28,8 +28,6 @@ public class TransformTagMessageNode implements NodeAction {
 
     private final SendMessageUtil sendMessageUtil;
 
-    private final TbBotPromptDoService tbBotPromptDoService;
-
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
 
     @Override

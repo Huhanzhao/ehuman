@@ -293,7 +293,7 @@ public class VoicePluginManager {
             }
         }
     }
-    
+
     /**
      * 获取所有插件名称
      */
@@ -332,18 +332,6 @@ public class VoicePluginManager {
         // 当前classpath
         String classpath = System.getProperty("java.class.path");
         cp.append(classpath);
-        
-        // 添加lib目录下的jar
-        Path libDir = Paths.get("./lib");
-        if (Files.exists(libDir)) {
-            try (Stream<Path> stream = Files.list(libDir)) {
-                stream.filter(p -> p.toString().endsWith(".jar"))
-                      .forEach(p -> cp.append(File.pathSeparator).append(p.toString()));
-            } catch (IOException e) {
-                log.warn("读取lib目录失败", e);
-            }
-        }
-        
         return cp.toString();
     }
     

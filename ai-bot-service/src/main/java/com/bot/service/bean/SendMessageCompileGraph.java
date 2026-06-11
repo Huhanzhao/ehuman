@@ -1,17 +1,22 @@
 package com.bot.service.bean;
 
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.bot.service.enums.LlmNodeTypeEnum;
+import com.bot.service.enums.NodeEnum;
 import com.bot.service.node.*;
 import com.bot.service.utils.SendMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,10 +38,10 @@ public class SendMessageCompileGraph {
     private final GraphSearchNode graphSearchNode;
     private final TransformTagMessageNode transformTagMessageNode;
     private final RoleReversalCheckNode roleReversalCheckNode;
-    private final MessageFabricateCheckNode messageFabricateCheckNode;
     private final CheckAggregateNode checkAggregateNode;
-    private final RealLifeInteractionCheckNode realLifeInteractionCheckNode;
     private final SendMessageUtil sendMessageUtil;
+
+    private final ChatClientFactory chatClientFactory;
 
 
     @Bean("sendMessageCompiledGraph")
@@ -61,10 +66,10 @@ public class SendMessageCompileGraph {
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(graphSearchNode))
                     .addNode("roleReversalCheckNode", node_async(roleReversalCheckNode))
-                    .addNode("messageFabricateCheckNode", node_async(messageFabricateCheckNode))
+                    .addNode("memoryCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO)))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
-                    .addNode("realLifeInteractionCheckNode", node_async(realLifeInteractionCheckNode))
-                    .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来触发并发
+                    .addNode("interactionCheckNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO)))
+                    .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
@@ -85,12 +90,12 @@ public class SendMessageCompileGraph {
                         return CompletableFuture.completedFuture("next");
                     }, Map.of("end", StateGraph.END,"next","dispatchToChecks"))
 
-                    .addEdge("dispatchToChecks", "messageFabricateCheckNode")
+                    .addEdge("dispatchToChecks", "memoryCheckNode")
                     .addEdge("dispatchToChecks", "roleReversalCheckNode")
-                    .addEdge("dispatchToChecks", "realLifeInteractionCheckNode")
+                    .addEdge("dispatchToChecks", "interactionCheckNode")
                     .addEdge("roleReversalCheckNode", "checkAggregateNode")
-                    .addEdge("messageFabricateCheckNode", "checkAggregateNode")
-                    .addEdge("realLifeInteractionCheckNode", "checkAggregateNode")
+                    .addEdge("memoryCheckNode", "checkAggregateNode")
+                    .addEdge("interactionCheckNode", "checkAggregateNode")
 
                     .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
                             Map.of("messageGenerateNode", "messageGenerateNode",
@@ -115,6 +120,23 @@ public class SendMessageCompileGraph {
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public LlmNode getLlmNode(LlmNodeTypeEnum nodeTypeEnum, NodeEnum nodeEnum) {
+        PromptTemplate promptTemplate = null;
+        try {
+            promptTemplate = PromptTemplate.builder().template(
+                    Files.readString(Paths.get(nodeTypeEnum.getPromptTemplatePath()))).build();
+            return LlmNode.builder()
+                    .nodeName(nodeTypeEnum.getNodeName())
+                    .promptTemplate(promptTemplate)
+                    .outPutKey(nodeTypeEnum.getOutputKey())
+                    .nodeEnum(nodeEnum)
+                    .chatClientFactory(chatClientFactory)
+                    .build();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

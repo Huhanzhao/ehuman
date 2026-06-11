@@ -76,6 +76,9 @@ public class MessageGenerateNode implements NodeAction {
         String content = null;
         if (initiative){
             content = chatClientRequestSpec.user("这条消息是你主动给用户发送的消息，不是用户主动给你发送的消息").call().content();
+            state.updateState(Map.of("memoryCheckInitiativePrompt","3. 本次消息为ai主动发送的消息，如果消息不符合上下文请拦截。例如 " +
+                    "ai主动发送：”早就睡醒了“。但是上下文用户并没有问ai是否睡醒了，类似的没有问但是主动回答的消息" +
+                            " 主动分享的消息不要拦截，例如： 今天早上喝的豆浆、我来上课了。"));
         }else{
             content = chatClientRequestSpec.call().content();
         }

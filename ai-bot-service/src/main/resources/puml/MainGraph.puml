@@ -23,9 +23,9 @@ usecase "botStatusSearchNode"<<Node>>
 usecase "memoryVectorSearchNode"<<Node>>
 usecase "graphSearchNode"<<Node>>
 usecase "roleReversalCheckNode"<<Node>>
-usecase "messageFabricateCheckNode"<<Node>>
+usecase "memoryCheckNode"<<Node>>
 usecase "checkAggregateNode"<<Node>>
-usecase "realLifeInteractionCheckNode"<<Node>>
+usecase "interactionCheckNode"<<Node>>
 usecase "dispatchToChecks"<<Node>>
 hexagon "check state" as condition1<<Condition>>
 hexagon "check state" as condition2<<Condition>>
@@ -37,16 +37,16 @@ hexagon "check state" as condition2<<Condition>>
 "memoryVectorSearchNode" -down-> "messageGenerateNode"
 "graphSearchNode" -down-> "messageGenerateNode"
 "messageGenerateNode" .down.> "condition1"
-"condition1" .down.> "dispatchToChecks": "next"
-'"messageGenerateNode" .down.> "dispatchToChecks": "next"
 "condition1" .down.> "__END__": "end"
 '"messageGenerateNode" .down.> "__END__": "end"
-"dispatchToChecks" -down-> "messageFabricateCheckNode"
+"condition1" .down.> "dispatchToChecks": "next"
+'"messageGenerateNode" .down.> "dispatchToChecks": "next"
+"dispatchToChecks" -down-> "memoryCheckNode"
 "dispatchToChecks" -down-> "roleReversalCheckNode"
-"dispatchToChecks" -down-> "realLifeInteractionCheckNode"
+"dispatchToChecks" -down-> "interactionCheckNode"
 "roleReversalCheckNode" -down-> "checkAggregateNode"
-"messageFabricateCheckNode" -down-> "checkAggregateNode"
-"realLifeInteractionCheckNode" -down-> "checkAggregateNode"
+"memoryCheckNode" -down-> "checkAggregateNode"
+"interactionCheckNode" -down-> "checkAggregateNode"
 "checkAggregateNode" .down.> "condition2"
 "condition2" .down.> "messageGenerateNode"
 '"checkAggregateNode" .down.> "messageGenerateNode"
