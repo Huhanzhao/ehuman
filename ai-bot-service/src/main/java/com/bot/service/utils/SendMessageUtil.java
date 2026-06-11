@@ -172,7 +172,7 @@ public class SendMessageUtil {
                     splitMessage,
                     enableAudioList.getFirst().getReferAudioUrl(),
                     ttsModel.getApiKey(),
-                    systemPath.getAudioPath() + enableAudioList.getFirst().getReferAudioName());
+                    systemPath.getClassesUseAudioPath() + enableAudioList.getFirst().getReferAudioName());
         } catch (Exception e) {
             log.error("语音合成失败{}",e.getMessage());
             sendMegToSelf("语音合成失败" + e.getMessage());

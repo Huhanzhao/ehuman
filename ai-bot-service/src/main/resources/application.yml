@@ -41,7 +41,8 @@ shiro:
    - com.bot.service.plugin.QQBotPlugin
 
 bot:
-  audio-path: ../../../qq-bot-plugin/plugin/TTS/audio/
+  classes-use-audio-path: ../../../qq-bot-plugin/plugin/TTS/audio/
+  audio-path: ./qq-bot-plugin/plugin/TTS/audio/
   emoji-base-path: ./emoji/
   voice-plugin-source-path: ./qq-bot-plugin/plugin/TTS
-  voice-plugin-classes-path: ./qq-bot-plugin/plugin/classes
+  voice-plugin-classes-path: ./qq-bot-plugin/target/plugin/classes

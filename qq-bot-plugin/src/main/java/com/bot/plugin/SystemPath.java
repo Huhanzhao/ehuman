@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "bot")
 public class SystemPath {
-
+    private String classesUseAudioPath;
     private String audioPath;
     private String emojiBasePath;
     private String voicePluginSourcePath;
