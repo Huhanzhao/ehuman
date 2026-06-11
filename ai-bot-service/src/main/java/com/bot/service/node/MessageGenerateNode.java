@@ -81,6 +81,7 @@ public class MessageGenerateNode implements NodeAction {
                             " 主动分享的消息不要拦截，例如： 今天早上喝的豆浆、我来上课了。"));
         }else{
             content = chatClientRequestSpec.call().content();
+            state.updateState(Map.of("memoryCheckInitiativePrompt",""));
         }
         log.info("结果输出：{}" , content);
         String currentActivity = promptVariables.get("currentActivity").toString();
