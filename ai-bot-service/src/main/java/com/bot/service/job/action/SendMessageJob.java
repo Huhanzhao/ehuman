@@ -1,6 +1,7 @@
 package com.bot.service.job.action;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.entity.TbUserBotStatusDo;
@@ -20,6 +21,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -84,7 +86,15 @@ public class SendMessageJob implements Job {
             不要太突兀，要与上下文相和谐
             1. 可以分享正在做的事、表达想念、撒娇、问好等。
             """;
-            sendMessageCompiledGraph.invoke(Map.of("userId", userId, "target", target, "initiative", true));
+            String chatId = UUID.randomUUID().toString();
+            // 配置线程 ID
+            var invokeConfig = RunnableConfig.builder()
+                    .threadId(chatId)
+                    .build();
+            sendMessageCompiledGraph.invoke(
+                    Map.of("userId", userId, "target", target, "initiative", true),
+                    invokeConfig
+            );
         }
 
         // 执行完毕删除任务
