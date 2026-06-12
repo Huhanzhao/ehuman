@@ -5,7 +5,7 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.bot.service.bean.ChatClientFactory;
-import com.bot.service.config.LocalCache;
+import com.bot.service.utils.LocalCacheUtil;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.enums.NodeEnum;
 import com.bot.service.enums.PromptTypeEnum;
@@ -105,7 +105,7 @@ public class ImageAnalysisNode implements NodeAction {
                 // 保存图片描述作为用户输入
                 tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(content));
             }finally {
-                LocalCache.getLocalCache().remove(userId + "_image");
+                LocalCacheUtil.getLocalCacheUtil().remove(userId + "_image");
             }
         }
         String target = tbBotPromptDoService.getContext(PromptTypeEnum.TARGET);

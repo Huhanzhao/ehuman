@@ -1,7 +1,7 @@
 package com.bot.service.plugin;
 
 import com.alibaba.cloud.ai.graph.*;
-import com.bot.service.config.LocalCache;
+import com.bot.service.utils.LocalCacheUtil;
 import com.bot.service.entity.TbAiChatMemoryDo;
 import com.bot.service.service.TbAiChatMemoryService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
@@ -28,7 +28,7 @@ public class QQBotPlugin extends BotPlugin {
 
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
-    private final LocalCache localCache = LocalCache.getLocalCache();
+    private final LocalCacheUtil localCacheUtil = LocalCacheUtil.getLocalCacheUtil();
 
     public QQBotPlugin(@Qualifier("qqBotMainGraph")CompiledGraph qqBotMainGraph){
         this.qqBotMainGraph = qqBotMainGraph;
@@ -44,7 +44,7 @@ public class QQBotPlugin extends BotPlugin {
 
         try {
             for (int i = 0; i < 20; i++){
-                if (localCache.containsKey(userId + "_image")){
+                if (localCacheUtil.containsKey(userId + "_image")){
                     // 正在解析图片但是收到了新消息 等待图片解析一分钟
                     log.info("正在解析图片等待3秒");
                     Thread.sleep(3000);
@@ -54,7 +54,7 @@ public class QQBotPlugin extends BotPlugin {
             throw new RuntimeException(e);
         }finally {
             // 一分钟还没有解析完毕取消
-            LocalCache.getLocalCache().remove(userId + "_image");
+            LocalCacheUtil.getLocalCacheUtil().remove(userId + "_image");
         }
 
         // 保存用户消息
@@ -62,14 +62,14 @@ public class QQBotPlugin extends BotPlugin {
             // 不是图片直接保存 是图片在图片节点解析之后保存
             tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(event.getMessage()));
         }else {
-            LocalCache.getLocalCache().put(userId + "_image", true); // 标记正在解析图片 防止没有解析完毕被下次消息打断
+            LocalCacheUtil.getLocalCacheUtil().put(userId + "_image", true); // 标记正在解析图片 防止没有解析完毕被下次消息打断
         }
 
-        if (localCache.containsKey(userId + "_Graph")){
-            Disposable disposable = (Disposable) localCache.get(userId + "_Graph");
+        if (localCacheUtil.containsKey(userId + "_Graph")){
+            Disposable disposable = (Disposable) localCacheUtil.get(userId + "_Graph");
             disposable.dispose();
             log.info("已取消上次图执行");
-            localCache.remove(userId + "_Graph");
+            localCacheUtil.remove(userId + "_Graph");
         }
 
         // 执行
@@ -92,13 +92,13 @@ public class QQBotPlugin extends BotPlugin {
                 },
                 error -> log.error("流错误: " + error.getMessage()),
                 () -> {
-                    localCache.remove(userId + "_Graph");
+                    localCacheUtil.remove(userId + "_Graph");
                     log.info("流完成");
                 }
         );
 
         log.info("标记会话");
-        localCache.put(userId + "_Graph", disposable);
+        localCacheUtil.put(userId + "_Graph", disposable);
 
         return MESSAGE_IGNORE;
     }

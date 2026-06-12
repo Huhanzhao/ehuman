@@ -120,7 +120,7 @@ public class SendMessageCompileGraph {
                     "sendMessage flow");
             Path pumlDir = Paths.get("ai-bot-service/src/main/resources/puml");
             Files.createDirectories(pumlDir);
-            Files.writeString(pumlDir.resolve("MainGraph.puml"), sendMessageFlow.content());
+            Files.writeString(pumlDir.resolve("sendMessage.puml"), sendMessageFlow.content());
 
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
