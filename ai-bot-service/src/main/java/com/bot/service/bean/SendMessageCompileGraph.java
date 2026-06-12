@@ -34,8 +34,6 @@ public class SendMessageCompileGraph {
     private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final BotStatusSearchNode botStatusSearchNode;
-    private final MemoryVectorSearchNode memoryVectorSearchNode;
-    private final GraphSearchNode graphSearchNode;
     private final CheckAggregateNode checkAggregateNode;
     private final SendMessageUtil sendMessageUtil;
 
@@ -61,8 +59,8 @@ public class SendMessageCompileGraph {
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
                     .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT,NodeEnum.WANT_TO)))
                     .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
-                    .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
-                    .addNode("graphSearchNode", node_async(graphSearchNode))
+                    .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
+                    .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO)))
                     .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO)))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
@@ -70,7 +68,7 @@ public class SendMessageCompileGraph {
                     .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
                     .addNode("sendMessageNode", node_async(state -> {
                         sendMessageUtil.sendChatMsg(
-                                (Long) state.value("userId",Long.class).get(),
+                                state.value("userId",Long.class).get(),
                                 (String) state.value("formatOutPut").orElse("")
                         );
                         return Map.of();
