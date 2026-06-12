@@ -94,7 +94,7 @@ public class ImageAnalysisNode implements NodeAction {
 
                 Matcher resultMatcher = resultPattern.matcher(content);
 
-                // 如果是表情包 就查询消息id存到数据库  todo 保存到emoji目录
+                // 如果是表情包 保存到emoji目录
                 if (resultMatcher.find()){
                     String emo = resultMatcher.group(1);
                     String fileName = resultMatcher.group(2);

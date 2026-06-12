@@ -31,6 +31,7 @@ public class BotStatusSearchNode implements NodeAction {
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws InterruptedException {
+        // todo 把生成消息节点前面的查询逻辑挪到这里
         log.info("开始心情分析");
         Long userId = state.value("userId", Long.class).orElse(0L);
         String memoryString = state.value("memoryString", String.class).orElse("");

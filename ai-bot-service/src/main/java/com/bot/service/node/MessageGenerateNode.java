@@ -36,6 +36,8 @@ import java.util.Map;
 @Component
 public class MessageGenerateNode implements NodeAction {
 
+    // todo 改造成LlmNode 形式 人设提示词重新调整
+
     private final ChatClientFactory chatClientFactory;
 
     private final TbAiChatMemoryService tbAiChatMemoryService;

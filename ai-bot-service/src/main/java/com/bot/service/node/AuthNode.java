@@ -26,6 +26,7 @@ public class AuthNode implements NodeAction {
     private final SendMessageUtil sendMessageUtil;
     @Override
     public Map<String, Object> apply(OverAllState state){
+        // todo 启动之后校验是否齐全，之后跳过校验
         Long userId = state.value("userId",Long.class).orElse(0L);
 
         List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserId(userId);
