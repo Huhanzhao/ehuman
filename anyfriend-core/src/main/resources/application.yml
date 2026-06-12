@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    # SQLite 数据库连接配置
+    url: jdbc:sqlite:./sqlite/aiBot.db
+    driver-class-name: org.sqlite.JDBC
+    # SQLite 不需要用户名和密码
+    username:
+    password:
+  application:
+    name: ai-bot-service
+  profiles:
+    active: local
+  config:
+    import:
+      - optional:application.yml
+      - optional:application-${spring.profiles.active}.yml
+  ai:
+    anthropic:
+      api-key: sdfs
+    openai:
+      api-key: dsg
+server:
+  port: 8081
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.bot.service.config: info
+
+shiro:
+  ws:
+    server:
+      enable: true
+      url: "/ws"   # websocket服务端地址 napCat需要在webui页面配置ws客户端 ws://localhost:8081/ws
+    access-token: qqBot
+  plugin-list:
+   - com.anyfriend.core.plugin.TestPlugin
+   - com.anyfriend.core.plugin.SystemPlugin
+   - com.anyfriend.core.plugin.QQBotPlugin
+
+bot:
+  classes-use-audio-path: ../../../anyfriend-plugin/plugin/TTS/audio/
+  audio-path: ./anyfriend-plugin/plugin/TTS/audio/
+  emoji-base-path: ./emoji/
+  voice-plugin-source-path: ./anyfriend-plugin/plugin/TTS
+  voice-plugin-classes-path: ./anyfriend-plugin/target/plugin/classes

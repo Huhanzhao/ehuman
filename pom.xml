@@ -3,17 +3,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.bot</groupId>
-    <artifactId>ai-bot</artifactId>
+    <groupId>com.anyfriend</groupId>
+    <artifactId>anyfriend-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>ai-bot</name>
-    <description>ai-bot</description>
+    <name>com.anyfriend.parent</name>
+    <description>anyfriend</description>
 
 
     <packaging>pom</packaging>
     <modules>
-        <module>ai-bot-service</module>
-        <module>qq-bot-plugin</module>
+        <module>anyfriend-core</module>
+        <module>anyfriend-plugin</module>
+        <module>anyfriend-dao</module>
     </modules>
 
     <properties>

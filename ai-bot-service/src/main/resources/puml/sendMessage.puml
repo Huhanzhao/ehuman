@@ -43,10 +43,10 @@ hexagon "check state" as condition2<<Condition>>
 "memoryCheckLlmNode" -down-> "checkAggregateNode"
 "interactionCheckLlmNode" -down-> "checkAggregateNode"
 "checkAggregateNode" .down.> "condition2"
-"condition2" .down.> "messageGenerateNode"
-'"checkAggregateNode" .down.> "messageGenerateNode"
 "condition2" .down.> "formatOutPutLlmNode": "transformTagMessageNode"
 '"checkAggregateNode" .down.> "formatOutPutLlmNode": "transformTagMessageNode"
+"condition2" .down.> "messageGenerateNode"
+'"checkAggregateNode" .down.> "messageGenerateNode"
 "formatOutPutLlmNode" -down-> "sendMessageNode"
 "sendMessageNode" -down-> "__END__"
 @enduml
