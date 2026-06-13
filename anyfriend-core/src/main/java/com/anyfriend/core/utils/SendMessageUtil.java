@@ -197,4 +197,10 @@ public class SendMessageUtil {
         botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,build,false);
         tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(message));
     }
+
+    // 发送系统消息
+    public void sendSystemMsg(Long userId,String message) {
+        Long botId = Long.valueOf(System.getProperty("BOT_ID"));
+        botContainer.robots.get(botId).sendPrivateMsg(userId,message,false);
+    }
 }

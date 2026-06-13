@@ -3,7 +3,6 @@ package com.anyfriend.core.bean;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbChatConfigDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
-import com.anyfriend.dao.enums.ChatModelEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbChatConfigDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
@@ -24,6 +23,8 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.List;
 import java.util.Map;
+
+import static com.anyfriend.dao.enums.ChatModelCategoryEnum.*;
 
 @Component
 @Slf4j
@@ -53,12 +54,12 @@ public class ChatClientFactory {
 
         TbChatConfigDo chatConfigDo = tbChatConfigDoService.getByUserId(userId);
 
-        if (ChatModelEnum.GPT_4O_MINI.getCategory().equals(modelConfigDo.getCategory()) ||
-                ChatModelEnum.DEEP_SEEK_V3_2.getCategory().equals(modelConfigDo.getCategory()) ||
-                ChatModelEnum.GROK_4_1_NO_REASONING.getCategory().equals(modelConfigDo.getCategory())
+        if (GPT.getCategory().equals(modelConfigDo.getCategory()) ||
+                DEEP_SEEK.getCategory().equals(modelConfigDo.getCategory()) ||
+                GROK.getCategory().equals(modelConfigDo.getCategory())
         ){
             return createOpenAiChatClient(modelConfigDo,chatConfigDo);
-        }else if (ChatModelEnum.CLAUDE_SONNET_4_5.getCategory().equals(modelConfigDo.getCategory())){
+        }else if (CLAUDE.getCategory().equals(modelConfigDo.getCategory())){
             return createClaudeChatClient(modelConfigDo,chatConfigDo);
         }else {
             log.error("不支持的模型");

@@ -1,0 +1,24 @@
+@startuml API_Config_flow
+skinparam usecaseFontSize 14
+skinparam usecaseStereotypeFontSize 12
+skinparam hexagonFontSize 14
+skinparam hexagonStereotypeFontSize 12
+title "API Config flow"
+footer
+
+powered by spring-ai-alibaba
+end footer
+circle start<<input>> as __START__
+circle stop as __END__
+usecase "cateGoryNode"<<Node>>
+usecase "modelNameNode"<<Node>>
+usecase "baseUrlNode"<<Node>>
+usecase "proxyNode"<<Node>>
+usecase "apiKeyNode"<<Node>>
+"__START__" -down-> "cateGoryNode"
+"cateGoryNode" -down-> "modelNameNode"
+"modelNameNode" -down-> "baseUrlNode"
+"baseUrlNode" -down-> "proxyNode"
+"proxyNode" -down-> "apiKeyNode"
+"apiKeyNode" -down-> "__END__"
+@enduml

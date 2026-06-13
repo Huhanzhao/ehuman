@@ -57,7 +57,7 @@ public class SystemPlugin extends BotPlugin {
     private CompiledGraph apiConfigGraph;
 
     // todo 声音voice graph
-    private CompiledGraph voiceConfigGraph;
+//    private CompiledGraph voiceConfigGraph;
 
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
 
@@ -68,7 +68,7 @@ public class SystemPlugin extends BotPlugin {
     @PostConstruct
     public void init() {
         this.apiConfigGraph = systemGraph.getApiConfigGraph();
-        this.voiceConfigGraph = systemGraph.getVoiceGraph();
+//        this.voiceConfigGraph = systemGraph.getVoiceGraph();
     }
 
     @PrivateMessageHandler
