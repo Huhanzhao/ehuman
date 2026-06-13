@@ -84,7 +84,7 @@ public class BotLifeDetailCreateJob implements Job {
         String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
 
         // 调用AI生成今天的生活细节
-        String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的详细生活安排。\n\n" +
+        String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的生活安排。\n\n" +
                 "## 角色信息\n" +
                 botRole +
                 "\n\n" +
@@ -95,15 +95,15 @@ public class BotLifeDetailCreateJob implements Job {
                 "3. 每个时间段要具体、真实、贴近角色的日常生活 （比如吃饭 睡觉 玩手机 和朋友聊天等）\n" +
                 "4. 根据近期聊天内容适当融入相关情节（比如聊到过的话题、用户提到的事情等）\n" +
                 "5. 时间段要细致划分，一天至少15-20条记录，覆盖全天\n" +
-                "6. 每条描述简洁生动，15-30字\n\n" +
+                "6. 每条描述只说做了什么，10字以内\n\n" +
                 "## 输出格式\n" +
                 "严格按以下格式输出，每行一条，不要输出其他内容：\n" +
                 "HH:mm-HH:mm: 生活细节描述\n" +
                 "HH:mm-HH:mm: 生活细节描述\n" +
                 "...\n\n" +
                 "示例：\n" +
-                "00:00-07:30: 在宿舍睡觉，睡前刷了会手机\n" +
-                "07:30-08:00: 赖床十分钟然后洗漱化妆\n" +
+                "00:00-07:30: 在宿舍睡觉，玩了会手机\n" +
+                "07:30-08:00: 起床洗漱\n" +
                 "08:00-08:30: 和室友去食堂吃早餐";
 
         try {
@@ -174,7 +174,7 @@ public class BotLifeDetailCreateJob implements Job {
                         String jobName = "proactive_msg_" + detail.getId();
                         try {
                             jobManager.addJob(jobName, "message", cron,
-                                    "com.bot.service.job.action.SendMessageJob", detail.getDetail());
+                                    "com.anyfriend.core.job.action.SendMessageJob", detail.getDetail());
                             log.info("已创建主动消息定时任务: {} at {}", jobName, cron);
                         } catch (Exception e) {
                             log.error("创建主动消息任务失败: {}", jobName, e);
