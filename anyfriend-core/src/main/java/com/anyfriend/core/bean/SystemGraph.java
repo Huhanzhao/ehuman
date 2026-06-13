@@ -8,7 +8,9 @@ import com.anyfriend.core.node.SystemInterruptionNode;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
@@ -26,17 +28,20 @@ public class SystemGraph {
 
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
 
+    @Autowired
+    private ObjectMapper mapper;
+
     public CompiledGraph getApiConfigGraph() {
         // 配置 KeyStrategyFactory 不配置会导致人类反馈拿不到状态
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
             keyStrategyHashMap.put("userInput", new ReplaceStrategy());
             keyStrategyHashMap.put("userId", new ReplaceStrategy());
-            keyStrategyHashMap.put("cateGory", new ReplaceStrategy());
-            keyStrategyHashMap.put("modelName", new ReplaceStrategy());
+            keyStrategyHashMap.put("category", new ReplaceStrategy());
+            keyStrategyHashMap.put("model", new ReplaceStrategy());
             keyStrategyHashMap.put("baseUrl", new ReplaceStrategy());
             keyStrategyHashMap.put("apiKey", new ReplaceStrategy());
-            keyStrategyHashMap.put("proxy", new ReplaceStrategy());
+            keyStrategyHashMap.put("needProxy", new ReplaceStrategy());
             return keyStrategyHashMap;
         };
 
@@ -45,7 +50,7 @@ public class SystemGraph {
 
         // 收集模型类别节点
         SystemInterruptionNode cateGoryNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
-                .interruptKey("cateGory")
+                .interruptKey("category")
                 .nodeName("收集模型类别节点")
                 .inputPrompt("请输入要设置模型类别的序号：\n1.chatGpt\n2.claude\n3.grok\n4.deepseek")
                 .inputMapping(Map.of("1", GPT.getCategory(),
@@ -56,7 +61,7 @@ public class SystemGraph {
 
         // 收集模型名字节点
         SystemInterruptionNode modelNameNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
-                .interruptKey("modelName")
+                .interruptKey("model")
                 .nodeName("收集模型型号节点")
                 .inputPrompt("请输入model型号")
                 .build();
@@ -73,7 +78,7 @@ public class SystemGraph {
 
         // 收集是否需要代理
         SystemInterruptionNode proxyNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
-                .interruptKey("proxy")
+                .interruptKey("needProxy")
                 .nodeName("收集是否需要代理节点")
                 .inputPrompt("是否需要代理,请输入序号：\n1.是\n2.否")
                 .inputMapping(Map.of("1", true,
@@ -88,13 +93,7 @@ public class SystemGraph {
                 .afterLlmCallback((state, llmOutput) -> {
                     // 保存api配置
                     Map<String,Object> data = state.data();
-                    TbUserModelConfigDo modelConfigDo = new TbUserModelConfigDo()
-                            .setModel(data.get("modelName").toString())
-                            .setCategory(data.get("cateGory").toString())
-                            .setBaseUrl(data.get("baseUrl").toString())
-                            .setApiKey(data.get("apiKey").toString())
-                            .setUserId((Long.valueOf(data.get("userId").toString())))
-                            .setNeedProxy(Boolean.parseBoolean(data.get("proxy").toString()));
+                    TbUserModelConfigDo modelConfigDo = mapper.convertValue(state.data(), TbUserModelConfigDo.class);
                     // 插入数据
                     tbUserModelConfigDoService.save(modelConfigDo);
 

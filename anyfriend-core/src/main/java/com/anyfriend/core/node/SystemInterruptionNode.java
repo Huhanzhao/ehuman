@@ -34,11 +34,12 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         String userInput = state.value("userInput",String.class).orElse("").trim();
         // 正常节点逻辑：更新状态
-        String setValue = userInput;
         if (inputMapping != null && inputMapping.containsKey(userInput)){
-            setValue = inputMapping.get(userInput).toString();
+            state.updateState(Map.of(interruptKey, inputMapping.get(userInput)));
+        }else {
+            state.updateState(Map.of(interruptKey, userInput));
         }
-        state.updateState(Map.of(interruptKey, setValue,"userInput", ""));
+        state.updateState(Map.of("userInput", ""));
         // 执行后续逻辑
         if (afterLlmCallback != null) afterLlmCallback.execute(state, "");
         return CompletableFuture.completedFuture(Map.of());
