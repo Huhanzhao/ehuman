@@ -5,7 +5,11 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.anyfriend.core.node.*;
+import com.anyfriend.core.config.NodeStatePersistenceListener;
+import com.anyfriend.core.node.BotStatusSearchNode;
+import com.anyfriend.core.node.CheckAggregateNode;
+import com.anyfriend.core.node.LlmNode;
+import com.anyfriend.core.node.UserWantToNode;
 import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.MemoryCastUtils;
@@ -43,6 +47,7 @@ public class SendMessageCompileGraph {
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
     private final ChatClientFactory chatClientFactory;
+    private final NodeStatePersistenceListener nodeStatePersistenceListener;
 
 
     @Bean("sendMessageCompiledGraph")
@@ -132,6 +137,7 @@ public class SendMessageCompileGraph {
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();
             var compileConfig = CompileConfig.builder()
+                    .withLifecycleListener(nodeStatePersistenceListener)
                     .saverConfig(SaverConfig.builder()
                             .register(saver)
                             .build())

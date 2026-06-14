@@ -1,7 +1,7 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : qq_bot
+ Source Server         : bot_local
  Source Server Type    : SQLite
  Source Server Version : 3035005
  Source Schema         : main
@@ -10,7 +10,7 @@
  Target Server Version : 3035005
  File Encoding         : 65001
 
- Date: 28/05/2026 20:44:25
+ Date: 14/06/2026 20:11:12
 */
 
 PRAGMA foreign_keys = false;
@@ -24,8 +24,8 @@ CREATE TABLE "tb_ai_chat_memory" (
   "MEMORY_ID" INTEGER NOT NULL,
   "MESSAGE" TEXT NOT NULL,
   "ROLE" TEXT NOT NULL,
-  "CREATE_TIME" NUMERIC NOT NULL,
-  "UPDATE_TIME" NUMERIC NOT NULL,
+  "CREATE_TIME" date NOT NULL,
+  "UPDATE_TIME" date NOT NULL,
   "DELETE_FLAG" INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY ("ID")
 );
@@ -37,11 +37,24 @@ DROP TABLE IF EXISTS "tb_bot_life_detail";
 CREATE TABLE "tb_bot_life_detail" (
   "id" INTEGER NOT NULL,
   "bot_id" INTEGER NOT NULL,
-  "start_time" NUMERIC NOT NULL,
-  "end_time" NUMERIC NOT NULL,
+  "start_time" date NOT NULL,
+  "end_time" date NOT NULL,
   "detail" TEXT NOT NULL,
-  "create_time" NUMERIC,
-  "update_time" NUMERIC,
+  "create_time" date,
+  "update_time" date,
+  PRIMARY KEY ("id")
+);
+
+-- ----------------------------
+-- Table structure for tb_bot_prompt
+-- ----------------------------
+DROP TABLE IF EXISTS "tb_bot_prompt";
+CREATE TABLE "tb_bot_prompt" (
+  "id" integer NOT NULL,
+  "content" TEXT,
+  "type" integer,
+  "create_time" DATE,
+  "update_time" DATE,
   PRIMARY KEY ("id")
 );
 
@@ -58,6 +71,21 @@ CREATE TABLE "tb_chat_config" (
 );
 
 -- ----------------------------
+-- Table structure for tb_graph_log
+-- ----------------------------
+DROP TABLE IF EXISTS "tb_graph_log";
+CREATE TABLE "tb_graph_log" (
+  "id" TEXT NOT NULL,
+  "thread_id" text,
+  "node_id" text,
+  "state" TEXT,
+  "error_message" TEXT,
+  "create_time" DATE,
+  "update_time" DATE,
+  PRIMARY KEY ("id")
+);
+
+-- ----------------------------
 -- Table structure for tb_quartz_job
 -- ----------------------------
 DROP TABLE IF EXISTS "tb_quartz_job";
@@ -69,8 +97,8 @@ CREATE TABLE "tb_quartz_job" (
   "cron" TEXT,
   "status" INTEGER,
   "class_name" TEXT,
-  "create_time" NUMERIC,
-  "update_time" NUMERIC,
+  "create_time" date,
+  "update_time" date,
   "deleted" INTEGER DEFAULT 0,
   PRIMARY KEY ("id")
 );
@@ -85,8 +113,8 @@ CREATE TABLE "tb_update_grace_history" (
   "increase" INTEGER,
   "decrease" INTEGER,
   "reason" TEXT,
-  "create_time" NUMERIC,
-  "update_time" NUMERIC,
+  "create_time" date,
+  "update_time" date,
   PRIMARY KEY ("id")
 );
 
@@ -100,10 +128,11 @@ CREATE TABLE "tb_user_bot_status" (
   "grace" INTEGER,
   "familiarity" INTEGER NOT NULL DEFAULT 0,
   "mood" INTEGER NOT NULL DEFAULT 0,
+  "mood_reason" TEXT,
   "create_by" TEXT,
-  "create_time" NUMERIC,
+  "create_time" date,
   "update_by" TEXT,
-  "update_time" NUMERIC,
+  "update_time" date,
   "delete_flag" INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY ("id")
 );
@@ -116,8 +145,8 @@ CREATE TABLE "tb_user_info" (
   "id" INTEGER NOT NULL,
   "user_id" INTEGER NOT NULL,
   "user_info" TEXT,
-  "create_time" NUMERIC,
-  "update_time" NUMERIC,
+  "create_time" date,
+  "update_time" date,
   PRIMARY KEY ("id")
 );
 
@@ -129,8 +158,8 @@ CREATE TABLE "tb_user_message_summary" (
   "id" INTEGER NOT NULL,
   "user_id" INTEGER NOT NULL,
   "summary" TEXT NOT NULL,
-  "create_time" NUMERIC,
-  "update_time" NUMERIC,
+  "create_time" date,
+  "update_time" date,
   PRIMARY KEY ("id")
 );
 
@@ -145,8 +174,8 @@ CREATE TABLE "tb_user_model_config" (
   "user_id" INTEGER,
   "base_url" TEXT,
   "api_key" TEXT,
-  "update_time" NUMERIC,
-  "create_time" NUMERIC,
+  "update_time" date,
+  "create_time" date,
   "delete_flag" INTEGER NOT NULL DEFAULT 0,
   "category" TEXT,
   "need_proxy" INTEGER NOT NULL DEFAULT 0,
@@ -154,17 +183,17 @@ CREATE TABLE "tb_user_model_config" (
 );
 
 -- ----------------------------
--- Table structure for tb_user_voice_model
+-- Table structure for tb_user_refer_audio
 -- ----------------------------
-DROP TABLE IF EXISTS "tb_user_voice_model";
-CREATE TABLE "tb_user_voice_model" (
+DROP TABLE IF EXISTS "tb_user_refer_audio";
+CREATE TABLE "tb_user_refer_audio" (
   "id" INTEGER NOT NULL,
   "user_id" INTEGER,
-  "voice_model_url" TEXT,
-  "voice_model_name" TEXT,
+  "refer_audio_url" TEXT,
+  "refer_audio_name" TEXT,
   "enable" INTEGER,
-  "create_time" NUMERIC,
-  "update_time" NUMERIC,
+  "create_time" date,
+  "update_time" date,
   "delete_flag" INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY ("id")
 );

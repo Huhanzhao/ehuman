@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.anyfriend.core.config.NodeStatePersistenceListener;
 import com.anyfriend.core.node.SystemInterruptionNode;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
@@ -25,6 +26,7 @@ public class SystemGraph {
     private final SendMessageUtil sendMessageUtil;
 
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
+    private final NodeStatePersistenceListener nodeStatePersistenceListener;
 
     @Autowired
     private ObjectMapper mapper;
@@ -121,6 +123,7 @@ public class SystemGraph {
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();
             var compileConfig = CompileConfig.builder()
+                    .withLifecycleListener(nodeStatePersistenceListener)
                     .saverConfig(SaverConfig.builder()
                             .register(saver)
                             .build())
