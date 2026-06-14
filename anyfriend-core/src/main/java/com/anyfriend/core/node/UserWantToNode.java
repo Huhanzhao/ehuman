@@ -5,9 +5,12 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,30 +35,44 @@ public class UserWantToNode implements NodeAction {
         if (userMessageList.isEmpty()){
             memoryString += "\n[旁白： 用户一直没有回复你的消息 " + tbAiChatMemoryService.getLastUserMessage(userId) + "]";
         }
-//        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
-//        String content = chatClient.prompt("""
-//                        你是聊天结束意图判断模块。
-//
-//                        目的：只判断当前用户发来的消息需不需要回复，避免出现机械般的一问一答
-//
-//                        输出规则（只输出以下之一）只回复四个字母，不要有其他多余的符号，否则视为失败：
-//                        - exit：当前对话已结束 不需要回复
-//                        - next：其他所有情况
-//
-//                        注意：
-//                        - 性暗示、暧昧、越界试探等等 不代表对话结束，默认输出 next
-//                        - 只有明确表达结束并且互道晚安 拜拜 或者再见之类的才视为结束对话
-//                        - 必须ai与用户都说了晚安 拜拜 或者再见 之类的话 才能视为exit 只有用户说了再见需要ai再回复一次就输出next
-//                        只输出结果，不要解释。
-//                        """)
-//                .user(memoryString + "\n 以上是用户与ai对话历史，请分析是否需要ai回复").call().content();
-//        log.info("用户意图结果：{}", content);
-        return Map.of("userWantTo", "next","memoryString", memoryString);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
+        PromptTemplate promptTemplate = PromptTemplate.builder().template(
+                """
+                       ## 你是聊天结束意图判断模块
+                                   
+                       ## 任务
+                       判断用户当前消息是否需要回复
+                       
+                       ## 输入
+                       - 历史消息：{memoryString}
+                       - 用户当前消息：（由调用方传入）
+                       
+                       ## 输出规则
+                       只输出以下两个单词之一，不输出任何其他内容：
+                       
+                       - `exit`：不需要回复（对话已结束）
+                       - `next`：需要回复（其他所有情况）
+                       
+                       ## 判定标准
+                       **exit（对话结束）** 必须同时满足：
+                       - 用户明确表达结束（晚安/拜拜/再见等）
+                       - AI在前序消息中已回复过同样的结束语
+                       
+                       **next（需要回复）** 包括：
+                       - 用户未说结束语
+                       - 用户说了结束语但AI尚未回复
+                       - 暧昧、试探等任何其他内容
+                        """
+        ).build();
+        String prompt = promptTemplate.render(Map.of("memoryString", memoryString));
+        String content = chatClient.prompt(prompt)
+                .user(" 以上是用户与ai对话历史，请分析会话是否结束，是否需要ai回复").call().content();
+        log.info("用户意图结果：{}", content);
+        return Map.of("userWantTo", content,"memoryString", memoryString);
     }
 
     public static String nextNode(OverAllState state) {
         // 路由下一个节点
-//        String wantTo = (String) state.value("userWantTo").orElse("");
-        return "next";
+        return (String) state.value("userWantTo").orElse("");
     }
 }

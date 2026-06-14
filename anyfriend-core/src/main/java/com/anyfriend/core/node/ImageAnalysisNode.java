@@ -11,7 +11,6 @@ import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.enums.PromptTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
-import com.mikuac.shiro.core.BotContainer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -40,12 +39,6 @@ public class ImageAnalysisNode implements NodeAction {
 
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
-
-//    @Autowired
-//    private TbUserStickerMsgDoService tbUserStickerMsgDoService;
-
-    @Autowired
-    private BotContainer botContainer;
 
     @Autowired
     private TbBotPromptDoService tbBotPromptDoService;
