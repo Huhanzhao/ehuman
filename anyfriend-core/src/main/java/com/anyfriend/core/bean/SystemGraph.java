@@ -13,10 +13,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.anyfriend.dao.enums.ChatModelCategoryEnum.*;
@@ -32,26 +30,10 @@ public class SystemGraph {
     private ObjectMapper mapper;
 
     public CompiledGraph getApiConfigGraph() {
-        // 配置 KeyStrategyFactory 不配置会导致人类反馈拿不到状态
-        KeyStrategyFactory keyStrategyFactory = () -> {
-            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-            keyStrategyHashMap.put("userInput", new ReplaceStrategy());
-            keyStrategyHashMap.put("userId", new ReplaceStrategy());
-            keyStrategyHashMap.put("category", new ReplaceStrategy());
-            keyStrategyHashMap.put("model", new ReplaceStrategy());
-            keyStrategyHashMap.put("baseUrl", new ReplaceStrategy());
-            keyStrategyHashMap.put("apiKey", new ReplaceStrategy());
-            keyStrategyHashMap.put("needProxy", new ReplaceStrategy());
-            return keyStrategyHashMap;
-        };
-
-
-        StateGraph stateGraph = new StateGraph(keyStrategyFactory);
-
         // 收集模型类别节点
         SystemInterruptionNode cateGoryNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("category")
-                .nodeName("收集模型类别节点")
+                .nodeName("cateGoryNode")
                 .inputPrompt("请输入要设置模型类别的序号：\n1.chatGpt\n2.claude\n3.grok\n4.deepseek")
                 .inputMapping(Map.of("1", GPT.getCategory(),
                         "2", CLAUDE.getCategory(),
@@ -62,13 +44,13 @@ public class SystemGraph {
         // 收集模型名字节点
         SystemInterruptionNode modelNameNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("model")
-                .nodeName("收集模型型号节点")
+                .nodeName("modelNameNode")
                 .inputPrompt("请输入model型号")
                 .build();
         // 收集baseUrl
         SystemInterruptionNode baseUrlNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("baseUrl")
-                .nodeName("收集baseUrl节点")
+                .nodeName("baseUrlNode")
                 .inputPrompt("请输入baseUrl")
                 .afterLlmCallback((state, llmOutput) -> {
                     // 如果包含v1 去掉v1
@@ -79,7 +61,7 @@ public class SystemGraph {
         // 收集是否需要代理
         SystemInterruptionNode proxyNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("needProxy")
-                .nodeName("收集是否需要代理节点")
+                .nodeName("proxyNode")
                 .inputPrompt("是否需要代理,请输入序号：\n1.是\n2.否")
                 .inputMapping(Map.of("1", true,
                         "2", false))
@@ -88,7 +70,7 @@ public class SystemGraph {
         // 收集模型名字节点
         SystemInterruptionNode apiKeyNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("apiKey")
-                .nodeName("收集apiKey节点")
+                .nodeName("apiKeyNode")
                 .inputPrompt("请输入apiKey")
                 .afterLlmCallback((state, llmOutput) -> {
                     // 保存api配置
@@ -102,21 +84,39 @@ public class SystemGraph {
                 })
                 .build();
 
+        return getSystemGraph(List.of(cateGoryNode, modelNameNode, baseUrlNode, proxyNode, apiKeyNode),
+                List.of("category", "model", "baseUrl", "apiKey", "needProxy"));
+    }
+
+
+    // 获取系统收集信息中断节点图
+    public CompiledGraph getSystemGraph(List<SystemInterruptionNode> nodes, List<String> keys) {
+        // 配置 KeyStrategyFactory 不配置会导致人类反馈拿不到状态
+        KeyStrategyFactory keyStrategyFactory = () -> {
+            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+            for (String key : keys) {
+                keyStrategyHashMap.put(key, new ReplaceStrategy());
+            }
+            keyStrategyHashMap.put("userInput", new ReplaceStrategy());
+            keyStrategyHashMap.put("userId", new ReplaceStrategy());
+            return keyStrategyHashMap;
+        };
+
+        StateGraph stateGraph = new StateGraph(keyStrategyFactory);
 
         try {
-            stateGraph
-                    .addNode("cateGoryNode", cateGoryNode)
-                    .addNode("modelNameNode", modelNameNode)
-                    .addNode("baseUrlNode", baseUrlNode)
-                    .addNode("proxyNode", proxyNode)
-                    .addNode("apiKeyNode", apiKeyNode)
-
-                    .addEdge( StateGraph.START, "cateGoryNode")
-                    .addEdge( "cateGoryNode", "modelNameNode")
-                    .addEdge( "modelNameNode", "baseUrlNode")
-                    .addEdge( "baseUrlNode", "proxyNode")
-                    .addEdge( "proxyNode", "apiKeyNode")
-                    .addEdge("apiKeyNode", StateGraph.END);
+            for (int i = 0; i < nodes.size(); i++){
+                SystemInterruptionNode node = nodes.get(i);
+                stateGraph.addNode(node.getNodeName(), node);
+                if (i == 0){
+                    stateGraph.addEdge(StateGraph.START, node.getNodeName());
+                    stateGraph.addEdge(node.getNodeName(), nodes.get(i + 1).getNodeName());
+                }else if (i == nodes.size() - 1){
+                    stateGraph.addEdge(node.getNodeName(), StateGraph.END);
+                }else {
+                    stateGraph.addEdge(node.getNodeName(), nodes.get(i + 1).getNodeName());
+                }
+            }
 
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();
@@ -125,13 +125,6 @@ public class SystemGraph {
                             .register(saver)
                             .build())
                     .build();
-            // 生成 PUML 文件
-            GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
-                    "API Config flow");
-            Path pumlDir = Paths.get("ai-bot-service/src/main/resources/puml");
-            Files.createDirectories(pumlDir);
-            Files.writeString(pumlDir.resolve("ApiConfigGraph.puml"), graphRepresentation.content());
-
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);
         } catch (Exception e) {

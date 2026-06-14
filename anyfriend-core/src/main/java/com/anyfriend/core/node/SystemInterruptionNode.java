@@ -8,6 +8,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
 import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Builder
+@Data
 public class SystemInterruptionNode implements AsyncNodeActionWithConfig, InterruptableAction {
 
     private SendMessageUtil sendMessageUtil;

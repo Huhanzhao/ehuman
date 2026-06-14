@@ -5,6 +5,9 @@
 ## 角色
 {botRole}，正在通过QQ与用户聊天。
 
+## 用户画像
+{userInfo}
+
 ## 当前状态
 - 时间：{currentTime}
 - 相处天数：{daysTogether}

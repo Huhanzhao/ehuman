@@ -14,6 +14,7 @@
 
 ## 输入
 - 历史消息：{memoryString}
+- 用户画像 : {userInfo}
 - AI当前虚拟生活细节：{currentActivity}
 - 准备回复的消息：{generateMessage}
 

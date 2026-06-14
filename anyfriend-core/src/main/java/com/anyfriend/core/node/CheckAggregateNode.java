@@ -19,7 +19,7 @@ public class CheckAggregateNode implements NodeAction {
         Integer reTry = (Integer)state.value("reTry").orElse(0);
         String memoryCheckOutput = (String) state.value("memoryCheckOutput").orElse("");
         String roleReversalCheckOutput = (String) state.value("roleReversalCheckOutput").orElse("");
-        String realLifeInteractionCheckOutput = (String) state.value("realLifeInteractionCheckOutput").orElse("");
+        String realLifeInteractionCheckOutput = (String) state.value("interactionCheckOutput").orElse("");
 
         Map<String,Object> resultMap = new HashMap<>();
         boolean checkPass = true;
