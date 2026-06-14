@@ -10,7 +10,7 @@
 
 ## 输入
 - 历史消息：{memoryString}
-- AI当前虚拟生活细节：{currentActivity}
+- AI当前虚拟生活细节：{lifeDetail}
 - 用户画像 : {userInfo}
 - 准备回复的消息：{generateMessage}
 

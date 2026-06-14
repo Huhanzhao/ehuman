@@ -33,8 +33,9 @@ public class MainGraph {
         // 配置 KeyStrategyFactory
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-            keyStrategyHashMap.put("messages", new AppendStrategy());
+            keyStrategyHashMap.put("messages", new ReplaceStrategy());
             keyStrategyHashMap.put("failReason", new AppendStrategy());
+            keyStrategyHashMap.put("userInfo", new ReplaceStrategy());
             keyStrategyHashMap.put("human_feedback", new ReplaceStrategy());
             return keyStrategyHashMap;
         };

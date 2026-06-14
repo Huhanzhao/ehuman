@@ -45,6 +45,7 @@ public class SendMessageCompileGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
             keyStrategyHashMap.put("messages", new ReplaceStrategy());
+            keyStrategyHashMap.put("userInfo", new ReplaceStrategy());
             keyStrategyHashMap.put("failReason", new AppendStrategy());
             keyStrategyHashMap.put("human_feedback", new ReplaceStrategy());
             return keyStrategyHashMap;
@@ -57,7 +58,7 @@ public class SendMessageCompileGraph {
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerateNode))
                     .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.WANT_TO)))
-                    .addNode("botStatusSearchNode", node_async(botStatusSearchNode))
+                    .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO)))

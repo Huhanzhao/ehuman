@@ -14,7 +14,7 @@
 ## 输入
 - 历史消息：{memoryString}
 - 用户画像 : {userInfo}
-- AI当前虚拟生活细节：{currentActivity}
+- AI当前虚拟生活细节：{lifeDetail}
 - 准备回复的消息：{generateMessage}
 
 ## 输出规则（严格30字以内）

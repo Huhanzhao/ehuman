@@ -90,7 +90,7 @@ public class SystemGraph {
 
 
     // 获取系统收集信息中断节点图
-    public CompiledGraph getSystemGraph(List<SystemInterruptionNode> nodes, List<String> keys) {
+    private CompiledGraph getSystemGraph(List<SystemInterruptionNode> nodes, List<String> keys) {
         // 配置 KeyStrategyFactory 不配置会导致人类反馈拿不到状态
         KeyStrategyFactory keyStrategyFactory = () -> {
             HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
