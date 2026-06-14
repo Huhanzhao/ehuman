@@ -6,11 +6,16 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.anyfriend.core.node.*;
+import com.anyfriend.core.service.AfterLlmCallback;
+import com.anyfriend.core.service.BeforeLlmCallback;
+import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.enums.LlmNodeTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -20,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -30,11 +36,11 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @RequiredArgsConstructor
 @Slf4j
 public class SendMessageCompileGraph {
-    private final MessageGenerateNode messageGenerateNode;
     private final UserWantToNode userWantToNode;
     private final BotStatusSearchNode botStatusSearchNode;
     private final CheckAggregateNode checkAggregateNode;
     private final SendMessageUtil sendMessageUtil;
+    private final TbAiChatMemoryService tbAiChatMemoryService;
 
     private final ChatClientFactory chatClientFactory;
 
@@ -54,17 +60,33 @@ public class SendMessageCompileGraph {
         StateGraph stateGraph = new StateGraph(keyStrategyFactory);
 
         try {
+            // 创建消息生成节点
+            LlmNode messageGenerate = getLlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
+                    NodeEnum.GENERATE,
+                    state -> {
+                        Long userId = (Long)state.value("userId").orElse(0L);
+                        List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
+                                tbAiChatMemoryService.getMessageList(userId, 15));
+                        Boolean initiative = (Boolean)state.value("initiative").orElse(false);
+                        String userMessage = null;
+                        if ( initiative){
+                            userMessage = "这条消息是你主动给用户发送的消息，不是用户主动给你发送的消息";
+                        }
+                        return new LlmNode.BeforeCallBackEntity(messageList, userMessage);
+                    },
+                    null);
+
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
-                    .addNode("messageGenerateNode", node_async(messageGenerateNode))
-                    .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.WANT_TO)))
+                    .addNode("messageGenerateNode", node_async(messageGenerate))
+                    .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.WANT_TO,null,null)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
-                    .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO)))
-                    .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO)))
+                    .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO,null,null)))
+                    .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO,null,null)))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
-                    .addNode("interactionCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO)))
+                    .addNode("interactionCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO,null,null)))
                     .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
                     .addNode("sendMessageNode", node_async(state -> {
                         sendMessageUtil.sendChatMsg(
@@ -129,18 +151,20 @@ public class SendMessageCompileGraph {
         }
     }
 
-    public LlmNode getLlmNode(LlmNodeTypeEnum nodeTypeEnum, NodeEnum nodeEnum) {
+    public LlmNode getLlmNode(LlmNodeTypeEnum nodeTypeEnum, NodeEnum nodeEnum, BeforeLlmCallback beforeLlmCallback, AfterLlmCallback afterLlmCallback) {
         PromptTemplate promptTemplate = null;
         try {
             promptTemplate = PromptTemplate.builder().template(
                     Files.readString(Paths.get(nodeTypeEnum.getPromptTemplatePath()))).build();
-            return LlmNode.builder()
+            LlmNode.LlmNodeBuilder llmNodeBuilder = LlmNode.builder()
                     .nodeName(nodeTypeEnum.getNodeName())
                     .promptTemplate(promptTemplate)
                     .outPutKey(nodeTypeEnum.getOutputKey())
+                    .beforeLlmCallback(beforeLlmCallback)
+                    .afterLlmCallback(afterLlmCallback)
                     .nodeEnum(nodeEnum)
-                    .chatClientFactory(chatClientFactory)
-                    .build();
+                    .chatClientFactory(chatClientFactory);
+            return llmNodeBuilder.build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
