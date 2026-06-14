@@ -46,7 +46,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-        // todo 把生成消息节点前面的查询逻辑挪到这里
+        // todo 优化这个节点 太乱了
         log.info("开始心情分析");
         Long userId = state.value("userId", Long.class).orElse(0L);
         String memoryString = state.value("memoryString", String.class).orElse("");
