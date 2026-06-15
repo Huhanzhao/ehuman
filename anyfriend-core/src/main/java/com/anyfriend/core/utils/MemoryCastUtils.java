@@ -3,6 +3,7 @@ package com.anyfriend.core.utils;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import org.springframework.ai.chat.messages.*;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -56,10 +57,12 @@ public class MemoryCastUtils {
                 Date lastUserMessageTime = memoryDoList.get(i).getCreateTime();
                 if (lastUserMessageTime.getTime() < System.currentTimeMillis() - 5 * 60 * 1000){
                     String timeAgo = getTimeAgo(lastUserMessageTime);
+                    SimpleDateFormat sdf = new SimpleDateFormat("MM月dd日 HH:mm");
+                    String formatted = sdf.format(new Date());
                     // 插入到这条 AI 消息的后面
                     TbAiChatMemoryDo tbAiChatMemoryDo = new TbAiChatMemoryDo()
                             .setRole(MessageType.SYSTEM.getValue())
-                            .setMessage("[旁白：过了 " + timeAgo + "]");
+                            .setMessage("[旁白：过了 " + timeAgo + "之后 现在时间:" + formatted + ", 注意话题延续的时间合理性，不用强行延续]");
                     memoryDoList.add(i + 1, tbAiChatMemoryDo);
                 }
                 break;
