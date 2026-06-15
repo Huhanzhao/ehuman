@@ -79,7 +79,7 @@ public class SystemPlugin extends BotPlugin {
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
-        String userInput = event.getMessage().replaceAll("\n","").replaceAll(" ","").trim();
+        String userInput = event.getMessage().trim();
         Long userId = event.getUserId();
 
         if (userInput.equals("#exit")){
@@ -128,8 +128,7 @@ public class SystemPlugin extends BotPlugin {
 
         // 节点大模型切换引导
         if (userInput.equals("#切换api")){
-            // todo 节点大模型切换引导
-//            return startNewGraph(userId, graph);
+            return startNewGraph(userId, systemGraph.getChangeModelCompiledGraph());
         }
 
 
@@ -340,7 +339,6 @@ public class SystemPlugin extends BotPlugin {
     private int userInstruction(Long userId) {
         String msg = MsgUtils.builder()
                 .text("#声音 [模型名] - 查看/切换声音模型\n" +
-                        "#温度 [温度 topP] - 查看/修改模型参数\n" +
                         "#好感度 [数值] - 查看/修改好感度\n" +
                         "#模型查询 - 查看已配置模型\n" +
                         "#api查询 - 查看API配置\n" +

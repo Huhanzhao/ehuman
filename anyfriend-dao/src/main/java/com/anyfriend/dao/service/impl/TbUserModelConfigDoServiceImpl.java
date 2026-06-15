@@ -71,7 +71,6 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize) {
         Page<TbUserModelConfigDo> page = new Page<>(pageNum, pageSize);
         return lambdaQuery()
-                .isNotNull(TbUserModelConfigDo::getNodeEnum)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .page(page);
     }

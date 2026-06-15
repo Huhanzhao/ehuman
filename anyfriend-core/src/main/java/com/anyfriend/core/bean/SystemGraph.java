@@ -10,6 +10,7 @@ import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import groovyjarjarantlr4.v4.misc.Graph;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -88,6 +89,13 @@ public class SystemGraph {
 
         return getSystemGraph(List.of(cateGoryNode, modelNameNode, baseUrlNode, proxyNode, apiKeyNode),
                 List.of("category", "model", "baseUrl", "apiKey", "needProxy"));
+    }
+
+    public CompiledGraph getChangeModelCompiledGraph(){
+        // todo 1. 需要切换的节点类型 主，辅助，图片识别，语音合成
+        // 2. 当前空闲的api配置
+        // 3. 切换完毕
+        return getSystemGraph(null,null);
     }
 
 

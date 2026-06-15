@@ -76,7 +76,7 @@ public class ChatClientFactory {
 
             Proxy proxy = new Proxy(
                     Proxy.Type.HTTP,
-                    new InetSocketAddress("127.0.0.1", 7890)
+                    new InetSocketAddress("127.0.0.1", 7890)  // todo 改成动态
             );
 
             factory.setProxy(proxy);
@@ -118,7 +118,7 @@ public class ChatClientFactory {
 
             Proxy proxy = new Proxy(
                     Proxy.Type.HTTP,
-                    new InetSocketAddress("127.0.0.1", 7890)
+                    new InetSocketAddress("127.0.0.1", 7890)  // todo 改成动态
             );
 
             factory.setProxy(proxy);
