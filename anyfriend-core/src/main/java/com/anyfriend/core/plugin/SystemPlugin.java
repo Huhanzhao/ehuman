@@ -3,10 +3,8 @@ package com.anyfriend.core.plugin;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.anyfriend.core.bean.SystemGraph;
 import com.anyfriend.core.utils.SendMessageUtil;
-import com.anyfriend.dao.entity.TbChatConfigDo;
 import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
@@ -22,7 +20,6 @@ import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -74,6 +71,13 @@ public class SystemPlugin extends BotPlugin {
     // 保存当前执行中的图
     private final ConcurrentHashMap<Long, CompiledGraph> userGraphMap = new ConcurrentHashMap<>();
 
+    private CompiledGraph apiConfigGraph;
+
+    @PostConstruct
+    public void init() {
+        this.apiConfigGraph = systemGraph.getApiConfigGraph();
+    }
+
 
     @PrivateMessageHandler
     @MessageHandlerFilter
@@ -93,7 +97,7 @@ public class SystemPlugin extends BotPlugin {
 
         // 如果当前有中断的图 继续执行api配置引导图
         if (runningDisposables.containsKey(event.getUserId())){
-            return resumeGraph(userId, userInput,systemGraph.getApiConfigGraph());
+            return resumeGraph(userId, userInput,apiConfigGraph);
         }
 
         // 主菜单
@@ -123,7 +127,7 @@ public class SystemPlugin extends BotPlugin {
 
         // api引导
         if (userInput.startsWith("#开始配置api")){
-            return startNewGraph(userId,systemGraph.getApiConfigGraph());
+            return startNewGraph(userId,apiConfigGraph);
         }
 
         // 节点大模型切换引导
@@ -210,37 +214,37 @@ public class SystemPlugin extends BotPlugin {
 
         // 标记当前执行的图
         userGraphMap.put(userId,compiledGraph);
-        runningDisposables.put(userId, null);
+        runningDisposables.put(userId,() -> {});  // 先放一个空
 
         // 异步处理每个输出
         var disposable = stream.subscribe(
                 output -> {
                     log.info("当前迭代节点: " + output);
                     userCurrentNodeMap.put(userId, output.node());
+                    if (output.isEND()){
+                        clearFlag(userId);
+                    }
                 },
                 error -> {
                     log.error("流错误: " + error.getMessage());
                     sendMessageUtil.sendSystemMsg(userId,"系统错误已退出当前引导");
-                    // 流错误去除当前图标记
-                    runningDisposables.remove(userId);
-                    userCurrentNodeMap.remove(userId);
-                    userThreadIdMap.remove(userId);
-                    userGraphMap.remove(userId);
+                    clearFlag(userId);
                 },
-                () -> {
-                    // 执行完毕去除当前图标记
-                    runningDisposables.remove(userId);
-                    userCurrentNodeMap.remove(userId);
-                    userThreadIdMap.remove(userId);
-                    userGraphMap.remove(userId);
-                    log.info("流完成");
-                }
+                () -> log.info("流完成")
         );
 
         if (runningDisposables.containsKey(userId)) {
             runningDisposables.put(userId, disposable);
             log.info("标记会话");
         }
+    }
+
+    private void clearFlag(Long userId) {
+        // 去除当前图标记
+        runningDisposables.remove(userId);
+        userCurrentNodeMap.remove(userId);
+        userThreadIdMap.remove(userId);
+        userGraphMap.remove(userId);
     }
 
     private int getNodeEnableModel(Long userId) {
