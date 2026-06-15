@@ -56,36 +56,44 @@ public class SystemPlugin extends BotPlugin {
     @Autowired
     private SystemGraph systemGraph;
 
-    private CompiledGraph apiConfigGraph;
-
     // todo 声音voice graph
 //    private CompiledGraph voiceConfigGraph;
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
 
+    // 保存是否有运行中的图
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
 
+    // 保存图当前执行到的节点
     private final ConcurrentHashMap<Long, String> userCurrentNodeMap = new ConcurrentHashMap<>();
+
+    // 保存当前执行图的线程id
     private final ConcurrentHashMap<Long, String> userThreadIdMap = new ConcurrentHashMap<>();
 
+    // 保存当前执行中的图
+    private final ConcurrentHashMap<Long, CompiledGraph> userGraphMap = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    public void init() {
-        this.apiConfigGraph = systemGraph.getApiConfigGraph();
-//        this.voiceConfigGraph = systemGraph.getVoiceGraph();
-    }
 
     @PrivateMessageHandler
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot , PrivateMessageEvent event){
-        String userInput = event.getMessage().trim();
+        String userInput = event.getMessage().replaceAll("\n","").replaceAll(" ","").trim();
         Long userId = event.getUserId();
+
+        if (userInput.equals("#exit")){
+            runningDisposables.get(userId).dispose();
+            runningDisposables.remove(userId);
+            userCurrentNodeMap.remove(userId);
+            userThreadIdMap.remove(userId);
+            sendMessageUtil.sendSystemMsg(userId,"已退出当前配置");
+            return MESSAGE_BLOCK;
+        }
 
         // 如果当前有中断的图 继续执行api配置引导图
         if (runningDisposables.containsKey(event.getUserId())){
-            return apiConfigurationResume(userId, userInput);
+            return resumeGraph(userId, userInput,systemGraph.getApiConfigGraph());
         }
 
         // 主菜单
@@ -115,11 +123,15 @@ public class SystemPlugin extends BotPlugin {
 
         // api引导
         if (userInput.startsWith("#开始配置api")){
-            return apiConfigurationGuide(userId);
+            return startNewGraph(userId,systemGraph.getApiConfigGraph());
         }
 
+        // 节点大模型切换引导
+        if (userInput.equals("#切换api")){
+            // todo 节点大模型切换引导
+//            return startNewGraph(userId, graph);
+        }
 
-        // todo 节点大模型切换引导
 
         // todo 声音参考音频查询或切换
 
@@ -143,23 +155,10 @@ public class SystemPlugin extends BotPlugin {
         return MESSAGE_IGNORE;
     }
 
-    private int apiConfigurationResume(Long userId, String userInput) {
-        if (userCurrentNodeMap.get(userId).equals(StateGraph.END)){
-            log.info("已经执行到了end节点，移除会话标记");
-            userCurrentNodeMap.remove(userId);
-            runningDisposables.remove(userId);
-            userCurrentNodeMap.remove(userId);
-            userThreadIdMap.remove(userId);
-            return MESSAGE_BLOCK;
-        }
-
-        if ("#exit".equals(userInput)){
-            runningDisposables.get(userId).dispose();
-            runningDisposables.remove(userId);
-            userCurrentNodeMap.remove(userId);
-            userThreadIdMap.remove(userId);
-            sendMessageUtil.sendSystemMsg(userId,"已退出当前配置");
-            return MESSAGE_BLOCK;
+    // 继续执行图
+    private int resumeGraph(Long userId, String userInput, CompiledGraph compiledGraph) {
+        if (userInput.startsWith("#")){
+            sendMessageUtil.sendSystemMsg(userId, "当前有未完成的引导，输入 #exit 退出引导后重试");
         }
 
         // 配置线程 ID
@@ -171,12 +170,7 @@ public class SystemPlugin extends BotPlugin {
         try {
             Map<String,Object> map = new HashMap<>();
             map.put("userInput",userInput);
-
-            // 如果第一个节点就中断 放入model实例
-            if (userCurrentNodeMap.get(userId).equals("modelCategoryNode")){
-                map.put("modelConfig",new TbUserModelConfigDo());
-            }
-            updatedConfig = apiConfigGraph.updateState(invokeConfig, map, userCurrentNodeMap.get(userId));
+            updatedConfig = compiledGraph.updateState(invokeConfig, map, userCurrentNodeMap.get(userId));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -184,34 +178,18 @@ public class SystemPlugin extends BotPlugin {
         RunnableConfig resumeConfig = RunnableConfig.builder(updatedConfig)
                 .addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
                 .build();
-        // 继续执行 Graph（input 为 null，使用之前的状态）
-        apiConfigGraph.stream(null,resumeConfig)
-                .doOnNext(event1 -> {
-                    log.info("当前迭代节点: " + event1);
-                    userCurrentNodeMap.put(userId, event1.node());
-                    if (event1.node().equals(StateGraph.END)){
-                        runningDisposables.remove(userId);
-                        userCurrentNodeMap.remove(userId);
-                        userThreadIdMap.remove(userId);
-                    }
-                })
-                .doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-                .doOnComplete(() -> System.out.println("流完成"))
-                .blockLast();
+        doCompiledGraph(userId,compiledGraph,null,resumeConfig);
         return MESSAGE_BLOCK;
     }
 
-    private int apiConfigurationGuide(Long userId) {
+    // 开始执行一个新图
+    private int startNewGraph(Long userId, CompiledGraph compiledGraph) {
         String threadId = userThreadIdMap.get(userId);
         if (!userThreadIdMap.containsKey(userId)){
             threadId = UUID.randomUUID().toString();
             userThreadIdMap.put(userId, threadId);
         }
 
-        if (runningDisposables.containsKey(userId)){
-            sendMessageUtil.sendSystemMsg(userId,"有未推出的api配置，输入#exit退出");
-            return MESSAGE_BLOCK;
-        }
         // 执行
         Map<String, Object> input = Map.of(
                 "userInput", "",
@@ -221,31 +199,49 @@ public class SystemPlugin extends BotPlugin {
         var invokeConfig = RunnableConfig.builder()
                 .threadId(threadId)
                 .build();
+
+        doCompiledGraph(userId,compiledGraph,input,invokeConfig);
+        return MESSAGE_BLOCK;
+    }
+
+    private void doCompiledGraph(Long userId,CompiledGraph compiledGraph, Map<String,Object> input,RunnableConfig runnableConfig){
         // 执行图并获取流
-        Flux<NodeOutput> stream = apiConfigGraph.stream(input, invokeConfig)
+        Flux<NodeOutput> stream = compiledGraph.stream(input, runnableConfig)
                 .subscribeOn(Schedulers.boundedElastic()); // 异步 执行
+
+        // 标记当前执行的图
+        userGraphMap.put(userId,compiledGraph);
+        runningDisposables.put(userId, null);
 
         // 异步处理每个输出
         var disposable = stream.subscribe(
                 output -> {
                     log.info("当前迭代节点: " + output);
                     userCurrentNodeMap.put(userId, output.node());
-                    if (output.node().equals(StateGraph.END)){
-                        runningDisposables.remove(userId);
-                        userCurrentNodeMap.remove(userId);
-                        userThreadIdMap.remove(userId);
-                    }
                 },
-                error -> log.error("流错误: " + error.getMessage()),
+                error -> {
+                    log.error("流错误: " + error.getMessage());
+                    sendMessageUtil.sendSystemMsg(userId,"系统错误已退出当前引导");
+                    // 流错误去除当前图标记
+                    runningDisposables.remove(userId);
+                    userCurrentNodeMap.remove(userId);
+                    userThreadIdMap.remove(userId);
+                    userGraphMap.remove(userId);
+                },
                 () -> {
+                    // 执行完毕去除当前图标记
+                    runningDisposables.remove(userId);
+                    userCurrentNodeMap.remove(userId);
+                    userThreadIdMap.remove(userId);
+                    userGraphMap.remove(userId);
                     log.info("流完成");
                 }
-
         );
 
-        log.info("标记会话");
-        runningDisposables.put(userId, disposable);
-        return MESSAGE_BLOCK;
+        if (runningDisposables.containsKey(userId)) {
+            runningDisposables.put(userId, disposable);
+            log.info("标记会话");
+        }
     }
 
     private int getNodeEnableModel(Long userId) {
