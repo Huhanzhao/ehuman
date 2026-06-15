@@ -47,7 +47,6 @@ public class TestPlugin extends BotPlugin {
 
 //        byte[] bytes = new byte[0];
 //        try {
-//            // todo 获取图片链接，保存bytes 到数据库
 //            HttpResponse response = HttpRequest.get("https://multimedia.nt.qq.com.cn/download?appid=1406&fileid=EhTmzzmDzQn3FVkgxf2p1PWWo7sDKRjsViD-Cii50LS08veUAzIEcHJvZFCAuy9aEP06sXaHgBqsnxdh-H7J1vd6AoGAggECbmo&rkey=CAISMEjqu1yUtfmpNgZJJp9Zxpjo3NJKfxV0jnGH6hxndS_z3VDlvxLgddHKoOySls9MaQ").execute();
 //             bytes = response.bodyBytes();
 //            // 2. 确定文件后缀（从 Content-Type 或 URL 中获取）
