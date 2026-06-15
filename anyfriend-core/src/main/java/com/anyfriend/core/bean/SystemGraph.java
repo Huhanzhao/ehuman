@@ -6,11 +6,12 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.anyfriend.core.config.NodeStatePersistenceListener;
 import com.anyfriend.core.node.SystemInterruptionNode;
+import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
+import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import groovyjarjarantlr4.v4.misc.Graph;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -92,9 +93,27 @@ public class SystemGraph {
     }
 
     public CompiledGraph getChangeModelCompiledGraph(){
-        // todo 1. 需要切换的节点类型 主，辅助，图片识别，语音合成
+        // 1. 需要切换的节点类型 主，辅助，图片识别，语音合成
+        SystemInterruptionNode nodeTypeNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入要切换的节点类型序号：\n1.主节点\n2.辅助节点\n3.图片识别节点\n4.语音合成节点")
+                .inputMapping(Map.of("1", NodeEnum.MASTER, "2", NodeEnum.AUXILIARY, "3", NodeEnum.IMAGE_ANALYSIS, "4", NodeEnum.TTS))
+                .nodeName("nodeTypeNode")
+                .interruptKey("nodeType").build();
         // 2. 当前空闲的api配置
-        // 3. 切换完毕
+        SystemInterruptionNode disableNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .interruptKey("apiConfig")
+                .nodeName("disableNode")
+                .beforeLlmCallback((state) -> {
+                    // todo 返回提示消息 返回顺序列表，然后从state里面拿列表id去更新
+                    return new BeforeLlmCallback.BeforeCallBackEntity(null,null,null);
+                })
+                .afterLlmCallback((state, llmOutput) -> {
+                    // todo 获取状态机里面的实体id 根据id和nodetype去更新
+                    // 3. 切换完毕
+                })
+                .build();
         return getSystemGraph(null,null);
     }
 

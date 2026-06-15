@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.anyfriend.core.service.AfterLlmCallback;
+import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +33,8 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
 
     private AfterLlmCallback afterLlmCallback;  // 后续执行
 
+    private BeforeLlmCallback beforeLlmCallback;
+
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         String userInput = state.value("userInput",String.class).orElse("").trim();
@@ -54,6 +57,12 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
         String userInput = state.value("userInput",String.class).orElse("").trim();
         Long userId = Long.valueOf(state.value("userId", String.class).orElse(""));
         InterruptionMetadata interruption = null;
+        if (beforeLlmCallback != null){
+            BeforeLlmCallback.BeforeCallBackEntity callBackEntity = beforeLlmCallback.execute(state);
+            if (callBackEntity.interruptionMessage() != null){
+                inputPrompt = callBackEntity.interruptionMessage();
+            }
+        }
         if (userInput.isEmpty()) {
             // 中断等待用户输入
             sendMessageUtil.sendSystemMsg(userId, inputPrompt);

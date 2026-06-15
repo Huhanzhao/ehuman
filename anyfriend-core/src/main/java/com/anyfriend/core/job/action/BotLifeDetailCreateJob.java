@@ -109,7 +109,7 @@ public class BotLifeDetailCreateJob implements Job {
         try {
             // 使用userId来获取chatClient
             Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
+            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
             String content = chatClient.prompt(prompt).call().content();
             log.info("AI生成的生活细节:\n{}", content);
 
@@ -153,7 +153,7 @@ public class BotLifeDetailCreateJob implements Job {
                 "不要输出其他内容。";
 
         try {
-            ChatClient evalClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
+            ChatClient evalClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
             String evalResult = evalClient.prompt(evalPrompt).call().content();
             log.info("生活细节主动消息评估结果:\n{}", evalResult);
 

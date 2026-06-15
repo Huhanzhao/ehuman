@@ -9,20 +9,10 @@ import lombok.Getter;
 public enum NodeEnum {
 
     DISABLE("disable",0),
-    WANT_TO("UserWantToNode",1),
-    MOOD("BotStatusSearchNode",2),
-    GENERATE("MessageGenerateNode",3),
-    IMAGE_ANALYSIS("ImageAnalysisNode",4),
-    TTS("TTS",9999);
-
-    public static NodeEnum fromCode(Integer nodeNum){
-        for (NodeEnum value : values()) {
-            if (nodeNum.equals(value.getNodeNum())){
-                return value;
-            }
-        }
-        return null;
-    }
+    AUXILIARY("auxiliary",1),
+    MASTER("master",2),
+    IMAGE_ANALYSIS("ImageAnalysisNode",3),
+    TTS("TTS",4);
 
     private final String nodeName;
 

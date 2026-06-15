@@ -10,10 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,7 +45,7 @@ public class LlmNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) throws Exception {
         Map<String, Object> data = state.data();
 
-        BeforeCallBackEntity beforeCallBackEntity = null;
+        BeforeLlmCallback.BeforeCallBackEntity beforeCallBackEntity = null;
         // 前置逻辑
         if (beforeLlmCallback != null){
             beforeCallBackEntity = beforeLlmCallback.execute(state);
@@ -62,11 +60,11 @@ public class LlmNode implements NodeAction {
         ChatClient chatClient = chatClientFactory.createChatClient((Long) state.value("userId").get(), nodeEnum);
 
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt(prompt);
-        if (beforeCallBackEntity != null && beforeCallBackEntity.userMessage != null){
-            chatClientRequestSpec.user(beforeCallBackEntity.userMessage);
+        if (beforeCallBackEntity != null && beforeCallBackEntity.userMessage() != null){
+            chatClientRequestSpec.user(beforeCallBackEntity.userMessage());
         }
-        if (beforeCallBackEntity != null && beforeCallBackEntity.messages != null){
-            chatClientRequestSpec.messages(beforeCallBackEntity.messages);
+        if (beforeCallBackEntity != null && beforeCallBackEntity.messages() != null){
+            chatClientRequestSpec.messages(beforeCallBackEntity.messages());
         }
         String content = chatClientRequestSpec.call().content();
         log.info("llmNode: {},outPut:{}",this.nodeName, content);
@@ -79,7 +77,5 @@ public class LlmNode implements NodeAction {
 
         return Map.of(this.outPutKey, content);
     }
-
-    public record BeforeCallBackEntity(List<Message> messages, String userMessage) {}
 
 }

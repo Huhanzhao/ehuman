@@ -67,7 +67,7 @@ public class SendMessageCompileGraph {
         try {
             // 创建消息生成节点
             LlmNode messageGenerate = getLlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
-                    NodeEnum.GENERATE,
+                    NodeEnum.MASTER,
                     state -> {
                         Long userId = (Long)state.value("userId").orElse(0L);
                         List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
@@ -77,21 +77,21 @@ public class SendMessageCompileGraph {
                         if ( initiative){
                             userMessage = "这条消息是你主动给用户发送的消息，不是用户主动给你发送的消息";
                         }
-                        return new LlmNode.BeforeCallBackEntity(messageList, userMessage);
+                        return new LlmNode.BeforeCallBackEntity(messageList, userMessage,null);
                     },
                     null);
 
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerate))
-                    .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.WANT_TO,null,null)))
+                    .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.AUXILIARY,null,null)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
-                    .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.WANT_TO,null,null)))
-                    .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.WANT_TO,null,null)))
+                    .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.AUXILIARY,null,null)))
+                    .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.AUXILIARY,null,null)))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
-                    .addNode("interactionCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.WANT_TO,null,null)))
+                    .addNode("interactionCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.AUXILIARY,null,null)))
                     .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
                     .addNode("sendMessageNode", node_async(state -> {
                         sendMessageUtil.sendChatMsg(

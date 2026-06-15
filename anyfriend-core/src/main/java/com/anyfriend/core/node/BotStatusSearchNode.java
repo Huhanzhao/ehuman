@@ -97,7 +97,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
                 "不要输出其他内容。";
 
         try {
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.MOOD);
+            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
             String content = chatClient.prompt(prompt).call().content();
             log.info("心情分析原始结果: {}", content);
 

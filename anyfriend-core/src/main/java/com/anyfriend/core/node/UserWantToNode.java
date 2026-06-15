@@ -35,7 +35,7 @@ public class UserWantToNode implements NodeAction {
         if (userMessageList.isEmpty()){
             memoryString += "\n[旁白： 用户一直没有回复你的消息 " + tbAiChatMemoryService.getLastUserMessage(userId) + "]";
         }
-        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.WANT_TO);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
         PromptTemplate promptTemplate = PromptTemplate.builder().template(
                 """
                        ## 你是聊天结束意图判断模块
