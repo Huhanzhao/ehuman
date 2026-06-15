@@ -77,7 +77,7 @@ public class SendMessageCompileGraph {
                         if ( initiative){
                             userMessage = "这条消息是你主动给用户发送的消息，不是用户主动给你发送的消息";
                         }
-                        return new LlmNode.BeforeCallBackEntity(messageList, userMessage,null);
+                        return new BeforeLlmCallback.BeforeCallBackEntity(messageList, userMessage,null);
                     },
                     null);
 
