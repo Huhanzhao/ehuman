@@ -1,4 +1,4 @@
-package com.anyfriend.core.node;
+package com.anyfriend.core.node.system;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -8,8 +8,10 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -18,6 +20,8 @@ import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class SystemInterruptionNode implements AsyncNodeActionWithConfig, InterruptableAction {
 
