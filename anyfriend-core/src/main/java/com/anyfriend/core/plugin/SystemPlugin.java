@@ -105,8 +105,8 @@ public class SystemPlugin extends BotPlugin {
             return userInstruction(userId);
         }
 
-        // 查询或修改声音model
-        if (userInput.startsWith("#声音")){
+        // 查询或修改参考音频
+        if (userInput.startsWith("#参考音频")){
             return getOrUpdateVoiceModel(userId,userInput);
         }
 
@@ -115,13 +115,13 @@ public class SystemPlugin extends BotPlugin {
             return getOrUpdateBotStatus(userId, userInput);
         }
 
-        // 查询api配置
+        // todo 改成查询闲置api配置
         if (userInput.startsWith("#api查询")){
             return getApiConfig(userId, userInput);
         }
 
         // 查询节点启用的模型
-        if (userInput.startsWith("#模型查询")){
+        if (userInput.startsWith("#节点模型查询")){
             return getNodeEnableModel(userId);
         }
 
@@ -134,6 +134,8 @@ public class SystemPlugin extends BotPlugin {
         if (userInput.equals("#切换api")){
             return startNewGraph(userId, systemGraph.getChangeModelCompiledGraph());
         }
+
+        // 1.导入api  修改或配置节点
 
 
         // todo 声音参考音频查询或切换

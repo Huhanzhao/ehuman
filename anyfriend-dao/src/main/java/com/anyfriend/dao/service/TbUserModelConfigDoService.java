@@ -1,6 +1,7 @@
 package com.anyfriend.dao.service;
 
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
+import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -14,8 +15,6 @@ import java.util.List;
 */
 public interface TbUserModelConfigDoService extends IService<TbUserModelConfigDo> {
 
-    List<TbUserModelConfigDo> getModelList(TbUserModelConfigDo modelConfigDo);
-
     TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, NodeEnum nodeEnum);
 
     List<TbUserModelConfigDo> getByUserId(Long userId);
@@ -25,4 +24,8 @@ public interface TbUserModelConfigDoService extends IService<TbUserModelConfigDo
     void clearNodeNumByUserIdAndNodeNum(Long userId,  NodeEnum nodeEnum);
 
     Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize);
+
+    List<TbUserModelConfigDo> getDisableApiConfigByCategory(Long userId, ChatModelCategoryEnum categoryEnum);
+
+    void changeApiModelById(Long userId,TbUserModelConfigDo tbUserModelConfigDo,ChatModelCategoryEnum chatModelCategoryEnum);
 }

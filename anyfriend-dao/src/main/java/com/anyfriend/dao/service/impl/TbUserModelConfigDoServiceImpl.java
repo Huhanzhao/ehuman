@@ -1,14 +1,19 @@
 package com.anyfriend.dao.service.impl;
 
+import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.mapper.TbUserModelConfigDoMapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+import static com.anyfriend.dao.enums.NodeEnum.*;
 
 /**
 * @author Lenovo
@@ -18,20 +23,6 @@ import java.util.List;
 @Service
 public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfigDoMapper, TbUserModelConfigDo>
     implements TbUserModelConfigDoService{
-
-    @Override
-    public List<TbUserModelConfigDo> getModelList(TbUserModelConfigDo modelConfigDo) {
-        return lambdaQuery()
-                .eq(modelConfigDo.getUserId() != null,TbUserModelConfigDo::getUserId,modelConfigDo.getUserId())
-                .eq(modelConfigDo.getModel() != null,TbUserModelConfigDo::getModel,modelConfigDo.getModel())
-                .eq(modelConfigDo.getCategory() != null,TbUserModelConfigDo::getCategory,modelConfigDo.getCategory())
-                .eq(modelConfigDo.getNeedProxy() != null,TbUserModelConfigDo::getNeedProxy,modelConfigDo.getNeedProxy())
-                .eq(modelConfigDo.getNodeEnum() != null,TbUserModelConfigDo::getNodeEnum,modelConfigDo.getNodeEnum())
-                .eq(modelConfigDo.getId() != null,TbUserModelConfigDo::getId,modelConfigDo.getId())
-                .eq(modelConfigDo.getApiKey() != null,TbUserModelConfigDo::getApiKey,modelConfigDo.getApiKey())
-                .eq(modelConfigDo.getBaseUrl() != null,TbUserModelConfigDo::getBaseUrl,modelConfigDo.getBaseUrl())
-                .list();
-    }
 
     @Override
     public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, NodeEnum nodeEnum) {
@@ -73,6 +64,32 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .page(page);
+    }
+
+    @Override
+    public List<TbUserModelConfigDo> getDisableApiConfigByCategory(Long userId, ChatModelCategoryEnum categoryEnum) {
+        LambdaQueryChainWrapper<TbUserModelConfigDo> eq = lambdaQuery()
+                .eq(TbUserModelConfigDo::getUserId,userId)
+                .eq(TbUserModelConfigDo::getNodeEnum,DISABLE);
+        if (categoryEnum != null){
+            eq.eq(TbUserModelConfigDo::getCategory, categoryEnum.getCategory());
+        }else{
+            eq.ne(TbUserModelConfigDo::getNodeEnum,IMAGE_ANALYSIS).ne(TbUserModelConfigDo::getNodeEnum,TTS);
+        }
+
+        return eq.list();
+    }
+
+    @Override
+    @Transactional
+    public void changeApiModelById(Long userId, TbUserModelConfigDo tbUserModelConfigDo,ChatModelCategoryEnum chatModelCategoryEnum) {
+        // 设置所有 nodeNum为0
+        lambdaUpdate().set(TbUserModelConfigDo::getNodeEnum,DISABLE)
+                .eq(TbUserModelConfigDo::getUserId,userId)
+                .eq(TbUserModelConfigDo::getCategory,chatModelCategoryEnum.getCategory());
+
+        // 更新do
+        lambdaUpdate().update(tbUserModelConfigDo);
     }
 }
 

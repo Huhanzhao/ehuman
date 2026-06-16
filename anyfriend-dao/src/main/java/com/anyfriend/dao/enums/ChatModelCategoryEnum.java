@@ -7,9 +7,10 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ChatModelCategoryEnum {
 
-    DEEP_SEEK("deepseek"),
+    IMAGE("image"),
     GPT("gpt"),
     CLAUDE("claude"),
+    TTS("tts"),
     GROK("grok");
 
     private final String category;

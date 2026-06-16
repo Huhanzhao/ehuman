@@ -54,10 +54,7 @@ public class ChatClientFactory {
 
         TbChatConfigDo chatConfigDo = tbChatConfigDoService.getByUserId(userId);
 
-        if (GPT.getCategory().equals(modelConfigDo.getCategory()) ||
-                DEEP_SEEK.getCategory().equals(modelConfigDo.getCategory()) ||
-                GROK.getCategory().equals(modelConfigDo.getCategory())
-        ){
+        if (GPT.getCategory().equals(modelConfigDo.getCategory()) || IMAGE.getCategory().equals(modelConfigDo.getCategory())){
             return createOpenAiChatClient(modelConfigDo,chatConfigDo);
         }else if (CLAUDE.getCategory().equals(modelConfigDo.getCategory())){
             return createClaudeChatClient(modelConfigDo,chatConfigDo);

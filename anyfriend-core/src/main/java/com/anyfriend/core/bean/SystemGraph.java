@@ -4,15 +4,18 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.fastjson2.JSON;
 import com.anyfriend.core.config.NodeStatePersistenceListener;
 import com.anyfriend.core.node.SystemInterruptionNode;
 import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
+import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,11 +41,11 @@ public class SystemGraph {
         SystemInterruptionNode cateGoryNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("category")
                 .nodeName("cateGoryNode")
-                .inputPrompt("请输入要设置模型类别的序号：\n1.chatGpt\n2.claude\n3.grok\n4.deepseek")
+                .inputPrompt("请输入要设置模型类别的序号：\n1.Gpt协议聊天模型\n2.claude协议聊天模型\n3.gpt协议图片识别\n4.TTS文字转语音")
                 .inputMapping(Map.of("1", GPT.getCategory(),
                         "2", CLAUDE.getCategory(),
-                        "3",GROK.getCategory(),
-                        "4",DEEP_SEEK.getCategory())) // 1.chatGpt 2.claude 3.grok 4.deepseek
+                        "3",IMAGE.getCategory(),
+                        "4",TTS.getCategory()))
                 .build();
 
         // 收集模型名字节点
@@ -100,21 +103,65 @@ public class SystemGraph {
                 .inputMapping(Map.of("1", NodeEnum.MASTER, "2", NodeEnum.AUXILIARY, "3", NodeEnum.IMAGE_ANALYSIS, "4", NodeEnum.TTS))
                 .nodeName("nodeTypeNode")
                 .interruptKey("nodeType").build();
+
         // 2. 当前空闲的api配置
         SystemInterruptionNode disableNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
-                .interruptKey("apiConfig")
+                .interruptKey("apiConfigIndex")
                 .nodeName("disableNode")
                 .beforeLlmCallback((state) -> {
-                    // todo 返回提示消息 返回顺序列表，然后从state里面拿列表id去更新
-                    return new BeforeLlmCallback.BeforeCallBackEntity(null,null,null);
+                    // 返回提示消息 state保存列表
+                    Long userId = state.value("userId", Long.class).get();
+                    NodeEnum nodeEnum = state.value("nodeType", NodeEnum.class).get();
+                    ChatModelCategoryEnum  categoryEnum = null;
+                    if (nodeEnum.equals(NodeEnum.IMAGE_ANALYSIS)){
+                        categoryEnum = IMAGE;
+                    }
+                    if (nodeEnum.equals(NodeEnum.TTS)){
+                        categoryEnum = TTS;
+                    }
+                    List<TbUserModelConfigDo> modelConfigList = tbUserModelConfigDoService.getDisableApiConfigByCategory(userId, categoryEnum);
+                    state.updateState(Map.of("modelConfigList",modelConfigList));
+                    StringBuilder userMessageBuilder = new StringBuilder("当前可切换的api配置\n");
+                    if (modelConfigList.isEmpty()){
+                        userMessageBuilder.append("无");
+                    }
+                    for (int i = 0; i < modelConfigList.size(); i++) {
+                        TbUserModelConfigDo tbUserModelConfigDo = modelConfigList.get(i);
+                        userMessageBuilder.append(i + 1).append(" . model:")
+                                .append(tbUserModelConfigDo.getModel()).append("\n")
+                                .append("baseUrl:").append(tbUserModelConfigDo.getBaseUrl()).append("\n\n");
+                    }
+                    return new BeforeLlmCallback.BeforeCallBackEntity(null,null,userMessageBuilder.toString().trim());
                 })
                 .afterLlmCallback((state, llmOutput) -> {
-                    // todo 获取状态机里面的实体id 根据id和nodetype去更新
+                    //  获取状态机里面的实体id 根据id和nodetype去更新
+                    // 根据输入获取
+                    Integer apiConfigIndex = state.value("apiConfigIndex", Integer.class).get();
+                    Long userId = state.value("userId", Long.class).get();
+                    List<TbUserModelConfigDo> modelConfigList = state.value("modelConfigList", List.class).get();
+
+                    if (apiConfigIndex < 1 || apiConfigIndex > modelConfigList.size()){
+                        sendMessageUtil.sendSystemMsg(userId,"更新失败，输入错误");
+                        throw new RuntimeException("更新失败");
+                    }
+
+                    TbUserModelConfigDo tbUserModelConfigDo = modelConfigList.get(apiConfigIndex - 1);
+                    NodeEnum nodeEnum = state.value("nodeType", NodeEnum.class).get();
+                    tbUserModelConfigDo.setNodeEnum(nodeEnum);
+                    ChatModelCategoryEnum categoryEnum = null;
+                    if (nodeEnum.equals(NodeEnum.IMAGE_ANALYSIS)){
+                        categoryEnum = IMAGE;
+                    }
+                    if (nodeEnum.equals(NodeEnum.TTS)){
+                        categoryEnum = TTS;
+                    }
+                    tbUserModelConfigDoService.changeApiModelById(userId,tbUserModelConfigDo,categoryEnum);
                     // 3. 切换完毕
+                    sendMessageUtil.sendSystemMsg(userId,"更新成功");
                 })
                 .build();
-        return getSystemGraph(null,null);
+        return getSystemGraph(List.of(nodeTypeNode,disableNode),List.of("nodeType","apiConfigIndex"));
     }
 
 
