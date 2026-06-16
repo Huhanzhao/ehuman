@@ -73,9 +73,15 @@ public class SystemPlugin extends BotPlugin {
 
     private CompiledGraph apiConfigGraph;
 
+    private CompiledGraph changeModeGraph;
+
+    private CompiledGraph referAudioConfig;
+
     @PostConstruct
     public void init() {
         this.apiConfigGraph = systemGraph.getApiConfigGraph();
+        this.changeModeGraph = systemGraph.getChangeModelCompiledGraph();
+        this.referAudioConfig = systemGraph.getReferAudioConfigGraph();
     }
 
 
@@ -88,9 +94,7 @@ public class SystemPlugin extends BotPlugin {
 
         if (userInput.equals("#exit")){
             runningDisposables.get(userId).dispose();
-            runningDisposables.remove(userId);
-            userCurrentNodeMap.remove(userId);
-            userThreadIdMap.remove(userId);
+            clearFlag(userId);
             sendMessageUtil.sendSystemMsg(userId,"已退出当前配置");
             return MESSAGE_BLOCK;
         }
@@ -105,51 +109,60 @@ public class SystemPlugin extends BotPlugin {
             return userInstruction(userId);
         }
 
-        // 查询或修改参考音频
-        if (userInput.startsWith("#参考音频")){
-            return getOrUpdateVoiceModel(userId,userInput);
-        }
-
         // bot状态查询和修改
         if (userInput.startsWith("#好感度")) {
             return getOrUpdateBotStatus(userId, userInput);
         }
 
-        // todo 改成查询闲置api配置
-        if (userInput.startsWith("#api查询")){
+        // 查询闲置api配置
+        if (userInput.equals("#未启用api查询")){
             return getApiConfig(userId, userInput);
         }
 
-        // 查询节点启用的模型
-        if (userInput.startsWith("#节点模型查询")){
+        // 已启用api查询
+        if (userInput.equals("#已启用api查询")){
             return getNodeEnableModel(userId);
         }
 
         // api引导
-        if (userInput.startsWith("#开始配置api")){
+        if (userInput.equals("#开始配置api")){
             return startNewGraph(userId,apiConfigGraph);
         }
 
-        // 节点大模型切换引导
+        // 节点大模型切换引导  等待测试
         if (userInput.equals("#切换api")){
-            return startNewGraph(userId, systemGraph.getChangeModelCompiledGraph());
+            return startNewGraph(userId, changeModeGraph);
         }
 
-        // 1.导入api  修改或配置节点
-
+        // 声音音频导入引导 等待测试 todo 保存名字和本地标识
+        if (userInput.equals("#配置参考音频")){
+            return startNewGraph(userId,referAudioConfig);
+        }
 
         // todo 声音参考音频查询或切换
+        // 查询或修改参考音频
+        if (userInput.startsWith("#参考音频")){
+            return getOrUpdateVoiceModel(userId,userInput);
+        }
 
-        // todo 声音音频导入引导
 
-        // todo 人设导入引导
+        // todo 角色查询或切换
+        if(userInput.startsWith("#人设")){
+            return MESSAGE_BLOCK;
+        }
 
-        // todo 人设查询或切换
+        // 导入表情包引导
+        if (userInput.equals("#导入表情包")){
+            sendMessageUtil.sendSystemMsg(userId,"图片解析节点配置完毕之后随着聊天收集，也可以在emoji文件夹下面自行管理");
+            return MESSAGE_BLOCK;
+        }
 
-        // todo 导入表情包引导
+        // todo 加载配置文件  通过启动来加载
+        // todo 语音没有配置的时候生成文字 改提示词
 
+        // 以后再做
         // todo 我的画像查询
-
+        // todo 角色创建引导
         // todo 支持作者
 
         // 非法命令提示
@@ -252,6 +265,9 @@ public class SystemPlugin extends BotPlugin {
     private int getNodeEnableModel(Long userId) {
         List<TbUserModelConfigDo> list = tbUserModelConfigDoService.getByUserIdNodeNumNotZero(userId);
         StringBuilder msg = new StringBuilder();
+        if (list.isEmpty()){
+            msg.append("无");
+        }
         for (TbUserModelConfigDo tbUserModelConfigDo : list) {
             msg.append(NodeEnum.getByNameNodeNum(tbUserModelConfigDo.getNodeEnum().getNodeNum()))
                     .append(":")
@@ -317,16 +333,16 @@ public class SystemPlugin extends BotPlugin {
         if (!param.isEmpty()) {
             boolean success = tbUserReferAudioDoService.switchVoiceModel(userId, param);
             if (success) {
-                sendMessageUtil.sendSystemMsg(userId,"已切换到声音模型：" + param);
+                sendMessageUtil.sendSystemMsg(userId,"已切换到参考音频：" + param);
             } else {
-                sendMessageUtil.sendSystemMsg(userId,"没有找到该声音模型：" + param);
+                sendMessageUtil.sendSystemMsg(userId,"没有找到该参考音频：" + param);
             }
             return MESSAGE_BLOCK;
         }
         // 查询声音列表
         List<TbUserReferAudioDo> voiceModels = tbUserReferAudioDoService.getByUserId(userId);
         if (voiceModels.isEmpty()) {
-            sendMessageUtil.sendSystemMsg(userId,"暂无声音模型");
+            sendMessageUtil.sendSystemMsg(userId,"暂无参考音频");
             return MESSAGE_BLOCK;
         }
         StringBuilder msg = new StringBuilder();
@@ -337,7 +353,7 @@ public class SystemPlugin extends BotPlugin {
             }
             msg.append("\n");
         }
-        msg.append("\n切换声音：#声音 模型名");
+        msg.append("\n切换声音：#声音 参考音频名");
         sendMessageUtil.sendSystemMsg(userId,msg.toString().trim());
         return MESSAGE_BLOCK;
     }

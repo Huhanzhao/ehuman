@@ -10,9 +10,11 @@ import com.anyfriend.core.node.system.UpdateNodeApiConfigNode;
 import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
+import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
+import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,9 @@ public class SystemGraph {
 
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
     private final NodeStatePersistenceListener nodeStatePersistenceListener;
+
+    @Autowired
+    private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
     @Autowired
     private UpdateNodeApiConfigNode updateNodeApiConfigNode;
@@ -154,4 +159,32 @@ public class SystemGraph {
         }
     }
 
+    public CompiledGraph getReferAudioConfigGraph() {
+        // 文件名
+        SystemInterruptionNode fileNameNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入文件全名（包含后缀名）")
+                .nodeName("fileNameNode")
+                .interruptKey("referAudioName").build();
+
+        // 在线链接
+        SystemInterruptionNode audioUrlNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入音频公网url，不需要公网链接的插件可以随便填，例如插件indextts2需要公网链接，mimoTTS使用本地文件不需要公网链接,自定义插件看情况使用")
+                .nodeName("audioUrlNode")
+                .interruptKey("referAudioUrl")
+                .afterLlmCallback((state,llmOutPut) -> {
+                    // 保存配置
+                    Map<String,Object> data = state.data();
+                    TbUserReferAudioDo tbUserReferAudioDo = mapper.convertValue(state.data(), TbUserReferAudioDo.class);
+                    // 插入数据
+                    tbUserReferAudioDoService.save(tbUserReferAudioDo);
+
+                    sendMessageUtil.sendSystemMsg(Long.valueOf(data.get("userId").toString()), "设置成功");
+                    state.clear();
+                })
+                .build();
+
+        return getSystemGraph(List.of(fileNameNode,audioUrlNode),List.of("referAudioName","referAudioUrl"));
+    }
 }

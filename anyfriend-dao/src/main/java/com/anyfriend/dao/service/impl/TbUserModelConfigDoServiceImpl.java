@@ -44,7 +44,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId) {
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .isNotNull(TbUserModelConfigDo::getNodeEnum)
+                .ne(TbUserModelConfigDo::getNodeEnum,DISABLE)
                 .orderByAsc(TbUserModelConfigDo::getNodeEnum)
                 .list();
     }
@@ -62,6 +62,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize) {
         Page<TbUserModelConfigDo> page = new Page<>(pageNum, pageSize);
         return lambdaQuery()
+                .eq(TbUserModelConfigDo::getNodeEnum,DISABLE)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .page(page);
     }
