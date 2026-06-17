@@ -144,7 +144,7 @@ public class SystemGraph {
                     TbBotPromptDo promptDo = new TbBotPromptDo();
                     promptDo.setName(data.get("name").toString());
                     promptDo.setContent(data.get("content").toString());
-                    promptDo.setPromptTypeEnum(PromptTypeEnum.TARGET);
+                    promptDo.setPromptTypeEnum(PromptTypeEnum.BOT_ROLE); // todo 改成enable
                     tbBotPromptDoService.save(promptDo);
 
                     sendMessageUtil.sendSystemMsg(Long.valueOf(data.get("userId").toString()), "人设创建成功");

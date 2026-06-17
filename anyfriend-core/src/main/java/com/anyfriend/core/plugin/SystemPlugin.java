@@ -138,7 +138,7 @@ public class SystemPlugin extends BotPlugin {
             return startNewGraph(userId, changeModeGraph);
         }
 
-        // 声音音频导入引导 等待测试
+        // 声音音频导入引导
         if (userInput.equals("#配置参考音频")){
             return startNewGraph(userId,referAudioConfig);
         }
@@ -153,13 +153,13 @@ public class SystemPlugin extends BotPlugin {
             return getReferAudioByUserId(userId,true);
         }
 
-        // 切换参考音频 等待测试
+        // 切换参考音频
         if (userInput.startsWith("#切换参考音频")){
             return startNewGraph(userId,switchReferAudioGraph);
         }
 
 
-        //  角色查询或切换
+        //  角色查询或切换 todo 调试
         if(userInput.startsWith("#人设")){
             return getOrSwitchRole(userId,userInput);
         }

@@ -67,7 +67,7 @@ public class TbUserReferAudioDoServiceImpl extends ServiceImpl<TbUserReferAudioD
     public void changeReferAudio(Long userId, TbUserReferAudioDo tbUserReferAudioDo) {
         lambdaUpdate().eq(TbUserReferAudioDo::getUserId, userId).set(TbUserReferAudioDo::getEnable, false).update();
         
-        lambdaUpdate().update(tbUserReferAudioDo);
+        lambdaUpdate().eq(TbUserReferAudioDo::getId, tbUserReferAudioDo.getId()).update(tbUserReferAudioDo);
     }
 }
 
