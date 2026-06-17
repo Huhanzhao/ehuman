@@ -8,9 +8,12 @@ import com.anyfriend.core.config.NodeStatePersistenceListener;
 import com.anyfriend.core.node.system.SystemInterruptionNode;
 import com.anyfriend.core.node.system.SwitchNodeApiConfigNode;
 import com.anyfriend.core.utils.SendMessageUtil;
+import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.PromptTypeEnum;
+import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +36,9 @@ public class SystemGraph {
 
     @Autowired
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
+
+    @Autowired
+    private final TbBotPromptDoService tbBotPromptDoService;
 
     @Autowired
     private SwitchNodeApiConfigNode switchNodeApiConfigNode;
@@ -111,6 +117,36 @@ public class SystemGraph {
         return getSystemGraph(List.of(nodeTypeNode, switchNodeApiConfigNode),List.of("nodeType","apiConfigIndex"));
     }
 
+
+    public CompiledGraph getCreateRoleGraph() {
+        // 收集人设名称
+        SystemInterruptionNode roleNameNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入人设名称")
+                .nodeName("roleNameNode")
+                .interruptKey("name").build();
+
+        // 收集人设内容
+        SystemInterruptionNode roleContentNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入人设prompt内容")
+                .nodeName("roleContentNode")
+                .interruptKey("content")
+                .afterLlmCallback((state, llmOutput) -> {
+                    Map<String, Object> data = state.data();
+                    TbBotPromptDo promptDo = new TbBotPromptDo();
+                    promptDo.setName(data.get("name").toString());
+                    promptDo.setContent(data.get("content").toString());
+                    promptDo.setPromptTypeEnum(PromptTypeEnum.TARGET);
+                    tbBotPromptDoService.save(promptDo);
+
+                    sendMessageUtil.sendSystemMsg(Long.valueOf(data.get("userId").toString()), "人设创建成功");
+                    state.clear();
+                })
+                .build();
+
+        return getSystemGraph(List.of(roleNameNode, roleContentNode), List.of("name", "content"));
+    }
 
     // 获取系统收集信息中断节点图
     private CompiledGraph getSystemGraph(List<SystemInterruptionNode> nodes, List<String> keys) {

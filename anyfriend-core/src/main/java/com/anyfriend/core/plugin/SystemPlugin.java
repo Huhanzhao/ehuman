@@ -75,12 +75,15 @@ public class SystemPlugin extends BotPlugin {
 
     private CompiledGraph switchReferAudioGraph;
 
+    private CompiledGraph createRoleGraph;
+
     @PostConstruct
     public void init() {
         this.apiConfigGraph = systemGraph.getApiConfigGraph();
         this.changeModeGraph = systemGraph.getChangeModelCompiledGraph();
         this.referAudioConfig = systemGraph.getReferAudioConfigGraph();
         this.switchReferAudioGraph = systemGraph.getSwitchReferAudioGraph();
+        this.createRoleGraph = systemGraph.getCreateRoleGraph();
     }
 
 
@@ -160,8 +163,8 @@ public class SystemPlugin extends BotPlugin {
         }
 
         //  添加人设
-        if(userInput.startsWith("#添加人设")){
-
+        if(userInput.equals("#添加人设")){
+            return startNewGraph(userId, createRoleGraph);
         }
 
         // 导入表情包引导
