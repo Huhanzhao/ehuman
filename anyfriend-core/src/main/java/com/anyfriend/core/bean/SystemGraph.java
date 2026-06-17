@@ -4,9 +4,10 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.anyfriend.core.config.NodeStatePersistenceListener;
-import com.anyfriend.core.node.system.SystemInterruptionNode;
+import com.anyfriend.core.node.system.CollectReferAudioTypeNode;
 import com.anyfriend.core.node.system.SwitchNodeApiConfigNode;
+import com.anyfriend.core.node.system.SwitchReferAudioNode;
+import com.anyfriend.core.node.system.SystemInterruptionNode;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
@@ -45,6 +46,12 @@ public class SystemGraph {
 
     @Autowired
     private ObjectMapper mapper;
+
+    @Autowired
+    private CollectReferAudioTypeNode collectReferAudioTypeNode;
+
+    @Autowired
+    private SwitchReferAudioNode switchReferAudioNode;
 
     public CompiledGraph getApiConfigGraph() {
         // 收集模型类别节点
@@ -110,7 +117,7 @@ public class SystemGraph {
         SystemInterruptionNode nodeTypeNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
                 .inputPrompt("请输入要切换的节点类型序号：\n1.主节点\n2.辅助节点\n3.图片识别节点\n4.语音合成节点")
-                .inputMapping(Map.of("1", NodeEnum.MASTER, "2", NodeEnum.AUXILIARY, "3", NodeEnum.IMAGE_ANALYSIS, "4", NodeEnum.TTS))
+                .inputMapping(Map.of("1", NodeEnum.MASTER.name(), "2", NodeEnum.AUXILIARY.name(), "3", NodeEnum.IMAGE_ANALYSIS.name(), "4", NodeEnum.TTS.name()))
                 .nodeName("nodeTypeNode")
                 .interruptKey("nodeType").build();
 
@@ -230,10 +237,6 @@ public class SystemGraph {
     }
 
     public CompiledGraph getSwitchReferAudioGraph() {
-        // 需要切换本地参考音频还是在线音频，当前声音插件是。。。 请注意音频类型与插件的适配性，默认插件 indextts2必须使用在线音频，mimoTTS必须使用本地音频
-
-        // 请选择要切换的音频
-
-        return getSystemGraph(List.of(),List.of("type"));
+        return getSystemGraph(List.of(collectReferAudioTypeNode,switchReferAudioNode),List.of("type"));
     }
 }

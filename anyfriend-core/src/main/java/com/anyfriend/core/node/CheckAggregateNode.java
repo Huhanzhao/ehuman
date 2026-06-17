@@ -35,7 +35,7 @@ public class CheckAggregateNode implements NodeAction {
             checkPass = false;
         }
 
-        if (!"通过".equals(roleReversalCheckOutput.trim())) {
+        if (!"通过".equals(realLifeInteractionCheckOutput.trim())) {
             log.info("出现现实生活互动，开始进行异常处理");
             resultMap.put("failReason", realLifeInteractionCheckOutput);
             checkPass = false;

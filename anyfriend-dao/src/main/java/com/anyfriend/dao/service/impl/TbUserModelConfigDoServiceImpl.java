@@ -4,6 +4,7 @@ import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.mapper.TbUserModelConfigDoMapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
@@ -84,13 +85,20 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     @Override
     @Transactional
     public void changeApiModelById(Long userId, TbUserModelConfigDo tbUserModelConfigDo,ChatModelCategoryEnum chatModelCategoryEnum) {
+        LambdaUpdateChainWrapper<TbUserModelConfigDo> eq =
+                lambdaUpdate().set(TbUserModelConfigDo::getNodeEnum, DISABLE)
+                        .eq(TbUserModelConfigDo::getNodeEnum, tbUserModelConfigDo.getNodeEnum())
+                .eq(TbUserModelConfigDo::getUserId, userId);
         // 设置所有 nodeNum为0
-        lambdaUpdate().set(TbUserModelConfigDo::getNodeEnum,DISABLE)
-                .eq(TbUserModelConfigDo::getUserId,userId)
-                .eq(TbUserModelConfigDo::getCategory,chatModelCategoryEnum.getCategory()).update();
+        if (chatModelCategoryEnum == null){
+            eq.ne(TbUserModelConfigDo::getNodeEnum,IMAGE_ANALYSIS).ne(TbUserModelConfigDo::getNodeEnum,TTS);
+        }else{
+            eq.eq(TbUserModelConfigDo::getCategory, chatModelCategoryEnum.getCategory());
+        }
+        eq.update();
 
         // 更新do
-        lambdaUpdate().update(tbUserModelConfigDo);
+        lambdaUpdate().eq(TbUserModelConfigDo::getId, tbUserModelConfigDo.getId()).update(tbUserModelConfigDo);
     }
 }
 

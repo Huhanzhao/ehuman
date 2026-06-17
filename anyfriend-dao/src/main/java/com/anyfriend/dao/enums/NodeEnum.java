@@ -9,8 +9,8 @@ import lombok.Getter;
 public enum NodeEnum {
 
     DISABLE("disable",0),
-    AUXILIARY("auxiliary",1),
-    MASTER("master",2),
+    MASTER("master",1),
+    AUXILIARY("auxiliary",2),
     IMAGE_ANALYSIS("ImageAnalysisNode",3),
     TTS("TTS",4);
 

@@ -149,7 +149,7 @@ public class SendMessageUtil {
     public void sendVoiceMsg(Long userId, String message){
         // 查询当前启用的插件名字和参考声音url
         TbUserModelConfigDo ttsModel = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.TTS);
-        List<TbUserReferAudioDo> enableAudioList = tbUserReferAudioDoService.getEnableReferAudioByUserId(userId);
+        List<TbUserReferAudioDo> enableAudioList = tbUserReferAudioDoService.getReferAudioByUserId(userId,true);
         if (enableAudioList.isEmpty()) {
             log.error("no enable audio");
             return;

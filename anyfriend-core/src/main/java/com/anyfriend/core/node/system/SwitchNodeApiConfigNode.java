@@ -46,7 +46,7 @@ public class SwitchNodeApiConfigNode extends SystemInterruptionNode{
         String userInput = state.value("userInput",String.class).orElse("").trim();
         Long userId = Long.valueOf(state.value("userId", String.class).orElse(""));
         InterruptionMetadata interruption = null;
-        NodeEnum nodeEnum = state.value("nodeType", NodeEnum.class).get();
+        NodeEnum nodeEnum = NodeEnum.valueOf((String) state.value("nodeType").orElse(""));
         ChatModelCategoryEnum categoryEnum = null;
         if (nodeEnum.equals(NodeEnum.IMAGE_ANALYSIS)){
             categoryEnum = IMAGE;

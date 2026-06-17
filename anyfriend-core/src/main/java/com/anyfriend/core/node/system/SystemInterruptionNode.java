@@ -45,7 +45,7 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
         // 正常节点逻辑：更新状态
         if (inputMapping != null && inputMapping.containsKey(userInput)){
             state.updateState(Map.of(interruptKey, inputMapping.get(userInput)));
-        }else {
+        }else if (interruptKey != null && !interruptKey.isEmpty() && !userInput.isEmpty()){
             state.updateState(Map.of(interruptKey, userInput));
         }
         state.updateState(Map.of("userInput", ""));

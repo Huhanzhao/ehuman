@@ -10,7 +10,10 @@ import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.enums.NodeEnum;
-import com.anyfriend.dao.service.*;
+import com.anyfriend.dao.service.TbBotPromptDoService;
+import com.anyfriend.dao.service.TbUserBotStatusDoService;
+import com.anyfriend.dao.service.TbUserModelConfigDoService;
+import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
@@ -20,7 +23,6 @@ import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.jsqlparser.statement.Block;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -131,7 +133,7 @@ public class SystemPlugin extends BotPlugin {
             return startNewGraph(userId,apiConfigGraph);
         }
 
-        // 节点大模型切换引导  等待测试
+        // 节点大模型切换引导
         if (userInput.equals("#切换api")){
             return startNewGraph(userId, changeModeGraph);
         }
@@ -343,7 +345,7 @@ public class SystemPlugin extends BotPlugin {
                     }
                 },
                 error -> {
-                    log.error("流错误: " + error.getMessage());
+                    log.error("流错误: " + error);
                     sendMessageUtil.sendSystemMsg(userId,"系统错误已退出当前引导");
                     clearFlag(userId);
                 },
