@@ -6,46 +6,46 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class CheckAggregateNode implements NodeAction {
 
+    private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造|角色混乱|现实互动)\\s*[:：]\\s*(不通过)\\s*(.*)");
+
     @Override
     public Map<String, Object> apply(OverAllState state) {
-        Integer reTry = (Integer)state.value("reTry").orElse(0);
-        String memoryCheckOutput = (String) state.value("memoryCheckOutput").orElse("");
-        String roleReversalCheckOutput = (String) state.value("roleReversalCheckOutput").orElse("");
-        String realLifeInteractionCheckOutput = (String) state.value("interactionCheckOutput").orElse("");
+        Integer reTry = (Integer) state.value("reTry").orElse(0);
+        String combinedCheckOutput = (String) state.value("combinedCheckOutput").orElse("");
 
-        Map<String,Object> resultMap = new HashMap<>();
-        boolean checkPass = true;
-        if (!"通过".equals(memoryCheckOutput.trim())) {
-            log.info("回复超出记忆，开始进行异常处理");
-            resultMap.put("failReason", memoryCheckOutput);
-            checkPass = false;
+        Map<String, Object> resultMap = new HashMap<>();
+        List<String> failReasons = new ArrayList<>();
+
+        Matcher matcher = CHECK_LINE_PATTERN.matcher(combinedCheckOutput);
+        while (matcher.find()) {
+            String checkName = matcher.group(1);
+            String reason = matcher.group(3).trim();
+            failReasons.add(checkName + "：" + reason);
+            log.info("审核不通过 - {} {}", checkName, reason);
         }
 
-        if (!"通过".equals(roleReversalCheckOutput.trim())) {
-            log.info("角色混乱异常，开始进行异常处理");
-            resultMap.put("failReason", roleReversalCheckOutput);
-            checkPass = false;
-        }
-
-        if (!"通过".equals(roleReversalCheckOutput.trim())) {
-            log.info("出现现实生活互动，开始进行异常处理");
-            resultMap.put("failReason", realLifeInteractionCheckOutput);
-            checkPass = false;
+        boolean checkPass = failReasons.isEmpty();
+        if (!checkPass) {
+            resultMap.put("failReason", String.join("\n", failReasons));
         }
 
         resultMap.put("checkPass", checkPass);
         resultMap.put("reTry", reTry + 1);
 
-        if (reTry > 15){
-            log.info("消息生成出现了15轮重试，放弃");
+        if (reTry > 3) {
+            log.info("消息生成出现{}轮重试，放弃", reTry);
             resultMap.put("checkPass", true);
         }
 
@@ -53,12 +53,10 @@ public class CheckAggregateNode implements NodeAction {
     }
 
     public static String nextNode(OverAllState state) {
-        // 路由下一个节点
         Boolean checkPass = (Boolean) state.value("checkPass").orElse(true);
         if (!checkPass) {
             return "messageGenerateNode";
         }
         return "transformTagMessageNode";
     }
-
 }

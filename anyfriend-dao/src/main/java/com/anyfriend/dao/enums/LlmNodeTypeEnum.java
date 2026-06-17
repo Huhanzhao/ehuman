@@ -17,7 +17,8 @@ public enum LlmNodeTypeEnum {
     FORMAT_OUTPUT("formatOutPut", "./md/FormatOutPutPrompt.md", "formatOutPut",0),
     ROLE_REVERSAL_CHECK("roleReversalCheck", "./md/RoleReversalCheckPrompt.md", "roleReversalCheckOutput",0),
     MESSAGE_GENERATE("messageGenerateNode", "./md/MessageGeneratePrompt.md", "generateMessage",15),
-    INTERACTION_CHECK("interactionCheckOutput", "./md/InteractionCheckPrompt.md", "interactionCheckOutput",0);
+    INTERACTION_CHECK("interactionCheckOutput", "./md/InteractionCheckPrompt.md", "interactionCheckOutput",0),
+    COMBINED_CHECK("combinedCheckNode", "./md/CombinedCheckPrompt.md", "combinedCheckOutput",0);
 
     private final String nodeName;
     private final String promptTemplatePath;
