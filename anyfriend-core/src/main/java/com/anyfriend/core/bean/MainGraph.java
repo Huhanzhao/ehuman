@@ -54,7 +54,6 @@ public class MainGraph {
                     Map.of("true", "imageAnalysisNode",
                             "false", StateGraph.END))
                     .addEdge("imageAnalysisNode", "sendMessageCompiledGraph")
-                    // todo bot状态节点？ 异步修改心情
                     .addEdge("sendMessageCompiledGraph", StateGraph.END);
 
             // 配置内存保存器（用于状态持久化）
