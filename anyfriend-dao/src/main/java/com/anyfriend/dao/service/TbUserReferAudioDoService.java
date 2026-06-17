@@ -12,9 +12,13 @@ import java.util.List;
 */
 public interface TbUserReferAudioDoService extends IService<TbUserReferAudioDo> {
 
-    List<TbUserReferAudioDo> getEnableReferAudioByUserId(Long userId);
+    List<TbUserReferAudioDo> getReferAudioByUserId(Long userId, Boolean enable);
 
     List<TbUserReferAudioDo> getByUserId(Long userId);
 
     boolean switchVoiceModel(Long userId, String voiceModelName);
+
+    List<TbUserReferAudioDo> getDisableReferAudioByUserIdAndType(Long userId, String type);
+
+    void changeReferAudio(Long userId, TbUserReferAudioDo tbUserReferAudioDo);
 }

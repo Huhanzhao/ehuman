@@ -87,7 +87,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
         // 设置所有 nodeNum为0
         lambdaUpdate().set(TbUserModelConfigDo::getNodeEnum,DISABLE)
                 .eq(TbUserModelConfigDo::getUserId,userId)
-                .eq(TbUserModelConfigDo::getCategory,chatModelCategoryEnum.getCategory());
+                .eq(TbUserModelConfigDo::getCategory,chatModelCategoryEnum.getCategory()).update();
 
         // 更新do
         lambdaUpdate().update(tbUserModelConfigDo);
