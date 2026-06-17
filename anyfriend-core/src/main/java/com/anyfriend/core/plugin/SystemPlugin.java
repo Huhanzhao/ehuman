@@ -101,7 +101,7 @@ public class SystemPlugin extends BotPlugin {
 
         // 如果当前有中断的图 继续执行api配置引导图
         if (runningDisposables.containsKey(event.getUserId())){
-            return resumeGraph(userId, userInput,apiConfigGraph);
+            return resumeGraph(userId, userInput,userGraphMap.get(userId));
         }
 
         // 主菜单
