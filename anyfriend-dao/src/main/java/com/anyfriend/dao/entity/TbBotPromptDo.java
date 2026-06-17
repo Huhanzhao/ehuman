@@ -20,6 +20,7 @@ public class TbBotPromptDo {
     @TableId(type = IdType.ASSIGN_ID)
     private Integer id;
 
+    private String name;
     /**
      * 
      */

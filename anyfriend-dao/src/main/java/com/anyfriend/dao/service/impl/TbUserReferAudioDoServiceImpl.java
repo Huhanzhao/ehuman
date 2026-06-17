@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,10 +19,10 @@ public class TbUserReferAudioDoServiceImpl extends ServiceImpl<TbUserReferAudioD
     implements TbUserReferAudioDoService {
 
     @Override
-    public List<TbUserReferAudioDo> getEnableReferAudioByUserId(Long userId) {
+    public List<TbUserReferAudioDo> getReferAudioByUserId(Long userId, Boolean enable) {
         return lambdaQuery()
                 .eq(TbUserReferAudioDo::getUserId, userId)
-                .eq(TbUserReferAudioDo::getEnable, true)
+                .eq(TbUserReferAudioDo::getEnable, enable)
                 .list();
     }
 
@@ -53,6 +54,20 @@ public class TbUserReferAudioDoServiceImpl extends ServiceImpl<TbUserReferAudioD
                 .eq(TbUserReferAudioDo::getId, targetModel.getId())
                 .update();
         return true;
+    }
+
+    @Override
+    public List<TbUserReferAudioDo> getDisableReferAudioByUserIdAndType(Long userId, String type) {
+        return lambdaQuery().eq(TbUserReferAudioDo::getType,type).eq(TbUserReferAudioDo::getUserId,userId)
+                .eq(TbUserReferAudioDo::getEnable,false).orderByAsc(TbUserReferAudioDo::getId).list();
+    }
+
+    @Override
+    @Transactional
+    public void changeReferAudio(Long userId, TbUserReferAudioDo tbUserReferAudioDo) {
+        lambdaUpdate().eq(TbUserReferAudioDo::getUserId, userId).set(TbUserReferAudioDo::getEnable, false).update();
+        
+        lambdaUpdate().update(tbUserReferAudioDo);
     }
 }
 

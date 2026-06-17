@@ -3,7 +3,6 @@ package com.anyfriend.core.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.fastjson2.util.DateUtils;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.dao.entity.*;
 import com.anyfriend.dao.enums.FamiliarityEnum;
@@ -21,11 +20,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.ZoneId;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +34,38 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Slf4j
 public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
+
+    private static final Pattern MOOD_PATTERN = Pattern.compile("心情[:：]\\s*([0-4])");
+    private static final Pattern MOOD_FALLBACK_PATTERN = Pattern.compile("[0-4]");
+    private static final Pattern REASON_PATTERN = Pattern.compile("原因[:：]\\s*(.+)");
+
+    private static final String MOOD_ANALYSIS_PROMPT = """
+            你是一个心情分析专家，负责分析情绪陪伴机器人当前应该处于什么心情。
+
+            ## 心情选项
+            0 - 平静：日常状态，没有明显情绪波动
+            1 - 开心：遇到好事、收到关心、有趣的话题
+            2 - 悲伤：受到委屈、想念、感伤的话题
+            3 - 愤怒：被冒犯、被辱骂、被不尊重
+            4 - 烦躁：被打扰、不耐烦、压力大
+
+            ## 当前状态
+            机器人正在做的事情：%s
+            ## 最近的对话
+            %s
+
+            ## 分析要求
+            1. 结合机器人正在做的事情和对话内容，判断当前最合理的心情
+            2. 心情变化不要太剧烈，除非对话中有强烈的情绪触发
+
+            ## 输出格式
+            心情为平静时只输出一行：
+            心情: 0
+            心情不平静时输出两行：
+            心情: 数字
+            原因: 简短原因（一句话）
+
+            不要输出其他内容。""";
 
     private final ChatClientFactory chatClientFactory;
     private final TbUserBotStatusDoService tbUserBotStatusDoService;
@@ -46,7 +78,6 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-        // todo 优化这个节点 太乱了
         log.info("开始心情分析");
         Long userId = state.value("userId", Long.class).orElse(0L);
         String memoryString = state.value("memoryString", String.class).orElse("");
@@ -56,7 +87,97 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
             return CompletableFuture.completedFuture(Map.of());
         }
 
-        // 获取当前正在做的事情
+        String lifeDetail = getCurrentLifeDetail();
+        TbUserBotStatusDo statusDo = getOrCreateStatus(userId);
+        MoodEnum currentMood = statusDo.getMoodEnum();
+
+        // 分析心情
+        MoodAnalysisResult moodResult = analyzeMood(currentMood, lifeDetail, memoryString);
+        tbUserBotStatusDoService.updateMoodByUserId(userId, moodResult.mood(), moodResult.reason());
+        log.info("用户{}心情更新: {} -> {} {}", userId, currentMood.getDesc(), moodResult.mood().getDesc(),
+                moodResult.reason().isEmpty() ? "" : "原因: " + moodResult.reason());
+
+        // 构建提示词变量
+        Map<String, Object> result = buildPromptVariables(state, statusDo, lifeDetail);
+        // 用最新的心情覆盖（心情分析可能改变了mood）
+        result.put("mood", buildMoodPrompt(moodResult.mood(), moodResult.reason()));
+        result.put("moodReason", moodResult.reason());
+        return CompletableFuture.completedFuture(result);
+    }
+
+    // ==================== 心情分析 ====================
+
+    private MoodAnalysisResult analyzeMood(MoodEnum currentMood, String lifeDetail, String memoryString) {
+        try {
+            ChatClient chatClient = chatClientFactory.createChatClient(0L, NodeEnum.AUXILIARY);
+            String prompt = String.format(MOOD_ANALYSIS_PROMPT, lifeDetail, memoryString);
+            String content = chatClient.prompt(prompt).call().content();
+            log.info("心情分析原始结果: {}", content);
+
+            int moodCode = extractMoodCode(content, currentMood.getCode());
+            String reason = extractMoodReason(content, moodCode);
+            MoodEnum newMood = MoodEnum.fromCode(moodCode);
+            return new MoodAnalysisResult(newMood, reason);
+        } catch (Exception e) {
+            log.error("心情分析失败", e);
+            return new MoodAnalysisResult(currentMood, "");
+        }
+    }
+
+    private int extractMoodCode(String content, int defaultCode) {
+        Matcher matcher = MOOD_PATTERN.matcher(content);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        Matcher fallback = MOOD_FALLBACK_PATTERN.matcher(content.trim());
+        if (fallback.find()) {
+            return Integer.parseInt(fallback.group());
+        }
+        return defaultCode;
+    }
+
+    private String extractMoodReason(String content, int moodCode) {
+        if (moodCode == MoodEnum.CALM.getCode()) {
+            return "";
+        }
+        Matcher matcher = REASON_PATTERN.matcher(content);
+        return matcher.find() ? matcher.group(1).trim() : "";
+    }
+
+    private record MoodAnalysisResult(MoodEnum mood, String reason) {}
+
+    // ==================== 提示词变量构建 ====================
+
+    private Map<String, Object> buildPromptVariables(OverAllState state, TbUserBotStatusDo statusDo, String lifeDetail) {
+        Long userId = state.value("userId", Long.class).orElse(0L);
+        Integer reTry = state.value("reTry", Integer.class).orElse(0);
+        String target = state.value("target", String.class).orElse("");
+
+        // 更新重试次数
+        if (reTry == 0) {
+            state.input(Map.of("reTry", 1));
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("botRole", tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE));
+        result.put("target", target);
+        result.put("mood", buildMoodPrompt(statusDo.getMoodEnum(), statusDo.getMoodReason()));
+        result.put("familiarity", buildFamiliarityPrompt(statusDo.getFamiliarity()));
+        result.put("grace", buildGracePrompt(statusDo.getGrace()));
+        result.put("lifeDetail", lifeDetail);
+        result.put("currentTime", buildTimeInfo(userId));
+        result.put("currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail);
+        result.put("userInfo", getUserInfo(userId));
+        result.put("yesterdayChatSummary", getYesterdayChatSummary(userId));
+        result.put("daysTogether", getDaysTogetherInfo(userId));
+        result.put("stickerTypes", getStickerTypes());
+        result.put("reTryPrompt", buildReTryPrompt(state, reTry));
+        return result;
+    }
+
+    // ==================== 数据查询 ====================
+
+    private String getCurrentLifeDetail() {
         Date now = new Date();
         TbBotLifeDetailDo currentLife = tbBotLifeDetailDoService.getOne(
                 Wrappers.<TbBotLifeDetailDo>lambdaQuery()
@@ -64,146 +185,28 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
                         .ge(TbBotLifeDetailDo::getEndTime, now)
                         .last("limit 1")
         );
-        String lifeDetail = currentLife != null ? currentLife.getDetail() : "无特定安排";
+        return currentLife != null ? currentLife.getDetail() : "无特定安排";
+    }
 
-        // 获取当前心情
+    private TbUserBotStatusDo getOrCreateStatus(Long userId) {
         TbUserBotStatusDo statusDo = tbUserBotStatusDoService.getByUserId(userId);
         if (statusDo == null) {
             statusDo = new TbUserBotStatusDo().setUserId(userId).setMoodEnum(MoodEnum.CALM).setGrace(0).setFamiliarity(0);
             tbUserBotStatusDoService.save(statusDo);
         }
-        MoodEnum currentMood = statusDo.getMoodEnum();
-
-        String prompt = "你是一个心情分析专家，负责分析情绪陪伴机器人当前应该处于什么心情。\n\n" +
-                "## 心情选项\n" +  // todo 用户和你现在的关系
-                "0 - 平静：日常状态，没有明显情绪波动\n" +
-                "1 - 开心：遇到好事、收到关心、有趣的话题\n" +
-                "2 - 悲伤：受到委屈、想念、感伤的话题\n" +
-                "3 - 愤怒：被冒犯、被辱骂、被不尊重\n" +
-                "4 - 烦躁：被打扰、不耐烦、压力大\n\n" +
-                "## 当前状态\n" +
-                "机器人正在做的事情：" + lifeDetail + "\n" +
-                "## 最近的对话\n" +
-                memoryString + "\n\n" +
-                "## 分析要求\n" +
-                "1. 结合机器人正在做的事情和对话内容，判断当前最合理的心情\n" +
-                "2. 心情变化不要太剧烈，除非对话中有强烈的情绪触发\n\n" +
-                "## 输出格式\n" +
-                "心情为平静时只输出一行：\n" +
-                "心情: 0\n" +
-                "心情不平静时输出两行：\n" +
-                "心情: 数字\n" +
-                "原因: 简短原因（一句话）\n\n" +
-                "不要输出其他内容。";
-
-        try {
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
-            String content = chatClient.prompt(prompt).call().content();
-            log.info("心情分析原始结果: {}", content);
-
-            // 提取心情数字
-            int moodCode = currentMood.getCode();
-            Matcher moodMatcher = Pattern.compile("心情[:：]\\s*([0-4])").matcher(content);
-            if (moodMatcher.find()) {
-                moodCode = Integer.parseInt(moodMatcher.group(1));
-            } else {
-                Matcher fallback = Pattern.compile("[0-4]").matcher(content.trim());
-                if (fallback.find()) {
-                    moodCode = Integer.parseInt(fallback.group());
-                }
-            }
-
-            // 提取原因
-            String reason = "";
-            if (moodCode != MoodEnum.CALM.getCode()) {
-                Matcher reasonMatcher = Pattern.compile("原因[:：]\\s*(.+)").matcher(content);
-                if (reasonMatcher.find()) {
-                    reason = reasonMatcher.group(1).trim();
-                }
-            }
-
-            MoodEnum newMood = MoodEnum.fromCode(moodCode);
-            tbUserBotStatusDoService.updateMoodByUserId(userId, newMood,reason);
-            log.info("用户{}心情更新: {} -> {} {}", userId, currentMood.getDesc(), newMood.getDesc(),
-                    reason.isEmpty() ? "" : "原因: " + reason);
-
-            // 合并心情分析结果和提示词变量，通过返回值传递给下一个节点
-            Map<String, Object> result = new HashMap<>(getPromptVariables(state));
-            result.put("mood", moodCode);
-            result.put("moodReason", reason);
-            result.put("grace", statusDo.getGrace());
-            result.put("familiarity", statusDo.getFamiliarity());
-            result.put("lifeDetail", lifeDetail);
-            return CompletableFuture.completedFuture(result);
-        } catch (Exception e) {
-            log.error("心情分析失败, userId={}", userId, e);
-            Map<String, Object> result = new HashMap<>(getPromptVariables(state));
-            result.put("mood", currentMood.getCode());
-            result.put("moodReason", "");
-            result.put("grace", statusDo.getGrace());
-            result.put("familiarity", statusDo.getFamiliarity());
-            result.put("lifeDetail", lifeDetail);
-            return CompletableFuture.completedFuture(result);
-        }
+        return statusDo;
     }
 
-    private Map getPromptVariables(OverAllState state) {
-        // 获取bot状态
-        Integer reTry = (Integer)state.value("reTry").orElse(0);
-        Integer moodCode = (Integer)state.value("mood").orElse(0);
-        Integer grace = (Integer)state.value("grace").orElse(0);
-        String target = (String) state.value("target").orElse("");
-        String moodReason = (String)state.value("moodReason").orElse("");
-        Integer familiarityScore = (Integer)state.value("familiarity").orElse(0);
-        Long userId = (Long)state.value("userId").orElse(0L);
+    private String getUserInfo(Long userId) {
+        List<String> infoList = tbUserInfoDoService.getUserInfoByUserId(userId).stream()
+                .map(TbUserInfoDo::getUserInfo).toList();
+        return infoList.isEmpty() ? "无" : infoList.getFirst();
+    }
 
-        // 获取枚举
-        MoodEnum moodEnum = MoodEnum.fromCode(moodCode);
-        FamiliarityEnum familiarityEnum = FamiliarityEnum.fromScore(familiarityScore);
-
-        // 构建心情提示词
-        String moodPrompt = buildMoodPrompt(moodEnum, moodReason);
-
-        // 构建亲密度提示词
-        String familiarityPrompt = buildFamiliarityPrompt(familiarityEnum, familiarityScore);
-
-        // 构建好感度提示词
-        String gracePrompt = buildGracePrompt(grace);
-
-        List<String> userInfoList = tbUserInfoDoService.getUserInfoByUserId(userId).stream().map(TbUserInfoDo::getUserInfo).toList();
-
-        // 查询bot当前正在做的事
-        Date now = new Date();
-        String lifeDetail = tbBotLifeDetailDoService.getCurrentActivity(Long.valueOf(System.getProperty("BOT_ID")));
-
-        // 查询加上好友的天数（从第一条消息开始算）
-        TbAiChatMemoryDo firstMessage = tbAiChatMemoryService.getOne(
-                Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                        .eq(TbAiChatMemoryDo::getMemoryId, userId)
-                        .orderByAsc(TbAiChatMemoryDo::getCreateTime)
-                        .last("limit 1")
-        );
-        String daysInfo = "";
-        if (firstMessage != null && firstMessage.getCreateTime() != null) {
-            long days = java.time.temporal.ChronoUnit.DAYS.between(
-                    firstMessage.getCreateTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-                    java.time.LocalDate.now()
-            );
-            daysInfo = "今天是你们加上好友的第" + days + "天";
-        }
-
-        // 查询最后一条用户消息的时间
-        String lastUserMessage = tbAiChatMemoryService.getLastUserMessage(userId);
-
-        // 构建时间信息
-        String currentTime = "今天是" + DateUtils.format(now, "yyyy年") + LocalDateTime.now().getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.CHINA)
-                + "，今天是" + DateUtils.format(now, "MM月dd日 HH:mm")
-                + lastUserMessage;
-
-        // 查询昨天的聊天总结
+    private String getYesterdayChatSummary(Long userId) {
         LocalDateTime yesterdayStart = LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime yesterdayEnd = LocalDateTime.now().minusDays(1).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        TbUserMessageSummaryDo yesterdaySummary = tbUserMessageSummaryDoService.getOne(
+        TbUserMessageSummaryDo summary = tbUserMessageSummaryDoService.getOne(
                 Wrappers.<TbUserMessageSummaryDo>lambdaQuery()
                         .eq(TbUserMessageSummaryDo::getUserId, userId)
                         .ge(TbUserMessageSummaryDo::getCreateTime, yesterdayStart)
@@ -211,56 +214,47 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
                         .orderByDesc(TbUserMessageSummaryDo::getCreateTime)
                         .last("limit 1")
         );
-        String yesterdayChatSummary = yesterdaySummary != null ? yesterdaySummary.getSummary() : "无";
+        return summary != null ? summary.getSummary() : "无";
+    }
 
-        String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
-
-        // 查看当前是第几次生成消息
-        if (reTry == 0){
-            state.input(Map.of("reTry", 1));
+    private String getDaysTogetherInfo(Long userId) {
+        TbAiChatMemoryDo firstMessage = tbAiChatMemoryService.getOne(
+                Wrappers.<TbAiChatMemoryDo>lambdaQuery()
+                        .eq(TbAiChatMemoryDo::getMemoryId, userId)
+                        .orderByAsc(TbAiChatMemoryDo::getCreateTime)
+                        .last("limit 1")
+        );
+        if (firstMessage == null || firstMessage.getCreateTime() == null) {
+            return "";
         }
+        long days = ChronoUnit.DAYS.between(
+                firstMessage.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate(),
+                LocalDate.now()
+        );
+        return "今天是你们加上好友的第" + days + "天";
+    }
 
-        String stickerTypes = null;
+    private String buildTimeInfo(Long userId) {
+        String lastUserMessage = tbAiChatMemoryService.getLastUserMessage(userId);
+        LocalDateTime now = LocalDateTime.now();
+        String dayOfWeek = now.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.CHINA);
+        return "今天是" + now.getYear() + "年" + dayOfWeek + "，今天是"
+                + String.format("%02d月%02d日 %02d:%02d", now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())
+                + lastUserMessage;
+    }
 
+    private String getStickerTypes() {
         try {
-            stickerTypes = Files.list(Paths.get(systemPath.getEmojiBasePath()))
-                    .toList().stream()
+            return Files.list(Paths.get(systemPath.getEmojiBasePath()))
                     .map(path -> path.getFileName().toString())
                     .toList().toString();
         } catch (IOException e) {
-            stickerTypes = "无";
+            return "无";
         }
-
-        Map<String, String> resultMap = new HashMap<>();
-        resultMap.put("botRole", botRole);
-        resultMap.put("target", target);
-        resultMap.put("mood", moodPrompt);
-        resultMap.put("familiarity", familiarityPrompt);
-        resultMap.put("grace", gracePrompt);
-        resultMap.put("currentTime", currentTime);
-        resultMap.put("currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail);
-        resultMap.put("userInfo", userInfoList.isEmpty() ? "无" : userInfoList.getFirst());
-        resultMap.put("yesterdayChatSummary", yesterdayChatSummary);
-        resultMap.put("daysTogether", daysInfo);
-        resultMap.put("stickerTypes", stickerTypes);
-        if (reTry > 0){
-            List<String> failReasons = (List<String>) state.value("failReason").orElse(null);
-            resultMap.put("reTryPrompt", "系统信息：这是第" + (reTry + 1) + "次为本轮生成消息\n " +
-                    "**前面生成的消息审核失败的原因：**"
-                    +  String.join("\n", failReasons)
-                    + "\n 请避免这些原因 按照要求重新为本次会话生成消息"
-            );
-        }else{
-            resultMap.put("reTryPrompt", "");
-        }
-        return resultMap;
     }
 
+    // ==================== 提示词构建 ====================
 
-
-    /**
-     * 构建心情提示词
-     */
     private String buildMoodPrompt(MoodEnum moodEnum, String moodReason) {
         String base = switch (moodEnum) {
             case CALM -> "当前心情平静，语气自然平稳";
@@ -269,17 +263,14 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
             case ANGRY -> "当前心情不好，语气冷淡克制，可能带点刺";
             case IRRITABLE -> "当前有点烦躁，语气不耐烦，回复简短";
         };
-
         if (moodEnum != MoodEnum.CALM && !moodReason.isEmpty()) {
             base += "（原因：" + moodReason + "）";
         }
         return base;
     }
 
-    /**
-     * 构建亲密度提示词
-     */
-    private String buildFamiliarityPrompt(FamiliarityEnum familiarityEnum, int score) {
+    private String buildFamiliarityPrompt(int score) {
+        FamiliarityEnum familiarityEnum = FamiliarityEnum.fromScore(score);
         String desc = switch (familiarityEnum) {
             case STRANGER -> "你们还不熟，保持礼貌客气，称呼正式，不聊私密话题";
             case NORMAL -> "关系普通，正常交流，可以聊日常，但不过分主动";
@@ -290,9 +281,6 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         return "亲密度：" + score + "/200（" + familiarityEnum.getDesc() + "）" + desc;
     }
 
-    /**
-     * 构建好感度提示词
-     */
     private String buildGracePrompt(int grace) {
         String desc;
         if (grace <= -60) {
@@ -311,5 +299,16 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
             desc = "非常喜欢，语气黏人，主动关心，情感丰富";
         }
         return "好感度：" + grace + "/100，" + desc;
+    }
+
+    private String buildReTryPrompt(OverAllState state, int reTry) {
+        if (reTry <= 0) {
+            return "";
+        }
+        List<String> failReasons = (List<String>) state.value("failReason").orElse(null);
+        return "系统信息：这是第" + (reTry + 1) + "次为本轮生成消息\n" +
+                "**前面生成的消息审核失败的原因：**"
+                + String.join("\n", failReasons)
+                + "\n 请避免这些原因 按照要求重新为本次会话生成消息";
     }
 }

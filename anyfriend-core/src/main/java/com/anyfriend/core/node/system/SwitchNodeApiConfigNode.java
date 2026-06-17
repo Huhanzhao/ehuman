@@ -3,22 +3,18 @@ package com.anyfriend.core.node.system;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
-import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static com.anyfriend.dao.enums.ChatModelCategoryEnum.IMAGE;
 import static com.anyfriend.dao.enums.ChatModelCategoryEnum.TTS;
@@ -31,7 +27,7 @@ import static com.anyfriend.dao.enums.ChatModelCategoryEnum.TTS;
 @Data
 @Slf4j
 @Component
-public class UpdateNodeApiConfigNode extends SystemInterruptionNode{
+public class SwitchNodeApiConfigNode extends SystemInterruptionNode{
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
@@ -59,12 +55,13 @@ public class UpdateNodeApiConfigNode extends SystemInterruptionNode{
             categoryEnum = TTS;
         }
         List<TbUserModelConfigDo> modelConfigList = tbUserModelConfigDoService.getDisableApiConfigByCategory(userId, categoryEnum);
+        if (modelConfigList.isEmpty()){
+            sendMessageUtil.sendSystemMsg(userId,"没有可切换的api，已退出引导");
+            return Optional.empty();
+        }
         if (userInput.isEmpty()) {
             // 中断等待用户输入
             StringBuilder userMessageBuilder = new StringBuilder("当前可切换的api配置\n");
-            if (modelConfigList.isEmpty()){
-                userMessageBuilder.append("无");
-            }
             for (int i = 0; i < modelConfigList.size(); i++) {
                 TbUserModelConfigDo tbUserModelConfigDo = modelConfigList.get(i);
                 userMessageBuilder.append(i + 1).append(" . model:")
@@ -87,6 +84,7 @@ public class UpdateNodeApiConfigNode extends SystemInterruptionNode{
             index = Long.valueOf(userInput).intValue();
         }catch(Exception exception){
             log.error("非法输入");
+            index = -1;
         }
 
         if (index <= 0 || index > modelConfigList.size()){

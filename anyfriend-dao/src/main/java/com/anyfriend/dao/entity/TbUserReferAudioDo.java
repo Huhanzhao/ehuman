@@ -34,6 +34,8 @@ public class TbUserReferAudioDo {
      */
     private String referAudioName;
 
+    private String type; // local online
+
     /**
      * 创建时间
      */

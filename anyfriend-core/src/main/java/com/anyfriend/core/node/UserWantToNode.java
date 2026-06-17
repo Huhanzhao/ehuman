@@ -27,7 +27,6 @@ public class UserWantToNode implements NodeAction {
     @Override
     public Map<String, Object> apply (OverAllState state){
         Long userId = (Long) state.value("userId").orElse(0L);
-        // todo 会话结束后不发送消息
         // 查询历史消息
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);

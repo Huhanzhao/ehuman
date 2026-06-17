@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.anyfriend.core.bean.SystemGraph;
 import com.anyfriend.core.utils.SendMessageUtil;
+import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
@@ -19,6 +20,7 @@ import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.jsqlparser.statement.Block;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -36,12 +38,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SystemPlugin extends BotPlugin {
 
     @Autowired
-    private TbAiChatMemoryService tbAiChatMemoryService;
-
-    @Autowired
-    private TbChatConfigDoService tbChatConfigDoService;
-
-    @Autowired
     private TbUserBotStatusDoService tbUserBotStatusDoService;
 
     @Autowired
@@ -53,11 +49,11 @@ public class SystemPlugin extends BotPlugin {
     @Autowired
     private SystemGraph systemGraph;
 
-    // todo 声音voice graph
-//    private CompiledGraph voiceConfigGraph;
-
     @Autowired
     private SendMessageUtil sendMessageUtil;
+
+    @Autowired
+    private TbBotPromptDoService tbBotPromptDoService;
 
     // 保存是否有运行中的图
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
@@ -77,11 +73,17 @@ public class SystemPlugin extends BotPlugin {
 
     private CompiledGraph referAudioConfig;
 
+    private CompiledGraph switchReferAudioGraph;
+
+    private CompiledGraph createRoleGraph;
+
     @PostConstruct
     public void init() {
         this.apiConfigGraph = systemGraph.getApiConfigGraph();
         this.changeModeGraph = systemGraph.getChangeModelCompiledGraph();
         this.referAudioConfig = systemGraph.getReferAudioConfigGraph();
+        this.switchReferAudioGraph = systemGraph.getSwitchReferAudioGraph();
+        this.createRoleGraph = systemGraph.getCreateRoleGraph();
     }
 
 
@@ -115,12 +117,12 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // 查询闲置api配置
-        if (userInput.equals("#未启用api查询")){
+        if (userInput.equals("#查询未启用api")){
             return getApiConfig(userId, userInput);
         }
 
         // 已启用api查询
-        if (userInput.equals("#已启用api查询")){
+        if (userInput.equals("#查询已启用api")){
             return getNodeEnableModel(userId);
         }
 
@@ -134,21 +136,35 @@ public class SystemPlugin extends BotPlugin {
             return startNewGraph(userId, changeModeGraph);
         }
 
-        // 声音音频导入引导 等待测试 todo 保存名字和本地标识
+        // 声音音频导入引导 等待测试
         if (userInput.equals("#配置参考音频")){
             return startNewGraph(userId,referAudioConfig);
         }
 
-        // todo 声音参考音频查询或切换
-        // 查询或修改参考音频
-        if (userInput.startsWith("#参考音频")){
-            return getOrUpdateVoiceModel(userId,userInput);
+        // 查询未启动参考音频
+        if(userInput.equals("#查询未启用参考音频")){
+            return getReferAudioByUserId(userId,false);
+        }
+
+        // 查询已启动参考音频
+        if(userInput.equals("#查询已启用参考音频")){
+            return getReferAudioByUserId(userId,true);
+        }
+
+        // 切换参考音频 等待测试
+        if (userInput.startsWith("#切换参考音频")){
+            return startNewGraph(userId,switchReferAudioGraph);
         }
 
 
-        // todo 角色查询或切换
+        //  角色查询或切换
         if(userInput.startsWith("#人设")){
-            return MESSAGE_BLOCK;
+            return getOrSwitchRole(userId,userInput);
+        }
+
+        //  添加人设
+        if(userInput.equals("#添加人设")){
+            return startNewGraph(userId, createRoleGraph);
         }
 
         // 导入表情包引导
@@ -171,6 +187,92 @@ public class SystemPlugin extends BotPlugin {
             return MESSAGE_BLOCK;
         }
         return MESSAGE_IGNORE;
+    }
+
+
+    private int getOrSwitchRole(Long userId, String userInput) {
+        String roleName = userInput.replace("#人设", "").trim();
+        List<TbBotPromptDo> promptDos = tbBotPromptDoService.list();
+
+        if (roleName.isEmpty()) {
+            // 查询所有人设
+            StringBuilder msg = new StringBuilder();
+            TbBotPromptDo currentRole = null;
+            StringBuilder optionalRoles = new StringBuilder();
+
+            for (TbBotPromptDo promptDo : promptDos) {
+                if (promptDo.getPromptTypeEnum().getType() == 0) {
+                    currentRole = promptDo;
+                } else {
+                    optionalRoles.append(promptDo.getName()).append("\n");
+                }
+            }
+
+            if (currentRole != null) {
+                msg.append("当前人设：").append(currentRole.getName());
+            } else {
+                msg.append("当前人设：未设置");
+            }
+
+            if (optionalRoles.length() > 0) {
+                msg.append("\n\n可选人设：\n").append(optionalRoles);
+                msg.append("\n切换格式：#人设 人设名称");
+            }
+
+            sendMessageUtil.sendSystemMsg(userId, msg.toString().trim());
+            return MESSAGE_BLOCK;
+        }
+
+        // 切换人设 - 根据名称查找
+        TbBotPromptDo targetRole = null;
+        for (TbBotPromptDo promptDo : promptDos) {
+            if (roleName.equals(promptDo.getName())) {
+                targetRole = promptDo;
+                break;
+            }
+        }
+
+        if (targetRole == null) {
+            sendMessageUtil.sendSystemMsg(userId, "未找到人设：" + roleName);
+            return MESSAGE_BLOCK;
+        }
+
+        // 找到当前人设并更新
+        TbBotPromptDo currentRole = null;
+        for (TbBotPromptDo promptDo : promptDos) {
+            if (promptDo.getPromptTypeEnum().getType() == 0) {
+                currentRole = promptDo;
+                break;
+            }
+        }
+
+        if (currentRole != null) {
+            // 将目标人设的内容更新到当前人设
+            currentRole.setContent(targetRole.getContent());
+            currentRole.setName(targetRole.getName());
+            tbBotPromptDoService.updateById(currentRole);
+            sendMessageUtil.sendSystemMsg(userId, "已切换人设为：" + targetRole.getName());
+        } else {
+            sendMessageUtil.sendSystemMsg(userId, "未找到当前人设配置，无法切换");
+        }
+
+        return MESSAGE_BLOCK;
+    }
+
+    private int getReferAudioByUserId(Long userId, boolean enbale) {
+        List<TbUserReferAudioDo> audioDos = tbUserReferAudioDoService.getReferAudioByUserId(userId, enbale);
+        StringBuilder msg = new StringBuilder();
+        if (audioDos.isEmpty()){
+            msg.append("没有查询到符合条件的参考音频");
+        }
+        audioDos.forEach(param -> {
+            msg.append("音频名:")
+                    .append(param.getReferAudioName()).append("\n音频url:")
+                    .append(param.getReferAudioUrl()).append("\n音频类型:")
+                    .append(param.getType()).append("\n\n");
+        });
+        sendMessageUtil.sendSystemMsg(userId,msg.toString().trim());
+        return MESSAGE_BLOCK;
     }
 
     // 继续执行图
@@ -324,37 +426,6 @@ public class SystemPlugin extends BotPlugin {
         TbUserBotStatusDo tbUserBotStatusDo = tbUserBotStatusDoService.getByUserId(userId);
         String msg = MsgUtils.builder().text("当前好感度: " + tbUserBotStatusDo.getGrace() + "\n\n修改格式：#好感度 50").build();
         sendMessageUtil.sendSystemMsg(userId,msg);
-        return MESSAGE_BLOCK;
-    }
-
-    private int getOrUpdateVoiceModel(Long userId, String userInput) {
-        String param = userInput.replace("#声音", "").trim();
-        // 切换声音
-        if (!param.isEmpty()) {
-            boolean success = tbUserReferAudioDoService.switchVoiceModel(userId, param);
-            if (success) {
-                sendMessageUtil.sendSystemMsg(userId,"已切换到参考音频：" + param);
-            } else {
-                sendMessageUtil.sendSystemMsg(userId,"没有找到该参考音频：" + param);
-            }
-            return MESSAGE_BLOCK;
-        }
-        // 查询声音列表
-        List<TbUserReferAudioDo> voiceModels = tbUserReferAudioDoService.getByUserId(userId);
-        if (voiceModels.isEmpty()) {
-            sendMessageUtil.sendSystemMsg(userId,"暂无参考音频");
-            return MESSAGE_BLOCK;
-        }
-        StringBuilder msg = new StringBuilder();
-        for (TbUserReferAudioDo model : voiceModels) {
-            msg.append(model.getReferAudioName());
-            if (Boolean.TRUE.equals(model.getEnable())) {
-                msg.append(" [当前启用]");
-            }
-            msg.append("\n");
-        }
-        msg.append("\n切换声音：#声音 参考音频名");
-        sendMessageUtil.sendSystemMsg(userId,msg.toString().trim());
         return MESSAGE_BLOCK;
     }
 

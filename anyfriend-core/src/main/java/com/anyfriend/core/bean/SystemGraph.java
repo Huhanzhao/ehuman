@@ -6,13 +6,14 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.anyfriend.core.config.NodeStatePersistenceListener;
 import com.anyfriend.core.node.system.SystemInterruptionNode;
-import com.anyfriend.core.node.system.UpdateNodeApiConfigNode;
-import com.anyfriend.core.service.BeforeLlmCallback;
+import com.anyfriend.core.node.system.SwitchNodeApiConfigNode;
 import com.anyfriend.core.utils.SendMessageUtil;
+import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
-import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.PromptTypeEnum;
+import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,13 +33,15 @@ public class SystemGraph {
     private final SendMessageUtil sendMessageUtil;
 
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
-    private final NodeStatePersistenceListener nodeStatePersistenceListener;
 
     @Autowired
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
     @Autowired
-    private UpdateNodeApiConfigNode updateNodeApiConfigNode;
+    private final TbBotPromptDoService tbBotPromptDoService;
+
+    @Autowired
+    private SwitchNodeApiConfigNode switchNodeApiConfigNode;
 
     @Autowired
     private ObjectMapper mapper;
@@ -59,7 +62,7 @@ public class SystemGraph {
         SystemInterruptionNode modelNameNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("model")
                 .nodeName("modelNameNode")
-                .inputPrompt("请输入model型号")
+                .inputPrompt("请输入model型号,如果是TTS类型，请输入插件name")
                 .build();
         // 收集baseUrl
         SystemInterruptionNode baseUrlNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
@@ -111,9 +114,39 @@ public class SystemGraph {
                 .nodeName("nodeTypeNode")
                 .interruptKey("nodeType").build();
 
-        return getSystemGraph(List.of(nodeTypeNode,updateNodeApiConfigNode),List.of("nodeType","apiConfigIndex"));
+        return getSystemGraph(List.of(nodeTypeNode, switchNodeApiConfigNode),List.of("nodeType","apiConfigIndex"));
     }
 
+
+    public CompiledGraph getCreateRoleGraph() {
+        // 收集人设名称
+        SystemInterruptionNode roleNameNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入人设名称")
+                .nodeName("roleNameNode")
+                .interruptKey("name").build();
+
+        // 收集人设内容
+        SystemInterruptionNode roleContentNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入人设prompt内容")
+                .nodeName("roleContentNode")
+                .interruptKey("content")
+                .afterLlmCallback((state, llmOutput) -> {
+                    Map<String, Object> data = state.data();
+                    TbBotPromptDo promptDo = new TbBotPromptDo();
+                    promptDo.setName(data.get("name").toString());
+                    promptDo.setContent(data.get("content").toString());
+                    promptDo.setPromptTypeEnum(PromptTypeEnum.TARGET);
+                    tbBotPromptDoService.save(promptDo);
+
+                    sendMessageUtil.sendSystemMsg(Long.valueOf(data.get("userId").toString()), "人设创建成功");
+                    state.clear();
+                })
+                .build();
+
+        return getSystemGraph(List.of(roleNameNode, roleContentNode), List.of("name", "content"));
+    }
 
     // 获取系统收集信息中断节点图
     private CompiledGraph getSystemGraph(List<SystemInterruptionNode> nodes, List<String> keys) {
@@ -147,7 +180,6 @@ public class SystemGraph {
             // 配置内存保存器（用于状态持久化）
             var saver = new MemorySaver();
             var compileConfig = CompileConfig.builder()
-                    .withLifecycleListener(nodeStatePersistenceListener)
                     .saverConfig(SaverConfig.builder()
                             .register(saver)
                             .build())
@@ -160,6 +192,15 @@ public class SystemGraph {
     }
 
     public CompiledGraph getReferAudioConfigGraph() {
+        // 参考音频类型
+        SystemInterruptionNode fileTypeNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("参考音频是本地的还是在线链接呢？请输入序号：\n1.本地\n2.在线链接")
+                .inputMapping(Map.of("1","local","2","online"))
+                .nodeName("fileTypeNode")
+                .interruptKey("type").build();
+
+
         // 文件名
         SystemInterruptionNode fileNameNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
@@ -170,7 +211,7 @@ public class SystemGraph {
         // 在线链接
         SystemInterruptionNode audioUrlNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
-                .inputPrompt("请输入音频公网url，不需要公网链接的插件可以随便填，例如插件indextts2需要公网链接，mimoTTS使用本地文件不需要公网链接,自定义插件看情况使用")
+                .inputPrompt("请输入音频公网url\n(不需要公网链接的插件可以随便填，自带插件indextts2需要公网链接，mimoTTS使用本地文件不需要公网链接,自定义插件看情况使用)")
                 .nodeName("audioUrlNode")
                 .interruptKey("referAudioUrl")
                 .afterLlmCallback((state,llmOutPut) -> {
@@ -185,6 +226,14 @@ public class SystemGraph {
                 })
                 .build();
 
-        return getSystemGraph(List.of(fileNameNode,audioUrlNode),List.of("referAudioName","referAudioUrl"));
+        return getSystemGraph(List.of(fileTypeNode,fileNameNode,audioUrlNode),List.of("type","referAudioName","referAudioUrl"));
+    }
+
+    public CompiledGraph getSwitchReferAudioGraph() {
+        // 需要切换本地参考音频还是在线音频，当前声音插件是。。。 请注意音频类型与插件的适配性，默认插件 indextts2必须使用在线音频，mimoTTS必须使用本地音频
+
+        // 请选择要切换的音频
+
+        return getSystemGraph(List.of(),List.of("type"));
     }
 }
