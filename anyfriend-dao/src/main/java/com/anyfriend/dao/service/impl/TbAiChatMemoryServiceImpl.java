@@ -21,23 +21,6 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
     implements TbAiChatMemoryService {
 
     @Override
-    public String getLastUserMessage(Long userId) {
-        // 查询最后一条用户消息的时间
-        TbAiChatMemoryDo lastUserMessage = this.getOne(
-                Wrappers.<TbAiChatMemoryDo>lambdaQuery()
-                        .eq(TbAiChatMemoryDo::getMemoryId, userId)
-                        .eq(TbAiChatMemoryDo::getRole, "user")
-                        .orderByDesc(TbAiChatMemoryDo::getCreateTime)
-                        .last("LIMIT 1 OFFSET 1")
-        );
-        String lastMessageTime = "";
-        if (lastUserMessage != null && lastUserMessage.getCreateTime() != null) {
-            lastMessageTime = "用户上一条消息是" + DateUtils.format(lastUserMessage.getCreateTime(), "MM月dd日 HH:mm");
-        }
-        return lastMessageTime;
-    }
-
-    @Override
     public List<TbAiChatMemoryDo> getMessageList(Long userId, Integer pageSize) {
         Page<TbAiChatMemoryDo> page = new Page<>(1,pageSize);
         return this.page(page,Wrappers.<TbAiChatMemoryDo>lambdaQuery()

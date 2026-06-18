@@ -11,9 +11,6 @@ import java.util.List;
 * @createDate 2025-11-03 22:19:57
 */
 public interface TbAiChatMemoryService extends IService<TbAiChatMemoryDo> {
-
-    String getLastUserMessage(Long userId);
-
     List<TbAiChatMemoryDo> getMessageList(Long userId,Integer pageSize);
 
     void removeByMemoryIdAndLikeMessage(Long memoryId, String message);

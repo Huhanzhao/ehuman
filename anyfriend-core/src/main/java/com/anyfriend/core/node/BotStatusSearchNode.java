@@ -165,7 +165,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         result.put("familiarity", buildFamiliarityPrompt(statusDo.getFamiliarity()));
         result.put("grace", buildGracePrompt(statusDo.getGrace()));
         result.put("lifeDetail", lifeDetail);
-        result.put("currentTime", buildTimeInfo(userId));
+        result.put("currentTime", buildTimeInfo());
         result.put("currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail);
         result.put("userInfo", getUserInfo(userId));
         result.put("yesterdayChatSummary", getYesterdayChatSummary(userId));
@@ -234,13 +234,11 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         return "今天是你们加上好友的第" + days + "天";
     }
 
-    private String buildTimeInfo(Long userId) {
-        String lastUserMessage = tbAiChatMemoryService.getLastUserMessage(userId);
+    private String buildTimeInfo() {
         LocalDateTime now = LocalDateTime.now();
         String dayOfWeek = now.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.CHINA);
         return "今天是" + now.getYear() + "年" + dayOfWeek + "，今天是"
-                + String.format("%02d月%02d日 %02d:%02d", now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())
-                + lastUserMessage;
+                + String.format("%02d月%02d日 %02d:%02d", now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute());
     }
 
     private String getStickerTypes() {

@@ -30,10 +30,6 @@ public class UserWantToNode implements NodeAction {
         // 查询历史消息
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
-        List<TbAiChatMemoryDo> userMessageList = messageList.stream().filter(memoryDo -> "user".equals(memoryDo.getRole())).toList();
-        if (userMessageList.isEmpty()){
-            memoryString += "\n[旁白： 用户一直没有回复你的消息 " + tbAiChatMemoryService.getLastUserMessage(userId) + "]";
-        }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
         PromptTemplate promptTemplate = PromptTemplate.builder().template(
                 """

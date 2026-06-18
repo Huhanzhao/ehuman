@@ -159,7 +159,7 @@ public class SystemPlugin extends BotPlugin {
         }
 
 
-        //  角色查询或切换 todo 调试
+        //  人设查询或切换 todo 调试
         if(userInput.startsWith("#人设")){
             return getOrSwitchRole(userId,userInput);
         }
