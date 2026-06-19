@@ -8,7 +8,6 @@ import com.anyfriend.dao.entity.*;
 import com.anyfriend.dao.enums.FamiliarityEnum;
 import com.anyfriend.dao.enums.MoodEnum;
 import com.anyfriend.dao.enums.NodeEnum;
-import com.anyfriend.dao.enums.PromptTypeEnum;
 import com.anyfriend.dao.service.*;
 import com.anyfriend.plugin.SystemPath;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -159,7 +158,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("botRole", tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE));
+        result.put("botRole", tbBotPromptDoService.getRolePrompt());
         result.put("target", target);
         result.put("mood", buildMoodPrompt(statusDo.getMoodEnum(), statusDo.getMoodReason()));
         result.put("familiarity", buildFamiliarityPrompt(statusDo.getFamiliarity()));

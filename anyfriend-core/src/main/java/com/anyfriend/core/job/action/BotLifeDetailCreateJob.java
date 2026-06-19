@@ -6,7 +6,6 @@ import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbBotLifeDetailDo;
 import com.anyfriend.dao.entity.TbUserMessageSummaryDo;
 import com.anyfriend.dao.enums.NodeEnum;
-import com.anyfriend.dao.enums.PromptTypeEnum;
 import com.anyfriend.dao.service.TbBotLifeDetailDoService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserBotStatusDoService;
@@ -81,7 +80,7 @@ public class BotLifeDetailCreateJob implements Job {
         String weekDay = getWeekDay(today.getDayOfWeek().getValue() - 1);
 
         // 获取bot角色设定
-        String botRole = tbBotPromptDoService.getContext(PromptTypeEnum.BOT_ROLE);
+        String botRole = tbBotPromptDoService.getRolePrompt();
 
         // 调用AI生成今天的生活细节
         String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的生活安排。\n\n" +

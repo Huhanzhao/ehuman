@@ -88,6 +88,27 @@ public class SystemPlugin extends BotPlugin {
         this.createRoleGraph = systemGraph.getCreateRoleGraph();
     }
 
+    private final String manu = "===== 基础命令 =====\n" +
+            "# - 查看菜单\n" +
+            "#exit - 退出当前引导\n\n" +
+            "===== API配置 =====\n" +
+            "#查询未启用api - 查看未启用的API配置\n" +
+            "#查询已启用api - 查看已启用的API配置\n" +
+            "#开始配置api - 配置新API\n" +
+            "#切换api - 切换节点使用的API\n\n" +
+            "===== 参考音频 =====\n" +
+            "#配置参考音频 - 导入参考音频\n" +
+            "#查询未启用参考音频 - 查看未启用的参考音频\n" +
+            "#查询已启用参考音频 - 查看已启用的参考音频\n" +
+            "#切换参考音频 - 切换参考音频\n\n" +
+            "===== 人设管理 =====\n" +
+            "#人设 - 查看当前人设\n" +
+            "#人设 [名称] - 切换人设\n" +
+            "#添加人设 - 创建新人设\n\n" +
+            "===== 其他 =====\n" +
+            "#好感度 - 查看好感度\n" +
+            "#导入表情包 - 管理表情包" ;
+
 
     @PrivateMessageHandler
     @MessageHandlerFilter
@@ -96,6 +117,7 @@ public class SystemPlugin extends BotPlugin {
         String userInput = event.getMessage().trim();
         Long userId = event.getUserId();
 
+        // ===== 基础命令 =====
         if (userInput.equals("#exit")){
             runningDisposables.get(userId).dispose();
             clearFlag(userId);
@@ -103,85 +125,60 @@ public class SystemPlugin extends BotPlugin {
             return MESSAGE_BLOCK;
         }
 
-        // 如果当前有中断的图 继续执行api配置引导图
+        // 如果当前有中断的图 继续执行
         if (runningDisposables.containsKey(event.getUserId())){
-            return resumeGraph(userId, userInput,userGraphMap.get(userId));
+            return resumeGraph(userId, userInput, userGraphMap.get(userId));
         }
 
         // 主菜单
-        if (userInput.trim().equals("#")){
+        if (userInput.equals("#")){
             return userInstruction(userId);
         }
 
-        // bot状态查询和修改
-        if (userInput.startsWith("#好感度")) {
-            return getOrUpdateBotStatus(userId, userInput);
-        }
-
-        // 查询闲置api配置
+        // ===== API配置 =====
         if (userInput.equals("#查询未启用api")){
             return getApiConfig(userId, userInput);
         }
-
-        // 已启用api查询
         if (userInput.equals("#查询已启用api")){
             return getNodeEnableModel(userId);
         }
-
-        // api引导
         if (userInput.equals("#开始配置api")){
-            return startNewGraph(userId,apiConfigGraph);
+            return startNewGraph(userId, apiConfigGraph);
         }
-
-        // 节点大模型切换引导
         if (userInput.equals("#切换api")){
             return startNewGraph(userId, changeModeGraph);
         }
 
-        // 声音音频导入引导
+        // ===== 参考音频 =====
         if (userInput.equals("#配置参考音频")){
-            return startNewGraph(userId,referAudioConfig);
+            return startNewGraph(userId, referAudioConfig);
         }
-
-        // 查询未启动参考音频
-        if(userInput.equals("#查询未启用参考音频")){
-            return getReferAudioByUserId(userId,false);
+        if (userInput.equals("#查询未启用参考音频")){
+            return getReferAudioByUserId(userId, false);
         }
-
-        // 查询已启动参考音频
-        if(userInput.equals("#查询已启用参考音频")){
-            return getReferAudioByUserId(userId,true);
+        if (userInput.equals("#查询已启用参考音频")){
+            return getReferAudioByUserId(userId, true);
         }
-
-        // 切换参考音频
         if (userInput.startsWith("#切换参考音频")){
-            return startNewGraph(userId,switchReferAudioGraph);
+            return startNewGraph(userId, switchReferAudioGraph);
         }
 
-
-        //  人设查询或切换 todo 调试
-        if(userInput.startsWith("#人设")){
-            return getOrSwitchRole(userId,userInput);
+        // ===== 人设管理 =====
+        if (userInput.startsWith("#人设")){
+            return getOrSwitchRole(userId, userInput);
         }
-
-        //  添加人设
-        if(userInput.equals("#添加人设")){
+        if (userInput.equals("#添加人设")){
             return startNewGraph(userId, createRoleGraph);
         }
 
-        // 导入表情包引导
+        // ===== 其他 =====
+        if (userInput.startsWith("#好感度")) {
+            return getOrUpdateBotStatus(userId, userInput);
+        }
         if (userInput.equals("#导入表情包")){
             sendMessageUtil.sendSystemMsg(userId,"图片解析节点配置完毕之后随着聊天收集，也可以在emoji文件夹下面自行管理");
             return MESSAGE_BLOCK;
         }
-
-        // todo 加载配置文件  通过启动来加载
-        // todo 语音没有配置的时候生成文字 改提示词
-
-        // 以后再做
-        // todo 我的画像查询
-        // todo 角色创建引导
-        // todo 支持作者
 
         // 非法命令提示
         if (userInput.startsWith("#")){
@@ -203,7 +200,7 @@ public class SystemPlugin extends BotPlugin {
             StringBuilder optionalRoles = new StringBuilder();
 
             for (TbBotPromptDo promptDo : promptDos) {
-                if (promptDo.getPromptTypeEnum().getType() == 0) {
+                if (promptDo.getEnable()) {
                     currentRole = promptDo;
                 } else {
                     optionalRoles.append(promptDo.getName()).append("\n");
@@ -226,38 +223,8 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // 切换人设 - 根据名称查找
-        TbBotPromptDo targetRole = null;
-        for (TbBotPromptDo promptDo : promptDos) {
-            if (roleName.equals(promptDo.getName())) {
-                targetRole = promptDo;
-                break;
-            }
-        }
-
-        if (targetRole == null) {
-            sendMessageUtil.sendSystemMsg(userId, "未找到人设：" + roleName);
-            return MESSAGE_BLOCK;
-        }
-
-        // 找到当前人设并更新
-        TbBotPromptDo currentRole = null;
-        for (TbBotPromptDo promptDo : promptDos) {
-            if (promptDo.getPromptTypeEnum().getType() == 0) {
-                currentRole = promptDo;
-                break;
-            }
-        }
-
-        if (currentRole != null) {
-            // 将目标人设的内容更新到当前人设
-            currentRole.setContent(targetRole.getContent());
-            currentRole.setName(targetRole.getName());
-            tbBotPromptDoService.updateById(currentRole);
-            sendMessageUtil.sendSystemMsg(userId, "已切换人设为：" + targetRole.getName());
-        } else {
-            sendMessageUtil.sendSystemMsg(userId, "未找到当前人设配置，无法切换");
-        }
-
+        tbBotPromptDoService.switchEnableRolePrompt(roleName);
+        sendMessageUtil.sendSystemMsg(userId,"已切换当前人设为：" + roleName);
         return MESSAGE_BLOCK;
     }
 
@@ -433,11 +400,7 @@ public class SystemPlugin extends BotPlugin {
 
     private int userInstruction(Long userId) {
         String msg = MsgUtils.builder()
-                .text("#声音 [模型名] - 查看/切换声音模型\n" +
-                        "#好感度 [数值] - 查看/修改好感度\n" +
-                        "#模型查询 - 查看已配置模型\n" +
-                        "#api查询 - 查看API配置\n" +
-                        "#开始配置api - 配置API引导")
+                .text(manu)
                 .build();
         sendMessageUtil.sendSystemMsg(userId,msg);
         return MESSAGE_BLOCK;

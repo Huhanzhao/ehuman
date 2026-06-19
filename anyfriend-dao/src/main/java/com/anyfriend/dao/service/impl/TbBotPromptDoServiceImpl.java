@@ -1,12 +1,11 @@
 package com.anyfriend.dao.service.impl;
 
-import com.anyfriend.dao.mapper.TbBotPromptDoMapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.anyfriend.dao.entity.TbBotPromptDo;
-import com.anyfriend.dao.enums.PromptTypeEnum;
+import com.anyfriend.dao.mapper.TbBotPromptDoMapper;
 import com.anyfriend.dao.service.TbBotPromptDoService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
 * @author Lenovo
@@ -18,12 +17,19 @@ public class TbBotPromptDoServiceImpl extends ServiceImpl<TbBotPromptDoMapper, T
     implements TbBotPromptDoService{
 
     @Override
-    public String getContext(PromptTypeEnum promptTypeEnum) {
+    public String getRolePrompt() {
         return lambdaQuery()
-                .eq(TbBotPromptDo::getPromptTypeEnum, promptTypeEnum)
+                .eq(TbBotPromptDo::getEnable, true)
                 .oneOpt()
                 .map(TbBotPromptDo::getContent)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void switchEnableRolePrompt(String roleName) {
+        lambdaUpdate().set(TbBotPromptDo::getEnable,false).eq(TbBotPromptDo::getEnable,true).update();
+        lambdaUpdate().set(TbBotPromptDo::getEnable,true).eq(TbBotPromptDo::getName,roleName).update();
     }
 }
 

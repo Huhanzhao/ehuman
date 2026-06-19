@@ -1,7 +1,6 @@
 package com.anyfriend.dao.service;
 
 import com.anyfriend.dao.entity.TbBotPromptDo;
-import com.anyfriend.dao.enums.PromptTypeEnum;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -11,5 +10,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbBotPromptDoService extends IService<TbBotPromptDo> {
 
-    String getContext(PromptTypeEnum promptTypeEnum);
+    String getRolePrompt();
+
+    void switchEnableRolePrompt(String roleName);
 }

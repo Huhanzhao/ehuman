@@ -8,7 +8,6 @@ import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.utils.LocalCacheUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.NodeEnum;
-import com.anyfriend.dao.enums.PromptTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import lombok.extern.slf4j.Slf4j;
@@ -101,8 +100,7 @@ public class ImageAnalysisNode implements NodeAction {
                 LocalCacheUtil.getLocalCacheUtil().remove(userId + "_image");
             }
         }
-        String target = tbBotPromptDoService.getContext(PromptTypeEnum.TARGET);
-        return Map.of("userInput",userInput,"target",target);
+        return Map.of("userInput",userInput);
     }
 
     public void downloadAndSaveImage(String imageUrl,String emo, String customName) throws IOException {
