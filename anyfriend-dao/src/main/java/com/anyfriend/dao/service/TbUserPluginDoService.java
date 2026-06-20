@@ -1,0 +1,16 @@
+package com.anyfriend.dao.service;
+
+import com.anyfriend.dao.entity.TbUserPluginDo;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+/**
+* @author Lenovo
+* @description 针对表【tb_user_plugin】的数据库操作Service
+* @createDate 2026-06-19 14:52:29
+*/
+public interface TbUserPluginDoService extends IService<TbUserPluginDo> {
+
+    void turnOnOrOffTTSPlugin(Long userId, boolean b);
+
+    boolean isEnableByUserId(Long userId);
+}

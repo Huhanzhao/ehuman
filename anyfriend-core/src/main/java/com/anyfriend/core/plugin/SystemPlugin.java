@@ -10,10 +10,7 @@ import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.enums.NodeEnum;
-import com.anyfriend.dao.service.TbBotPromptDoService;
-import com.anyfriend.dao.service.TbUserBotStatusDoService;
-import com.anyfriend.dao.service.TbUserModelConfigDoService;
-import com.anyfriend.dao.service.TbUserReferAudioDoService;
+import com.anyfriend.dao.service.*;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
@@ -56,6 +53,9 @@ public class SystemPlugin extends BotPlugin {
 
     @Autowired
     private TbBotPromptDoService tbBotPromptDoService;
+
+    @Autowired
+    private TbUserPluginDoService tbUserPluginDoService;
 
     // 保存是否有运行中的图
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
@@ -177,6 +177,14 @@ public class SystemPlugin extends BotPlugin {
         }
         if (userInput.equals("#导入表情包")){
             sendMessageUtil.sendSystemMsg(userId,"图片解析节点配置完毕之后随着聊天收集，也可以在emoji文件夹下面自行管理");
+            return MESSAGE_BLOCK;
+        }
+        if (userInput.equals("#开启语音合成")){
+            tbUserPluginDoService.turnOnOrOffTTSPlugin(userId,true);
+            return MESSAGE_BLOCK;
+        }
+        if (userInput.equals("#关闭语音合成")){
+            tbUserPluginDoService.turnOnOrOffTTSPlugin(userId,false);
             return MESSAGE_BLOCK;
         }
 

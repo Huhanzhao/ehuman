@@ -73,6 +73,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private final TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
     private final TbBotPromptDoService tbBotPromptDoService;
     private final TbAiChatMemoryService tbAiChatMemoryService;
+    private final TbUserPluginDoService tbUserPluginDoService;
     private final SystemPath systemPath;
 
     @Override
@@ -163,6 +164,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         result.put("mood", buildMoodPrompt(statusDo.getMoodEnum(), statusDo.getMoodReason()));
         result.put("familiarity", buildFamiliarityPrompt(statusDo.getFamiliarity()));
         result.put("grace", buildGracePrompt(statusDo.getGrace()));
+        result.put("voiceMessage", getVoiceMessagePrompt(userId));
         result.put("lifeDetail", lifeDetail);
         result.put("currentTime", buildTimeInfo());
         result.put("currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail);
@@ -170,8 +172,13 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         result.put("yesterdayChatSummary", getYesterdayChatSummary(userId));
         result.put("daysTogether", getDaysTogetherInfo(userId));
         result.put("stickerTypes", getStickerTypes());
-        result.put("reTryPrompt", buildReTryPrompt(state, reTry));
+        result.put("failReason", buildReTryPrompt(state, reTry));
         return result;
+    }
+
+    private String getVoiceMessagePrompt(Long userId) {
+        boolean exists = tbUserPluginDoService.isEnableByUserId(userId);
+        return exists ? "| `<voice tone=\"情绪\">内容</voice>` | 语音消息，情绪如撒娇、生气等|" : "只支持以上消息类型";
     }
 
     // ==================== 数据查询 ====================

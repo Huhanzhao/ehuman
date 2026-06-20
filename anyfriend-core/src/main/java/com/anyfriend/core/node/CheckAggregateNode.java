@@ -22,30 +22,32 @@ public class CheckAggregateNode implements NodeAction {
         String realLifeInteractionCheckOutput = (String) state.value("interactionCheckOutput").orElse("");
 
         Map<String,Object> resultMap = new HashMap<>();
+        StringBuilder failReason  = new StringBuilder();
         boolean checkPass = true;
         if (!"通过".equals(memoryCheckOutput.trim())) {
             log.info("回复超出记忆，开始进行异常处理");
-            resultMap.put("failReason", memoryCheckOutput);
+            failReason.append(memoryCheckOutput).append("\n");
             checkPass = false;
         }
 
         if (!"通过".equals(roleReversalCheckOutput.trim())) {
             log.info("角色混乱异常，开始进行异常处理");
-            resultMap.put("failReason", roleReversalCheckOutput);
+            failReason.append(roleReversalCheckOutput).append("\n");
             checkPass = false;
         }
 
         if (!"通过".equals(realLifeInteractionCheckOutput.trim())) {
             log.info("出现现实生活互动，开始进行异常处理");
-            resultMap.put("failReason", realLifeInteractionCheckOutput);
+            failReason.append(realLifeInteractionCheckOutput).append("\n");
             checkPass = false;
         }
 
         resultMap.put("checkPass", checkPass);
         resultMap.put("reTry", reTry + 1);
+        resultMap.put("failReason", failReason.toString().trim());
 
-        if (reTry > 15){
-            log.info("消息生成出现了15轮重试，放弃");
+        if (reTry > 3){
+            log.error("消息生成出现了3轮重试，放弃");
             resultMap.put("checkPass", true);
         }
 
