@@ -55,7 +55,7 @@ public class SystemPlugin extends BotPlugin {
     private TbBotPromptDoService tbBotPromptDoService;
 
     @Autowired
-    private TbUserPluginDoService tbUserPluginDoService;
+    private TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
 
     // 保存是否有运行中的图
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
@@ -180,11 +180,11 @@ public class SystemPlugin extends BotPlugin {
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#开启语音合成")){
-            tbUserPluginDoService.turnOnOrOffTTSPlugin(userId,true);
+            tbUserFeatureButtonDoService.turnOnOrOffTTSPlugin(userId,true);
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#关闭语音合成")){
-            tbUserPluginDoService.turnOnOrOffTTSPlugin(userId,false);
+            tbUserFeatureButtonDoService.turnOnOrOffTTSPlugin(userId,false);
             return MESSAGE_BLOCK;
         }
 

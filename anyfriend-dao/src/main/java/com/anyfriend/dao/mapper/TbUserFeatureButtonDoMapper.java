@@ -1,6 +1,6 @@
 package com.anyfriend.dao.mapper;
 
-import com.anyfriend.dao.entity.TbUserPluginDo;
+import com.anyfriend.dao.entity.TbUserFeatureButtonDo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2026-06-19 14:52:29
 * @Entity com.anyfriend.dao.entity.TbUserPluginDo
 */
-public interface TbUserPluginDoMapper extends BaseMapper<TbUserPluginDo> {
+public interface TbUserFeatureButtonDoMapper extends BaseMapper<TbUserFeatureButtonDo> {
 
 }
 

@@ -73,7 +73,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private final TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
     private final TbBotPromptDoService tbBotPromptDoService;
     private final TbAiChatMemoryService tbAiChatMemoryService;
-    private final TbUserPluginDoService tbUserPluginDoService;
+    private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
     private final SystemPath systemPath;
 
     @Override
@@ -177,7 +177,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     }
 
     private String getVoiceMessagePrompt(Long userId) {
-        boolean exists = tbUserPluginDoService.isEnableByUserId(userId);
+        boolean exists = tbUserFeatureButtonDoService.isEnableByUserId(userId);
         return exists ? "| `<voice tone=\"情绪\">内容</voice>` | 语音消息，情绪如撒娇、生气等|" : "只支持以上消息类型";
     }
 
