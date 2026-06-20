@@ -1,6 +1,7 @@
 package com.anyfriend.dao.service;
 
 import com.anyfriend.dao.entity.TbUserFeatureButtonDo;
+import com.anyfriend.dao.enums.FeatureTypeEnum;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -10,7 +11,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbUserFeatureButtonDoService extends IService<TbUserFeatureButtonDo> {
 
-    void turnOnOrOffTTSPlugin(Long userId, boolean b);
+    void turnOnOrOffFeature(Long userId, boolean b, FeatureTypeEnum featureTypeEnum);
 
-    boolean isEnableByUserId(Long userId);
+    boolean isEnableByUserId(Long userId, FeatureTypeEnum featureTypeEnum);
 }

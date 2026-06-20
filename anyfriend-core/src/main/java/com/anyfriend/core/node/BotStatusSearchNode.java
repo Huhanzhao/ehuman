@@ -29,6 +29,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.anyfriend.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -177,7 +179,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     }
 
     private String getVoiceMessagePrompt(Long userId) {
-        boolean exists = tbUserFeatureButtonDoService.isEnableByUserId(userId);
+        boolean exists = tbUserFeatureButtonDoService.isEnableByUserId(userId, VOICE_PLUGIN);
         return exists ? "| `<voice tone=\"情绪\">内容</voice>` | 语音消息，情绪如撒娇、生气等|" : "只支持以上消息类型";
     }
 

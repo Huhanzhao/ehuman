@@ -9,7 +9,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum FeatureTypeEnum {
 
-    VOICE_PLUGIN(1,"声音插件");
+    VOICE_PLUGIN(1,"声音插件"),
+    IMAGE_ANALYSIS(2,"图片解析"),
+    EMOJI_ANALYSIS(3,"自动解析表情包到表情包库");
 
     @EnumValue
     private final Integer featureType;

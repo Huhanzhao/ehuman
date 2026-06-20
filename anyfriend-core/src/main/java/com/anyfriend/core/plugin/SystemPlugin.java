@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.anyfriend.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
+
 @Component
 @Slf4j
 public class SystemPlugin extends BotPlugin {
@@ -180,11 +182,11 @@ public class SystemPlugin extends BotPlugin {
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#开启语音合成")){
-            tbUserFeatureButtonDoService.turnOnOrOffTTSPlugin(userId,true);
+            tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#关闭语音合成")){
-            tbUserFeatureButtonDoService.turnOnOrOffTTSPlugin(userId,false);
+            tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,false, VOICE_PLUGIN);
             return MESSAGE_BLOCK;
         }
 

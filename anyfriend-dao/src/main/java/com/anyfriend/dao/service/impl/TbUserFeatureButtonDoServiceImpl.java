@@ -1,6 +1,7 @@
 package com.anyfriend.dao.service.impl;
 
 import com.anyfriend.dao.entity.TbUserFeatureButtonDo;
+import com.anyfriend.dao.enums.FeatureTypeEnum;
 import com.anyfriend.dao.mapper.TbUserFeatureButtonDoMapper;
 import com.anyfriend.dao.service.TbUserFeatureButtonDoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -20,12 +21,12 @@ public class TbUserFeatureButtonDoServiceImpl extends ServiceImpl<TbUserFeatureB
 
     @Override
     @Transactional
-    public void turnOnOrOffTTSPlugin(Long userId, boolean enable) {
+    public void turnOnOrOffFeature(Long userId, boolean enable, FeatureTypeEnum featureTypeEnum) {
         boolean exists = lambdaQuery().eq(TbUserFeatureButtonDo::getUserId, userId).exists();
         if (!exists) {
             TbUserFeatureButtonDo tbUserFeatureButtonDo = new TbUserFeatureButtonDo();
             tbUserFeatureButtonDo.setUserId(userId);
-            tbUserFeatureButtonDo.setFeatureTypeEnum(VOICE_PLUGIN);
+            tbUserFeatureButtonDo.setFeatureTypeEnum(featureTypeEnum);
             tbUserFeatureButtonDo.setEnable(enable);
             save(tbUserFeatureButtonDo);
         }else{
@@ -34,9 +35,9 @@ public class TbUserFeatureButtonDoServiceImpl extends ServiceImpl<TbUserFeatureB
     }
 
     @Override
-    public boolean isEnableByUserId(Long userId) {
+    public boolean isEnableByUserId(Long userId, FeatureTypeEnum featureTypeEnum) {
         return lambdaQuery().eq(TbUserFeatureButtonDo::getUserId, userId)
-                .eq(TbUserFeatureButtonDo::getFeatureTypeEnum, VOICE_PLUGIN)
+                .eq(TbUserFeatureButtonDo::getFeatureTypeEnum, featureTypeEnum)
                 .eq(TbUserFeatureButtonDo::getEnable, true).exists();
     }
 }
