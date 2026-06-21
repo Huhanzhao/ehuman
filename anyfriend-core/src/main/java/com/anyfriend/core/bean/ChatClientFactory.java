@@ -15,6 +15,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -29,6 +30,12 @@ import static com.anyfriend.dao.enums.ChatModelCategoryEnum.*;
 @Component
 @Slf4j
 public class ChatClientFactory {
+
+    @Value("${proxy.host:127.0.0.1}")
+    private String proxyHost;
+
+    @Value("${proxy.port:7890}")
+    private int proxyPort;
 
     @Autowired
     private TbUserModelConfigDoService tbUserModelConfigDoService;
@@ -73,7 +80,7 @@ public class ChatClientFactory {
 
             Proxy proxy = new Proxy(
                     Proxy.Type.HTTP,
-                    new InetSocketAddress("127.0.0.1", 7890)  // todo 改成动态
+                    new InetSocketAddress(proxyHost, proxyPort)
             );
 
             factory.setProxy(proxy);
@@ -115,7 +122,7 @@ public class ChatClientFactory {
 
             Proxy proxy = new Proxy(
                     Proxy.Type.HTTP,
-                    new InetSocketAddress("127.0.0.1", 7890)  // todo 改成动态
+                    new InetSocketAddress(proxyHost, proxyPort)
             );
 
             factory.setProxy(proxy);

@@ -46,3 +46,7 @@ bot:
   emoji-base-path: ./emoji/
   voice-plugin-source-path: ./anyfriend-plugin/plugin/TTS
   voice-plugin-classes-path: ./anyfriend-plugin/target/plugin/classes
+
+proxy:
+  host: host.docker.internal
+  port: 7890
