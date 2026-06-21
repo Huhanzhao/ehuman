@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.anyfriend.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
+import static com.anyfriend.dao.enums.FeatureTypeEnum.*;
 
 @Component
 @Slf4j
@@ -107,6 +107,13 @@ public class SystemPlugin extends BotPlugin {
             "#人设 - 查看当前人设\n" +
             "#人设 [名称] - 切换人设\n" +
             "#添加人设 - 创建新人设\n\n" +
+            "===== 功能管理 =====\n" +
+            "#开启语音合成\n" +
+            "#关闭语音合成\n" +
+            "#开启表情包拾取\n" +
+            "#关闭表情包拾取\n" +
+            "#开启图片解析\n" +
+            "#关闭图片解析\n\n" +
             "===== 其他 =====\n" +
             "#好感度 - 查看好感度\n" +
             "#导入表情包 - 管理表情包" ;
@@ -181,12 +188,30 @@ public class SystemPlugin extends BotPlugin {
             sendMessageUtil.sendSystemMsg(userId,"图片解析节点配置完毕之后随着聊天收集，也可以在emoji文件夹下面自行管理");
             return MESSAGE_BLOCK;
         }
+
+        // ===== 功能开关 =====
         if (userInput.equals("#开启语音合成")){
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#关闭语音合成")){
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,false, VOICE_PLUGIN);
+            return MESSAGE_BLOCK;
+        }
+        if (userInput.equals("#开启表情包拾取")){
+            tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true,EMOJI_FETCH);
+            return MESSAGE_BLOCK;
+        }
+        if (userInput.equals("#关闭表情包拾取")){
+            tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,false,EMOJI_FETCH);
+            return MESSAGE_BLOCK;
+        }
+        if (userInput.equals("#开启图片解析")){
+            tbUserFeatureButtonDoService.turnOnOrOffImageAnalyze(userId,true);
+            return MESSAGE_BLOCK;
+        }
+        if (userInput.equals("#关闭图片解析")){
+            tbUserFeatureButtonDoService.turnOnOrOffImageAnalyze(userId,false);
             return MESSAGE_BLOCK;
         }
 

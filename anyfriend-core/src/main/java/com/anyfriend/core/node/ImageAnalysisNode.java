@@ -7,9 +7,11 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.utils.LocalCacheUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.enums.FeatureTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
+import com.anyfriend.dao.service.TbUserFeatureButtonDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -42,6 +44,9 @@ public class ImageAnalysisNode implements NodeAction {
     @Autowired
     private TbBotPromptDoService tbBotPromptDoService;
 
+    @Autowired
+    private TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
+
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
         String userInput = (String) state.value("userInput").orElse("");
@@ -49,6 +54,10 @@ public class ImageAnalysisNode implements NodeAction {
 
         if (userInput.startsWith("[CQ:image")){
             try{
+                boolean enableByUserId = tbUserFeatureButtonDoService.isEnableByUserId(userId, FeatureTypeEnum.IMAGE_ANALYSIS);
+                if (!enableByUserId){
+                    throw new RuntimeException("没有启用图片解析");
+                }
                 Pattern pattern = Pattern.compile("url=([^,]+)");
                 Matcher matcher = pattern.matcher(userInput.replaceAll("&amp;","&"));
                 matcher.find();
@@ -87,7 +96,8 @@ public class ImageAnalysisNode implements NodeAction {
                 Matcher resultMatcher = resultPattern.matcher(content);
 
                 // 如果是表情包 保存到emoji目录
-                if (resultMatcher.find()){
+                boolean enableEmojiFetch = tbUserFeatureButtonDoService.isEnableByUserId(userId, FeatureTypeEnum.EMOJI_FETCH);
+                if (resultMatcher.find() && enableEmojiFetch){
                     String emo = resultMatcher.group(1);
                     String fileName = resultMatcher.group(2);
 

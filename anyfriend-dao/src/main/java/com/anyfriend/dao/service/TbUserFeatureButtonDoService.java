@@ -11,7 +11,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbUserFeatureButtonDoService extends IService<TbUserFeatureButtonDo> {
 
-    void turnOnOrOffFeature(Long userId, boolean b, FeatureTypeEnum featureTypeEnum);
+    void turnOnOrOffFeature(Long userId, boolean enable, FeatureTypeEnum featureTypeEnum);
 
     boolean isEnableByUserId(Long userId, FeatureTypeEnum featureTypeEnum);
+
+    void turnOnOrOffImageAnalyze(Long userId, boolean enable);
 }

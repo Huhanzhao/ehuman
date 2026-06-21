@@ -23,6 +23,7 @@ public class TbUserFeatureButtonDo {
     /**
      * 
      */
+    @TableField("feature_type")
     private FeatureTypeEnum featureTypeEnum;
 
     /**

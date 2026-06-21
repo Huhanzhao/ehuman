@@ -8,8 +8,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.anyfriend.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
-
 /**
 * @author Lenovo
 * @description 针对表【tb_user_feature_button】的数据库操作Service实现
@@ -39,6 +37,17 @@ public class TbUserFeatureButtonDoServiceImpl extends ServiceImpl<TbUserFeatureB
         return lambdaQuery().eq(TbUserFeatureButtonDo::getUserId, userId)
                 .eq(TbUserFeatureButtonDo::getFeatureTypeEnum, featureTypeEnum)
                 .eq(TbUserFeatureButtonDo::getEnable, true).exists();
+    }
+
+    @Override
+    @Transactional
+    public void turnOnOrOffImageAnalyze(Long userId, boolean enable) {
+        if (enable){
+            this.turnOnOrOffFeature(userId, true, FeatureTypeEnum.IMAGE_ANALYSIS);
+        }else{
+            this.turnOnOrOffFeature(userId, false, FeatureTypeEnum.IMAGE_ANALYSIS);
+            this.turnOnOrOffFeature(userId, false, FeatureTypeEnum.EMOJI_FETCH);
+        }
     }
 }
 
