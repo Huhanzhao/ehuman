@@ -81,6 +81,8 @@ public class SendMessageCompileGraph {
                     },
                     null);
 
+            LlmNode combinedCheckNode = getLlmNode(LlmNodeTypeEnum.COMBINED_CHECK, NodeEnum.AUXILIARY, null, null);
+
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerate))
@@ -88,11 +90,8 @@ public class SendMessageCompileGraph {
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
-                    .addNode("roleReversalCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.ROLE_REVERSAL_CHECK,NodeEnum.AUXILIARY,null,null)))
-                    .addNode("memoryCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.MEMORY_CHECK,NodeEnum.AUXILIARY,null,null)))
+                    .addNode("combinedCheckNode", node_async(combinedCheckNode))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
-                    .addNode("interactionCheckLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.INTERACTION_CHECK,NodeEnum.AUXILIARY,null,null)))
-                    .addNode("dispatchToChecks", node_async(state -> Map.of())) // 用来充当并发中介
                     .addNode("sendMessageNode", node_async(state -> {
                         sendMessageUtil.sendChatMsg(
                                 state.value("userId",Long.class).get(),
@@ -119,14 +118,9 @@ public class SendMessageCompileGraph {
                             return CompletableFuture.completedFuture("end");
                         }
                         return CompletableFuture.completedFuture("next");
-                    }, Map.of("end", StateGraph.END,"next","dispatchToChecks"))
+                    }, Map.of("end", StateGraph.END,"next","combinedCheckNode"))
 
-                    .addEdge("dispatchToChecks", "memoryCheckLlmNode")
-                    .addEdge("dispatchToChecks", "roleReversalCheckLlmNode")
-                    .addEdge("dispatchToChecks", "interactionCheckLlmNode")
-                    .addEdge("roleReversalCheckLlmNode", "checkAggregateNode")
-                    .addEdge("memoryCheckLlmNode", "checkAggregateNode")
-                    .addEdge("interactionCheckLlmNode", "checkAggregateNode")
+                    .addEdge("combinedCheckNode", "checkAggregateNode")
 
                     .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
                             Map.of("messageGenerateNode", "messageGenerateNode",
