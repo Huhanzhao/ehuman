@@ -94,7 +94,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         MoodEnum currentMood = statusDo.getMoodEnum();
 
         // 分析心情
-        MoodAnalysisResult moodResult = analyzeMood(currentMood, lifeDetail, memoryString);
+        MoodAnalysisResult moodResult = analyzeMood(userId,currentMood, lifeDetail, memoryString);
         tbUserBotStatusDoService.updateMoodByUserId(userId, moodResult.mood(), moodResult.reason());
         log.info("用户{}心情更新: {} -> {} {}", userId, currentMood.getDesc(), moodResult.mood().getDesc(),
                 moodResult.reason().isEmpty() ? "" : "原因: " + moodResult.reason());
@@ -109,9 +109,9 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     // ==================== 心情分析 ====================
 
-    private MoodAnalysisResult analyzeMood(MoodEnum currentMood, String lifeDetail, String memoryString) {
+    private MoodAnalysisResult analyzeMood(Long userId,MoodEnum currentMood, String lifeDetail, String memoryString) {
         try {
-            ChatClient chatClient = chatClientFactory.createChatClient(0L, NodeEnum.AUXILIARY);
+            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
             String prompt = String.format(MOOD_ANALYSIS_PROMPT, lifeDetail, memoryString);
             String content = chatClient.prompt(prompt).call().content();
             log.info("心情分析原始结果: {}", content);
@@ -152,13 +152,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     private Map<String, Object> buildPromptVariables(OverAllState state, TbUserBotStatusDo statusDo, String lifeDetail) {
         Long userId = state.value("userId", Long.class).orElse(0L);
-        Integer reTry = state.value("reTry", Integer.class).orElse(0);
         String target = state.value("target", String.class).orElse("");
-
-        // 更新重试次数
-        if (reTry == 0) {
-            state.input(Map.of("reTry", 1));
-        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("botRole", tbBotPromptDoService.getRolePrompt());
@@ -174,7 +168,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         result.put("yesterdayChatSummary", getYesterdayChatSummary(userId));
         result.put("daysTogether", getDaysTogetherInfo(userId));
         result.put("stickerTypes", getStickerTypes());
-        result.put("failReason", buildReTryPrompt(state, reTry));
+        result.put("failReason", "");
         return result;
     }
 
@@ -305,16 +299,5 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
             desc = "非常喜欢，语气黏人，主动关心，情感丰富";
         }
         return "好感度：" + grace + "/100，" + desc;
-    }
-
-    private String buildReTryPrompt(OverAllState state, int reTry) {
-        if (reTry <= 0) {
-            return "";
-        }
-        List<String> failReasons = (List<String>) state.value("failReason").orElse(null);
-        return "系统信息：这是第" + (reTry + 1) + "次为本轮生成消息\n" +
-                "**前面生成的消息审核失败的原因：**"
-                + String.join("\n", failReasons)
-                + "\n 请避免这些原因 按照要求重新为本次会话生成消息";
     }
 }

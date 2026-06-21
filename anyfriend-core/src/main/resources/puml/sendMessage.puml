@@ -35,10 +35,10 @@ hexagon "check state" as condition2<<Condition>>
 '"messageGenerateNode" .down.> "__END__": "end"
 "combinedCheckNode" -down-> "checkAggregateNode"
 "checkAggregateNode" .down.> "condition2"
-"condition2" .down.> "messageGenerateNode": "fail"
-'"checkAggregateNode" .down.> "messageGenerateNode": "fail"
 "condition2" .down.> "formatOutPutLlmNode": "pass"
 '"checkAggregateNode" .down.> "formatOutPutLlmNode": "pass"
+"condition2" .down.> "messageGenerateNode": "fail"
+'"checkAggregateNode" .down.> "messageGenerateNode": "fail"
 "formatOutPutLlmNode" -down-> "sendMessageNode"
 "sendMessageNode" -down-> "__END__"
 @enduml
