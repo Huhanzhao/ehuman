@@ -123,8 +123,8 @@ public class SendMessageCompileGraph {
                     .addEdge("combinedCheckNode", "checkAggregateNode")
 
                     .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
-                            Map.of("messageGenerateNode", "messageGenerateNode",
-                                    "transformTagMessageNode", "formatOutPutLlmNode"))
+                            Map.of("fail", "messageGenerateNode",
+                                    "pass", "formatOutPutLlmNode"))
                     .addEdge("formatOutPutLlmNode", "sendMessageNode")
                     .addEdge("sendMessageNode", StateGraph.END);
 

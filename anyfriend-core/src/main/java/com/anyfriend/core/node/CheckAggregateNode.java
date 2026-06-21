@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CheckAggregateNode implements NodeAction {
 
-    private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造|角色混乱|现实互动)\\s*[:：]\\s*(不通过)\\s*(.*)");
+    private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造审核|角色混乱审核|现实互动审核)\\s*[:：]\\s*(不通过)\\s*(.*)");
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -37,12 +37,11 @@ public class CheckAggregateNode implements NodeAction {
         }
 
         boolean checkPass = failReasons.isEmpty();
-        if (!checkPass) {
-            resultMap.put("failReason", String.join("\n", failReasons));
-        }
-
         resultMap.put("checkPass", checkPass);
         resultMap.put("reTry", reTry + 1);
+        if (!checkPass) {
+            resultMap.put("failReason", "重要：本次是第" + (reTry + 1) + "次生成尝试，前面尝试生成消息没有通过的原因如下\n" + String.join("\n", failReasons));
+        }
 
         if (reTry > 3) {
             log.error("消息生成出现{}轮重试，放弃", reTry);
@@ -55,8 +54,8 @@ public class CheckAggregateNode implements NodeAction {
     public static String nextNode(OverAllState state) {
         Boolean checkPass = (Boolean) state.value("checkPass").orElse(true);
         if (!checkPass) {
-            return "messageGenerateNode";
+            return "fail";
         }
-        return "transformTagMessageNode";
+        return "pass";
     }
 }
