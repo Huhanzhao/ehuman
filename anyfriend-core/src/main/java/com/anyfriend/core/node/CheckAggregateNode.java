@@ -86,6 +86,19 @@ public class CheckAggregateNode implements NodeAction {
                 needFormat = true;
                 break;
             }
+            if (segment.trim().contains("(")
+                    || segment.trim().contains("[")
+                    || segment.trim().contains("{")
+                    || segment.trim().contains(")")
+                    || segment.trim().contains("]")
+                    || segment.trim().contains("}")
+                    || segment.trim().contains("）")
+                    || segment.trim().contains("（")
+                    || segment.trim().contains("\n")
+            ){
+                needFormat = true;
+                break;
+            }
         }
         return needFormat? "format" : "pass";
     }
