@@ -2,6 +2,7 @@ package com.anyfriend.core.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.anyfriend.dao.service.TbUserFeatureButtonDoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -10,13 +11,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.anyfriend.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class CheckAggregateNode implements NodeAction {
+
+    private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
 
     private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造审核|角色混乱审核|现实互动审核)\\s*[:：]\\s*(不通过)\\s*(.*)");
 
@@ -51,11 +57,36 @@ public class CheckAggregateNode implements NodeAction {
         return resultMap;
     }
 
-    public static String nextNode(OverAllState state) {
+    public String nextNode(OverAllState state) {
         Boolean checkPass = (Boolean) state.value("checkPass").orElse(true);
+        Long userId = state.value("userId",Long.class).orElse(0L);
         if (!checkPass) {
             return "fail";
         }
-        return "pass";
+
+        // 开头结尾格式判断，如果符合直接发送
+        boolean needFormat = false;
+        String generateMessage = state.value("generateMessage",String.class).orElse("");
+        boolean enableVoice = tbUserFeatureButtonDoService.isEnableByUserId(userId, VOICE_PLUGIN);
+        String[] split = generateMessage.trim().split("\n");
+
+        List<Predicate<String>> predicates = new ArrayList<>();
+        predicates.add(s -> s.trim().startsWith("<text>") && s.trim().endsWith("</text>"));
+        predicates.add(s -> s.trim().startsWith("<silence>") && s.trim().endsWith("</silence>"));
+        predicates.add(s -> s.trim().startsWith("<emoji emo=\"") && s.trim().endsWith("/>"));
+        if (enableVoice){
+            // 开启了语音
+            predicates.add(s -> s.trim().startsWith("<voice") && s.trim().endsWith("</voice>"));
+        }
+        for (String segment : split) {  // 遍历每个片段
+            // 判断当前片段是否匹配 predicates 里的任意一个
+            boolean isValid = predicates.stream().anyMatch(p -> p.test(segment.trim()));
+
+            if (!isValid) {
+                needFormat = true;
+                break;
+            }
+        }
+        return needFormat? "format" : "pass";
     }
 }
