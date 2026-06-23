@@ -27,9 +27,14 @@ public class UserWantToNode implements NodeAction {
     @Override
     public Map<String, Object> apply (OverAllState state){
         Long userId = (Long) state.value("userId").orElse(0L);
+        Boolean initiative = (Boolean)state.value("initiative").orElse(false);
         // 查询历史消息
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
+        if (initiative){
+            // 主动发送消息跳过
+            return Map.of("userWantTo", "next","memoryString", memoryString);
+        }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
         PromptTemplate promptTemplate = PromptTemplate.builder().template(
                 """

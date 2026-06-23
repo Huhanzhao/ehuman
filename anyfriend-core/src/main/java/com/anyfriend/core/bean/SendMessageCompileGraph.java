@@ -97,9 +97,12 @@ public class SendMessageCompileGraph {
                                 state.value("userId",Long.class).get(),
                                 (String) state.value("formatOutPut").orElse("")
                         );
+                        CompletableFuture.runAsync(() -> {
+                            // todo 判断下次发送消息
+//                            String result = callSlowApi(input);
+                        });
                         return Map.of();
-                    }
-                    ))
+                    }))
 
                     .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
@@ -122,9 +125,10 @@ public class SendMessageCompileGraph {
 
                     .addEdge("combinedCheckNode", "checkAggregateNode")
 
-                    .addConditionalEdges("checkAggregateNode", edge_async(CheckAggregateNode::nextNode),
+                    .addConditionalEdges("checkAggregateNode", edge_async(checkAggregateNode::nextNode),
                             Map.of("fail", "messageGenerateNode",
-                                    "pass", "formatOutPutLlmNode"))
+                                    "format","formatOutPutLlmNode",
+                                    "pass", "sendMessageNode"))
                     .addEdge("formatOutPutLlmNode", "sendMessageNode")
                     .addEdge("sendMessageNode", StateGraph.END);
 

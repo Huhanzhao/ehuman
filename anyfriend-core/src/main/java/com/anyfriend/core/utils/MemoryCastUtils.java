@@ -16,7 +16,6 @@ public class MemoryCastUtils {
         StringBuilder result = new StringBuilder();
         tbAiChatMemoryDos.forEach(memoryDo -> {
             result.append(memoryDo.getRole()).append(" : ").append(memoryDo.getMessage())
-//                    .append(" sendTime:").append(DateUtils.format(memoryDo.getCreateTime(), "yyyy-MM-dd HH:mm:ss"))
                     .append("\n");
         });
         return result.toString();
@@ -40,7 +39,8 @@ public class MemoryCastUtils {
     public static List<TbAiChatMemoryDo> fillSystemTimeMessage(List<TbAiChatMemoryDo> memoryDoList) {
         if (memoryDoList.isEmpty()) return new ArrayList<>();
 
-        // 先看有没有user消息  如果没有 加入旁白 距离上次消息 多久 用户一直没有回复你的消息
+        // todo 消息拼接成ai user 交替的，间隙插入系统消息提示时间
+        // 先看有没有user消息  如果没有 加入旁白 距离上次消息 多久 用户一直没有回复你的消息 todo 现在是什么时间
         if (memoryDoList.stream().noneMatch(memoryDo -> MessageType.USER.getValue().equals(memoryDo.getRole()))){
             Date lastMessageTime = memoryDoList.getLast().getCreateTime();
             String timeAgo = getTimeAgo(lastMessageTime);
@@ -51,7 +51,7 @@ public class MemoryCastUtils {
 
         // 如果有 查询最近一次ai消息时间 忽略user消息 加入旁白 距离上次消息多久
         for (int i = memoryDoList.size() - 1; i >= 0; i--){
-            // 出现ai消息大于五分钟放入旁白
+            // 出现ai消息大于五分钟放入旁白 todo 修改逻辑，现在是什么时间
             if (MessageType.ASSISTANT.getValue().equals(memoryDoList.get(i).getRole())){
 
                 Date lastUserMessageTime = memoryDoList.get(i).getCreateTime();
