@@ -4,6 +4,10 @@ import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import org.springframework.ai.chat.messages.*;
 
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -39,8 +43,7 @@ public class MemoryCastUtils {
     public static List<TbAiChatMemoryDo> fillSystemTimeMessage(List<TbAiChatMemoryDo> memoryDoList) {
         if (memoryDoList.isEmpty()) return new ArrayList<>();
 
-        // todo 消息拼接成ai user 交替的，间隙插入系统消息提示时间
-        // 先看有没有user消息  如果没有 加入旁白 距离上次消息 多久 用户一直没有回复你的消息 todo 现在是什么时间
+        // 先看有没有user消息  如果没有 加入旁白 距离上次消息 多久 用户一直没有回复你的消息
         if (memoryDoList.stream().noneMatch(memoryDo -> MessageType.USER.getValue().equals(memoryDo.getRole()))){
             Date lastMessageTime = memoryDoList.getLast().getCreateTime();
             String timeAgo = getTimeAgo(lastMessageTime);
@@ -69,6 +72,28 @@ public class MemoryCastUtils {
             }
         }
         return memoryDoList;
+    }
+
+    public static List<TbAiChatMemoryDo> fillSystemMessage(List<TbAiChatMemoryDo> memoryDoList) {
+        // todo 消息拼接成ai user 交替的， memoryDoList 是降序limit之后反转的
+        List<TbAiChatMemoryDo> result = new ArrayList<>();
+        for (int i = 0; i < memoryDoList.size(); i++) {
+            // 先给一个最早的系统时间消息
+            if (i == 0){
+                result.add(new TbAiChatMemoryDo().setMessage("sdfsd").setRole(MessageType.SYSTEM.getValue()));
+            }
+
+            if (i != memoryDoList.size() - 1){
+                // 从最早的消息开始循环，判断与第条消息的时间
+                    // 如果间隔超过五分钟 就插入一个系统消息提示时间
+                    // 如果没有超过 就判断消息类型，一样的消息类型就用换行合并在一起
+            }else{
+                // 最后一条消息后面跟上系统时间
+                result.add(new TbAiChatMemoryDo().setMessage("sdfsd").setRole(MessageType.SYSTEM.getValue()));
+            }
+        }
+
+        return result;
     }
 
     public static String getTimeAgo(Date lastMessageTime) {
@@ -115,5 +140,55 @@ public class MemoryCastUtils {
             // 不到一分钟
             return "刚刚";
         }
+    }
+
+    /**
+     * 将时间转换为相对当前时间的可读字符串
+     * 今天：中午 12:00
+     * 昨天：昨天 8:30
+     * 前天：前天 14:00
+     * 更早：6月10日 14:00
+     */
+    public static String formatRelativeTime(Date time) {
+        if (time == null) return "";
+
+        LocalDateTime dateTime = time.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+        LocalDate targetDate = dateTime.toLocalDate();
+
+        long daysBetween = Duration.between(targetDate.atStartOfDay(), today.atStartOfDay()).toDays();
+
+        String timeStr = String.format("%d:%02d", dateTime.getHour(), dateTime.getMinute());
+
+        if (daysBetween == 0) {
+            // 今天
+            return getTimePeriod(dateTime.getHour()) + " " + timeStr;
+        } else if (daysBetween == 1) {
+            // 昨天
+            return "昨天 " + timeStr;
+        } else if (daysBetween == 2) {
+            // 前天
+            return "前天 " + timeStr;
+        } else {
+            // 更早：几月几日 几点几分
+            return dateTime.getMonthValue() + "月" + dateTime.getDayOfMonth() + "日 " + timeStr;
+        }
+    }
+
+    /**
+     * 根据小时返回时间段描述
+     */
+    private static String getTimePeriod(int hour) {
+        if (hour >= 5 && hour < 8) return "清晨";
+        if (hour >= 8 && hour < 11) return "上午";
+        if (hour >= 11 && hour < 13) return "中午";
+        if (hour >= 13 && hour < 17) return "下午";
+        if (hour >= 17 && hour < 19) return "傍晚";
+        if (hour >= 19 && hour < 22) return "晚上";
+        return "深夜";
     }
 }
