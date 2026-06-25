@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class MemoryCastUtils {
@@ -78,20 +79,24 @@ public class MemoryCastUtils {
         // todo 消息拼接成ai user 交替的， memoryDoList 是降序limit之后反转的
         List<TbAiChatMemoryDo> result = new ArrayList<>();
         for (int i = 0; i < memoryDoList.size(); i++) {
+            TbAiChatMemoryDo currentMemoryDo = memoryDoList.get(i);
             // 先给一个最早的系统时间消息
             if (i == 0){
-                result.add(new TbAiChatMemoryDo().setMessage("sdfsd").setRole(MessageType.SYSTEM.getValue()));
+                result.add(new TbAiChatMemoryDo()
+                        .setMessage(formatRelativeTime(currentMemoryDo.getCreateTime()))
+                        .setRole(MessageType.SYSTEM.getValue()));
+                result.add(currentMemoryDo);
+                continue;
             }
 
-            if (i != memoryDoList.size() - 1){
-                // 从最早的消息开始循环，判断与第条消息的时间
-                    // 如果间隔超过五分钟 就插入一个系统消息提示时间
-                    // 如果没有超过 就判断消息类型，一样的消息类型就用换行合并在一起
-            }else{
-                // 最后一条消息后面跟上系统时间
-                result.add(new TbAiChatMemoryDo().setMessage("sdfsd").setRole(MessageType.SYSTEM.getValue()));
-            }
+            // 从最早的消息开始循环，判断与上一条消息的时间间隔
+                // 如果间隔超过五分钟 就插入一个系统消息提示时间
+                // 如果没有超过 就判断消息类型，一样的消息类型并且间隔小于一分钟就用换行合并在一起
         }
+        // 最后一条消息后面跟上系统时间
+        result.add(new TbAiChatMemoryDo()
+                .setMessage("当前时间：" + formatRelativeTime(new Date()))
+                .setRole(MessageType.SYSTEM.getValue()));
 
         return result;
     }
