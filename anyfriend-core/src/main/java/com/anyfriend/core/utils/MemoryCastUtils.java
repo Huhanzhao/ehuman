@@ -11,13 +11,12 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class MemoryCastUtils {
 
     public static String memoryCastToString(List<TbAiChatMemoryDo> memoryDoList) {
-        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemTimeMessage(memoryDoList);
+        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(memoryDoList);
         StringBuilder result = new StringBuilder();
         tbAiChatMemoryDos.forEach(memoryDo -> {
             result.append(memoryDo.getRole()).append(" : ").append(memoryDo.getMessage())
@@ -27,7 +26,7 @@ public class MemoryCastUtils {
     }
 
     public static List<Message> memoryCastToMessages(List<TbAiChatMemoryDo> memoryDoList) {
-        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemTimeMessage(memoryDoList);
+        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(memoryDoList);
         return tbAiChatMemoryDos.stream().map(memoryDo -> {
             Message message;
             if (MessageType.USER.getValue().equals(memoryDo.getRole())) {
@@ -76,29 +75,41 @@ public class MemoryCastUtils {
     }
 
     public static List<TbAiChatMemoryDo> fillSystemMessage(List<TbAiChatMemoryDo> memoryDoList) {
-        // todo 消息拼接成ai user 交替的， memoryDoList 是降序limit之后反转的
-        List<TbAiChatMemoryDo> result = new ArrayList<>();
+        // 消息拼接成ai user 交替的， memoryDoList 是降序limit之后反转的
+        List<TbAiChatMemoryDo> resultList = new ArrayList<>();
         for (int i = 0; i < memoryDoList.size(); i++) {
             TbAiChatMemoryDo currentMemoryDo = memoryDoList.get(i);
-            // 先给一个最早的系统时间消息
-            if (i == 0){
-                result.add(new TbAiChatMemoryDo()
-                        .setMessage(formatRelativeTime(currentMemoryDo.getCreateTime()))
-                        .setRole(MessageType.SYSTEM.getValue()));
-                result.add(currentMemoryDo);
-                continue;
+
+            long minutes = 0;
+            TbAiChatMemoryDo lastMemoryDo = null;
+            if (i != 0){
+                // 从最早的消息开始循环，判断与上一条消息的时间间隔
+                lastMemoryDo = resultList.getLast();
+                minutes = Duration.between(lastMemoryDo.getCreateTime().toInstant(), currentMemoryDo.getCreateTime().toInstant()).toMinutes();
             }
 
-            // 从最早的消息开始循环，判断与上一条消息的时间间隔
+            if (i == 0 || minutes >= 5){
                 // 如果间隔超过五分钟 就插入一个系统消息提示时间
-                // 如果没有超过 就判断消息类型，一样的消息类型并且间隔小于一分钟就用换行合并在一起
+                resultList.add(new TbAiChatMemoryDo()
+                        .setMessage(formatRelativeTime(currentMemoryDo.getCreateTime()))
+                        .setRole(MessageType.SYSTEM.getValue()));
+                resultList.add(currentMemoryDo);
+            }else{
+                // 如果没有超过5分钟
+                // 就判断消息类型，一样的消息类型并且间隔小于一分钟就用换行合并在一起
+                if (currentMemoryDo.getRole().equals(lastMemoryDo.getRole()) && minutes < 1){
+                    resultList.getLast().setMessage(resultList.getLast().getMessage() + "\n" + currentMemoryDo.getMessage());
+                }else{
+                    resultList.add(currentMemoryDo);
+                }
+            }
         }
         // 最后一条消息后面跟上系统时间
-        result.add(new TbAiChatMemoryDo()
+        resultList.add(new TbAiChatMemoryDo()
                 .setMessage("当前时间：" + formatRelativeTime(new Date()))
                 .setRole(MessageType.SYSTEM.getValue()));
 
-        return result;
+        return resultList;
     }
 
     public static String getTimeAgo(Date lastMessageTime) {

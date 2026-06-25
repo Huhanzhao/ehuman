@@ -46,7 +46,7 @@ public class CheckAggregateNode implements NodeAction {
         resultMap.put("checkPass", checkPass);
         resultMap.put("reTry", reTry + 1);
         if (!checkPass) {
-            resultMap.put("failReason", "重要：本次是第" + (reTry + 1) + "次生成尝试，前面尝试生成消息没有通过的原因如下\n" + String.join("\n", failReasons));
+            resultMap.put("failReason", "重要：本次是第" + (reTry + 2) + "次生成尝试，前面尝试生成消息没有通过的原因如下\n" + String.join("\n", failReasons));
         }
 
         if (reTry > 3) {

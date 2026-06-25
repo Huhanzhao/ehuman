@@ -93,9 +93,13 @@ public class SendMessageCompileGraph {
                     .addNode("combinedCheckNode", node_async(combinedCheckNode))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
                     .addNode("sendMessageNode", node_async(state -> {
+                        String message = state.value("formatOutPut",String.class).orElse("");
+                        if (message.isEmpty()){
+                            message = state.value("generateMessage",String.class).orElse("");
+                        }
                         sendMessageUtil.sendChatMsg(
                                 state.value("userId",Long.class).get(),
-                                (String) state.value("formatOutPut").orElse("")
+                                message
                         );
                         CompletableFuture.runAsync(() -> {
                             // todo 判断下次发送消息
