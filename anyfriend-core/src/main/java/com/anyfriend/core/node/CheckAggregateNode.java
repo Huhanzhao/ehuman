@@ -24,7 +24,7 @@ public class CheckAggregateNode implements NodeAction {
 
     private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
 
-    private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造审核|角色混乱审核|现实互动审核)\\s*[:：]\\s*(不通过)\\s*(.*)");
+    private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造审核|角色混乱审核|现实互动审核|时间混淆审核)\\s*[:：]\\s*(不通过)\\s*(.*)");
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
