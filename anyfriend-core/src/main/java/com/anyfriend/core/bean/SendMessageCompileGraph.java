@@ -70,14 +70,16 @@ public class SendMessageCompileGraph {
                     NodeEnum.MASTER,
                     state -> {
                         Long userId = (Long)state.value("userId").orElse(0L);
-                        List<Message> messageList = MemoryCastUtils.memoryCastToMessages(
-                                tbAiChatMemoryService.getMessageList(userId, 15));
                         Boolean initiative = (Boolean)state.value("initiative").orElse(false);
-                        String userMessage = null;
-                        if ( initiative){
-                            userMessage = "这条消息是你主动给用户发送的消息，不是用户主动给你发送的消息";
+                        List<Message> messageList = null;
+                        if (!initiative){
+                            messageList = MemoryCastUtils.memoryCastToMessages(
+                                    tbAiChatMemoryService.getMessageList(userId, 15));
+                        }else{
+                            messageList = MemoryCastUtils.memoryCastToInitiativeMessages(
+                                    tbAiChatMemoryService.getMessageList(userId, 15));
                         }
-                        return new BeforeLlmCallback.BeforeCallBackEntity(messageList, userMessage,null);
+                        return new BeforeLlmCallback.BeforeCallBackEntity(messageList, null,null);
                     },
                     null);
 

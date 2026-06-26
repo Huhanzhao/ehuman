@@ -88,7 +88,7 @@ public class MemoryCastUtils {
                 minutes = Duration.between(lastMemoryDo.getCreateTime().toInstant(), currentMemoryDo.getCreateTime().toInstant()).toMinutes();
             }
 
-            if (i == 0 || minutes >= 5){
+            if (i == 0 || minutes >= 60){
                 // 如果间隔超过五分钟 就插入一个系统消息提示时间
                 resultList.add(new TbAiChatMemoryDo()
                         .setMessage(formatRelativeTime(currentMemoryDo.getCreateTime()))
@@ -106,7 +106,7 @@ public class MemoryCastUtils {
         }
         // 最后一条消息后面跟上系统时间
         resultList.add(new TbAiChatMemoryDo()
-                .setMessage("当前时间：" + formatRelativeTime(new Date()))
+                .setMessage("当前时间：" + formatRelativeTime(new Date()) + " 必须确保生成的消息内容符合当前时间")
                 .setRole(MessageType.SYSTEM.getValue()));
 
         return resultList;
@@ -206,5 +206,14 @@ public class MemoryCastUtils {
         if (hour >= 17 && hour < 19) return "傍晚";
         if (hour >= 19 && hour < 22) return "晚上";
         return "深夜";
+    }
+
+    // 主动发送消息 添加提示词
+    public static List<Message> memoryCastToInitiativeMessages(List<TbAiChatMemoryDo> messageList) {
+        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(messageList);
+        if (tbAiChatMemoryDos.getLast().getRole().equals(MessageType.ASSISTANT.getValue())){
+            tbAiChatMemoryDos.getLast().setMessage("本次消息生成是你主动给用户发送的消息，可以不接着上个话题聊，不要自问自答 " + messageList.getLast().getMessage());
+        }
+        return memoryCastToMessages(tbAiChatMemoryDos);
     }
 }
