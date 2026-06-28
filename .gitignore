@@ -52,3 +52,5 @@ minio_data/**
 /anyfriend-plugin/plugin/TTS/audio/*
 /anyfriend-core/src/main/resources/application-local.yml
 /anyfriend-plugin/plugin/classes/com/bot/plugin/*.class
+/sqlite/aiBot-local.db-shm
+/sqlite/aiBot-local.db-wal

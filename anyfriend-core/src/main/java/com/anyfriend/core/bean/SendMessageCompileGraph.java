@@ -98,6 +98,8 @@ public class SendMessageCompileGraph {
                             message = state.value("generateMessage",String.class).orElse("");
                         }
                         sendMessageUtil.sendChatMsg(userId, message);
+
+                        // todo 删除定时任务，新增定时任务 五分钟之后执行 下次发送消息的时间
                         CompletableFuture.runAsync(() -> {
                             // 修改下次主动发送消息
                             commonAuxiliaryService.updateNextSendMessageInfo(userId, state);
