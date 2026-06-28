@@ -131,7 +131,7 @@ public class BotLifeDetailCreateJob implements Job {
         }
     }
 
-    private void evaluateAndScheduleMessages(Long userId, List<TbBotLifeDetailDo> details) {
+    private void evaluateAndScheduleMessages(Long userId, List<TbBotLifeDetailDo> details) {  // todo 删掉，已经在对话图里面调用
         StringBuilder detailList = new StringBuilder();
         for (int i = 0; i < details.size(); i++) {
             TbBotLifeDetailDo d = details.get(i);

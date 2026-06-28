@@ -138,6 +138,7 @@ public class SendMessageUtil {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         if (message.isEmpty()) {
             log.error("no message");
+            return;
         }
 
         // 通过机器人账号取出 Bot 对象

@@ -42,7 +42,7 @@ public class SendMessageJob implements Job {
         this.sendMessageCompiledGraph = sendMessageCompiledGraph;
     }
 
-    @Override
+    @Override  // todo 重做，排除干扰因素 加入示例句子
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         String jobName = jobExecutionContext.getJobDetail().getKey().getName();
         String jobGroup = jobExecutionContext.getJobDetail().getKey().getGroup();

@@ -12,8 +12,10 @@ import com.anyfriend.core.node.LlmNode;
 import com.anyfriend.core.node.UserWantToNode;
 import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.service.BeforeLlmCallback;
+import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
+import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.LlmNodeTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
@@ -45,6 +47,7 @@ public class SendMessageCompileGraph {
     private final CheckAggregateNode checkAggregateNode;
     private final SendMessageUtil sendMessageUtil;
     private final TbAiChatMemoryService tbAiChatMemoryService;
+    private final CommonAuxiliaryService commonAuxiliaryService;
 
     private final ChatClientFactory chatClientFactory;
     private final NodeStatePersistenceListener nodeStatePersistenceListener;
@@ -71,14 +74,8 @@ public class SendMessageCompileGraph {
                     state -> {
                         Long userId = (Long)state.value("userId").orElse(0L);
                         Boolean initiative = (Boolean)state.value("initiative").orElse(false);
-                        List<Message> messageList = null;
-                        if (!initiative){
-                            messageList = MemoryCastUtils.memoryCastToMessages(
-                                    tbAiChatMemoryService.getMessageList(userId, 15));
-                        }else{
-                            messageList = MemoryCastUtils.memoryCastToInitiativeMessages(
-                                    tbAiChatMemoryService.getMessageList(userId, 15));
-                        }
+                        List<Message> messageList =  MemoryCastUtils.memoryCastToMessages(
+                                tbAiChatMemoryService.getMessageList(userId, 15),initiative);
                         return new BeforeLlmCallback.BeforeCallBackEntity(messageList, null,null);
                     },
                     null);
@@ -96,16 +93,14 @@ public class SendMessageCompileGraph {
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
                     .addNode("sendMessageNode", node_async(state -> {
                         String message = state.value("formatOutPut",String.class).orElse("");
+                        Long userId = state.value("userId", Long.class).get();
                         if (message.isEmpty()){
                             message = state.value("generateMessage",String.class).orElse("");
                         }
-                        sendMessageUtil.sendChatMsg(
-                                state.value("userId",Long.class).get(),
-                                message
-                        );
+                        sendMessageUtil.sendChatMsg(userId, message);
                         CompletableFuture.runAsync(() -> {
-                            // todo 判断下次发送消息
-//                            String result = callSlowApi(input);
+                            // 修改下次主动发送消息
+                            commonAuxiliaryService.updateNextSendMessageInfo(userId, state);
                         });
                         return Map.of();
                     }))
@@ -121,9 +116,11 @@ public class SendMessageCompileGraph {
                     // 审查
                     .addConditionalEdges("messageGenerateNode", state ->{
                         String generateMessage = (String) state.value("generateMessage").orElse("");
+                        Long userId = state.value("userId", Long.class).get();
 
                         if (generateMessage.startsWith("<silence>") && generateMessage.endsWith("</silence>")){
                             sendMessageUtil.sendMegToSelf(generateMessage);
+                            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(generateMessage));
                             return CompletableFuture.completedFuture("end");
                         }
                         return CompletableFuture.completedFuture("next");

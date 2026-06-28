@@ -74,6 +74,7 @@ public class CheckAggregateNode implements NodeAction {
         predicates.add(s -> s.trim().startsWith("<text>") && s.trim().endsWith("</text>"));
         predicates.add(s -> s.trim().startsWith("<silence>") && s.trim().endsWith("</silence>"));
         predicates.add(s -> s.trim().startsWith("<emoji emo=\"") && s.trim().endsWith("/>"));
+        predicates.add(s -> s.trim().isEmpty());
         if (enableVoice){
             // 开启了语音
             predicates.add(s -> s.trim().startsWith("<voice") && s.trim().endsWith("</voice>"));

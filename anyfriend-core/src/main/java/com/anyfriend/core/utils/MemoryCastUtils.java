@@ -3,7 +3,6 @@ package com.anyfriend.core.utils;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import org.springframework.ai.chat.messages.*;
 
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,8 +24,11 @@ public class MemoryCastUtils {
         return result.toString();
     }
 
-    public static List<Message> memoryCastToMessages(List<TbAiChatMemoryDo> memoryDoList) {
+    public static List<Message> memoryCastToMessages(List<TbAiChatMemoryDo> memoryDoList, boolean initiative) {
         List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(memoryDoList);
+        if (initiative && tbAiChatMemoryDos.getLast().getRole().equals(MessageType.ASSISTANT.getValue())){
+            tbAiChatMemoryDos.getLast().setMessage("本次消息生成是你主动给用户发送的消息，可以不接着上个话题聊，不要自问自答 " + tbAiChatMemoryDos.getLast().getMessage());
+        }
         return tbAiChatMemoryDos.stream().map(memoryDo -> {
             Message message;
             if (MessageType.USER.getValue().equals(memoryDo.getRole())) {
@@ -38,40 +40,6 @@ public class MemoryCastUtils {
             }
             return message;
         }).collect(Collectors.toList());
-    }
-
-    public static List<TbAiChatMemoryDo> fillSystemTimeMessage(List<TbAiChatMemoryDo> memoryDoList) {
-        if (memoryDoList.isEmpty()) return new ArrayList<>();
-
-        // 先看有没有user消息  如果没有 加入旁白 距离上次消息 多久 用户一直没有回复你的消息
-        if (memoryDoList.stream().noneMatch(memoryDo -> MessageType.USER.getValue().equals(memoryDo.getRole()))){
-            Date lastMessageTime = memoryDoList.getLast().getCreateTime();
-            String timeAgo = getTimeAgo(lastMessageTime);
-            memoryDoList.add(new TbAiChatMemoryDo().setRole(MessageType.SYSTEM.getValue())
-                    .setMessage("[旁白：距离上次消息 " + timeAgo + " 用户一直没有回复你的消息]"));
-            return memoryDoList;
-        }
-
-        // 如果有 查询最近一次ai消息时间 忽略user消息 加入旁白 距离上次消息多久
-        for (int i = memoryDoList.size() - 1; i >= 0; i--){
-            // 出现ai消息大于五分钟放入旁白 todo 修改逻辑，现在是什么时间
-            if (MessageType.ASSISTANT.getValue().equals(memoryDoList.get(i).getRole())){
-
-                Date lastUserMessageTime = memoryDoList.get(i).getCreateTime();
-                if (lastUserMessageTime.getTime() < System.currentTimeMillis() - 5 * 60 * 1000){
-                    String timeAgo = getTimeAgo(lastUserMessageTime);
-                    SimpleDateFormat sdf = new SimpleDateFormat("MM月dd日 HH:mm");
-                    String formatted = sdf.format(new Date());
-                    // 插入到这条 AI 消息的后面
-                    TbAiChatMemoryDo tbAiChatMemoryDo = new TbAiChatMemoryDo()
-                            .setRole(MessageType.SYSTEM.getValue())
-                            .setMessage("[旁白：过了 " + timeAgo + "之后 现在时间:" + formatted + ", 注意话题延续的时间合理性，不用强行延续]");
-                    memoryDoList.add(i + 1, tbAiChatMemoryDo);
-                }
-                break;
-            }
-        }
-        return memoryDoList;
     }
 
     public static List<TbAiChatMemoryDo> fillSystemMessage(List<TbAiChatMemoryDo> memoryDoList) {
@@ -110,52 +78,6 @@ public class MemoryCastUtils {
                 .setRole(MessageType.SYSTEM.getValue()));
 
         return resultList;
-    }
-
-    public static String getTimeAgo(Date lastMessageTime) {
-        long now = System.currentTimeMillis();
-        long diff = now - lastMessageTime.getTime();  // 毫秒差值
-
-        // 如果时间是未来（异常情况），直接返回
-        if (diff < 0) {
-            return "刚刚";
-        }
-
-        long seconds = diff / 1000;
-        long minutes = seconds / 60;
-        long hours = minutes / 60;
-        long days = hours / 24;
-
-        if (days >= 1) {
-            // 超过一天：显示 "1天3小时30分钟"
-            long remainHours = hours % 24;
-            long remainMinutes = minutes % 60;
-
-            if (remainHours > 0 && remainMinutes > 0) {
-                return days + "天" + remainHours + "小时" + remainMinutes + "分钟";
-            } else if (remainHours > 0) {
-                return days + "天" + remainHours + "小时";
-            } else if (remainMinutes > 0) {
-                return days + "天" + remainMinutes + "分钟";
-            } else {
-                return days + "天";
-            }
-        } else if (hours >= 1) {
-            // 几小时：显示 "3小时30分钟"
-            long remainMinutes = minutes % 60;
-
-            if (remainMinutes > 0) {
-                return hours + "小时" + remainMinutes + "分钟";
-            } else {
-                return hours + "小时";
-            }
-        } else if (minutes >= 1) {
-            // 不到一小时：显示 "30分钟"
-            return minutes + "分钟";
-        } else {
-            // 不到一分钟
-            return "刚刚";
-        }
     }
 
     /**
@@ -206,14 +128,5 @@ public class MemoryCastUtils {
         if (hour >= 17 && hour < 19) return "傍晚";
         if (hour >= 19 && hour < 22) return "晚上";
         return "深夜";
-    }
-
-    // 主动发送消息 添加提示词
-    public static List<Message> memoryCastToInitiativeMessages(List<TbAiChatMemoryDo> messageList) {
-        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(messageList);
-        if (tbAiChatMemoryDos.getLast().getRole().equals(MessageType.ASSISTANT.getValue())){
-            tbAiChatMemoryDos.getLast().setMessage("本次消息生成是你主动给用户发送的消息，可以不接着上个话题聊，不要自问自答 " + messageList.getLast().getMessage());
-        }
-        return memoryCastToMessages(tbAiChatMemoryDos);
     }
 }
