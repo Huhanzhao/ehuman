@@ -5,7 +5,9 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.fastjson2.JSON;
 import com.anyfriend.core.config.NodeStatePersistenceListener;
+import com.anyfriend.core.job.JobManager;
 import com.anyfriend.core.node.BotStatusSearchNode;
 import com.anyfriend.core.node.CheckAggregateNode;
 import com.anyfriend.core.node.LlmNode;
@@ -30,6 +32,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +55,8 @@ public class SendMessageCompileGraph {
 
     private final ChatClientFactory chatClientFactory;
     private final NodeStatePersistenceListener nodeStatePersistenceListener;
+
+    private final JobManager jobManager;
 
 
     @Bean("sendMessageCompiledGraph")
@@ -104,10 +110,23 @@ public class SendMessageCompileGraph {
                         }
                         sendMessageUtil.sendChatMsg(userId, message);
 
-                        // todo 删除定时任务，新增定时任务 五分钟之后执行 下次发送消息的时间
+                        // 添加一个五分钟之后的定时任务（五分钟没有用户回复再去执行主动消息的任务）
                         CompletableFuture.runAsync(() -> {
-                            // 修改下次主动发送消息
-                            commonAuxiliaryService.updateNextSendMessageInfo(userId, state);
+                            try {
+                                jobManager.deleteJob("callNextSendMessageJob","system");
+
+                                // 当前时间 + 5分钟
+                                LocalDateTime now = LocalDateTime.now();
+                                LocalDateTime future = now.plusMinutes(5);
+                                // 格式化
+                                String result = future.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                                jobManager.addJob("callNextSendMessageJob","system",
+                                        commonAuxiliaryService.toCronExpression(result),
+                                        "com.anyfriend.core.job.action.CallSendMessageJob",
+                                        JSON.toJSONString(state));
+                            } catch (Exception e) {
+                                log.error("修改 callNextSendMessageJob 报错{}",e.getMessage());
+                            }
                         });
                         return Map.of();
                     }))
