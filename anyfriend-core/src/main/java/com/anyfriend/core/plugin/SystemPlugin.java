@@ -421,7 +421,7 @@ public class SystemPlugin extends BotPlugin {
 
     private int getOrUpdateBotStatus(Long userId, String userInput) {
         String param = userInput.replace("#好感度", "").trim();
-        // 修改好感度  todo 默认关闭
+        // 修改好感度
         if (!param.isEmpty()){
             Integer grace = Integer.valueOf(param);
             tbUserBotStatusDoService.updateGraceByUserId(userId, grace);
