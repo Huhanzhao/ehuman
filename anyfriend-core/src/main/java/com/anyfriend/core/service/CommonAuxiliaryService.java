@@ -97,7 +97,7 @@ public class CommonAuxiliaryService {
 
         // json解析
         try {
-            Map<String,Object> resultMap = JSON.parseObject(output.replaceAll("\n","").replaceAll(" ",""));
+            Map<String,Object> resultMap = JSON.parseObject(output.replaceAll("\n","").trim());
             jobManager.deleteJobByStartString("nextSendMessage_");
             if ((Boolean) resultMap.get("nextSend")){
                 jobManager.addJob("nextSendMessage_" + System.currentTimeMillis(),
