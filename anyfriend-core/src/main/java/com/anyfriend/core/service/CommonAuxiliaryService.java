@@ -98,9 +98,9 @@ public class CommonAuxiliaryService {
         // json解析
         try {
             Map<String,Object> resultMap = JSON.parseObject(output.replaceAll("\n","").replaceAll(" ",""));
-            jobManager.deleteJob("nextSendMessage", "system");
+            jobManager.deleteJobByStartString("nextSendMessage_");
             if ((Boolean) resultMap.get("nextSend")){
-                jobManager.addJob("nextSendMessage",
+                jobManager.addJob("nextSendMessage_" + System.currentTimeMillis(),
                         "system",
                         toCronExpression(resultMap.get("nextSendTime").toString()),
                         "com.anyfriend.core.job.action.SendMessageJob",

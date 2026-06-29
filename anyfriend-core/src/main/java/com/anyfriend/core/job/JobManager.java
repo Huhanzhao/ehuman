@@ -45,6 +45,21 @@ public class JobManager {
         scheduler.deleteJob(new JobKey(jobName, jobGroup));
     }
 
+    public void deleteJobByStartString(String startString) throws Exception {
+        // 查询字符开头的所有定时任务
+        List<TbQuartzJobDo> list = quartzJobService.list(new LambdaQueryWrapper<TbQuartzJobDo>()
+                .like(TbQuartzJobDo::getJobName, startString));
+
+        list.forEach(param ->{
+            // 删除
+            try {
+                this.deleteJob(param.getJobName(),param.getJobGroup());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     public void updateJob(String jobName, String jobGroup, String cron) throws Exception {
         // 更新数据库中的cron表达式
         quartzJobService.update(new LambdaUpdateWrapper<TbQuartzJobDo>()

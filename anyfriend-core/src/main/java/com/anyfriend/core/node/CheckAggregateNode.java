@@ -60,7 +60,11 @@ public class CheckAggregateNode implements NodeAction {
     public String nextNode(OverAllState state) {
         Boolean checkPass = (Boolean) state.value("checkPass").orElse(true);
         Long userId = state.value("userId",Long.class).orElse(0L);
+        Boolean initiative = state.value("initiative",Boolean.class).orElse(false);
         if (!checkPass) {
+            if (initiative){
+                return "initiativeFail";
+            }
             return "fail";
         }
 

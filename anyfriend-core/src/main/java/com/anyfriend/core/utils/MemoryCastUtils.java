@@ -24,11 +24,8 @@ public class MemoryCastUtils {
         return result.toString();
     }
 
-    public static List<Message> memoryCastToMessages(List<TbAiChatMemoryDo> memoryDoList, boolean initiative) {
+    public static List<Message> memoryCastToMessages(List<TbAiChatMemoryDo> memoryDoList) {
         List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(memoryDoList);
-        if (initiative && tbAiChatMemoryDos.getLast().getRole().equals(MessageType.ASSISTANT.getValue())){
-            tbAiChatMemoryDos.getLast().setMessage("本次消息生成是你主动给用户发送的消息，可以不接着上个话题聊，不要自问自答 " + tbAiChatMemoryDos.getLast().getMessage());
-        }
         return tbAiChatMemoryDos.stream().map(memoryDo -> {
             Message message;
             if (MessageType.USER.getValue().equals(memoryDo.getRole())) {

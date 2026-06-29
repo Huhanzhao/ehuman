@@ -73,22 +73,27 @@ public class SendMessageCompileGraph {
                     NodeEnum.MASTER,
                     state -> {
                         Long userId = (Long)state.value("userId").orElse(0L);
-                        Boolean initiative = (Boolean)state.value("initiative").orElse(false);
                         List<Message> messageList =  MemoryCastUtils.memoryCastToMessages(
-                                tbAiChatMemoryService.getMessageList(userId, 15),initiative);
+                                tbAiChatMemoryService.getMessageList(userId, 15));
                         return new BeforeLlmCallback.BeforeCallBackEntity(messageList, null,null);
                     },
                     null);
 
+            // 合并检查节点
             LlmNode combinedCheckNode = getLlmNode(LlmNodeTypeEnum.COMBINED_CHECK, NodeEnum.AUXILIARY, null, null);
+
+            // 主动发消息生成节点
+            LlmNode initiativeMessageGenerateNode = getLlmNode(LlmNodeTypeEnum.INITIATIVE_MESSAGE_GENERATE, NodeEnum.MASTER, null, null);
 
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerate))
+                    .addNode("initiativeMessageGenerateNode", node_async(initiativeMessageGenerateNode))
                     .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.AUXILIARY,null,null)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
+                    .addNode("initiativeOrNotNode", node_async(state -> Map.of()))  // 主动被动中转节点
                     .addNode("combinedCheckNode", node_async(combinedCheckNode))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
                     .addNode("sendMessageNode", node_async(state -> {
@@ -111,11 +116,15 @@ public class SendMessageCompileGraph {
                     .addEdge("userWantToNode", "botStatusSearchNode")
                     .addEdge("userWantToNode", "memoryVectorSearchNode")
                     .addEdge("userWantToNode", "graphSearchNode")
-                    .addEdge("botStatusSearchNode", "messageGenerateNode")
-                    .addEdge("memoryVectorSearchNode", "messageGenerateNode")
-                    .addEdge("graphSearchNode", "messageGenerateNode")
+                    .addEdge("botStatusSearchNode", "initiativeOrNotNode")
+                    .addEdge("memoryVectorSearchNode", "initiativeOrNotNode")
+                    .addEdge("graphSearchNode", "initiativeOrNotNode")
+                    .addConditionalEdges("initiativeOrNotNode",
+                            edge_async(state -> state.value("initiative",Boolean.class).orElse(false).toString()),
+                            Map.of("true","initiativeMessageGenerateNode","false","messageGenerateNode"))
 
                     // 审查
+                    .addEdge("initiativeMessageGenerateNode","combinedCheckNode")
                     .addConditionalEdges("messageGenerateNode", state ->{
                         String generateMessage = (String) state.value("generateMessage").orElse("");
                         Long userId = state.value("userId", Long.class).get();
@@ -132,6 +141,7 @@ public class SendMessageCompileGraph {
 
                     .addConditionalEdges("checkAggregateNode", edge_async(checkAggregateNode::nextNode),
                             Map.of("fail", "messageGenerateNode",
+                                    "initiativeFail", "initiativeMessageGenerateNode",
                                     "format","formatOutPutLlmNode",
                                     "pass", "sendMessageNode"))
                     .addEdge("formatOutPutLlmNode", "sendMessageNode")
