@@ -3,6 +3,8 @@ spring:
     # SQLite 数据库连接配置
     url: jdbc:sqlite:./sqlite/aiBot.db?journal_mode=WAL&busy_timeout=30000&enable_load_extension=true
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      connection-init-sql: SELECT load_extension('./sqlite/vector.dll');SELECT vector_init('vector', 'embedding', 'dimension=4,type=FLOAT32,distance=cosine');
     # SQLite 不需要用户名和密码
     username:
     password:
