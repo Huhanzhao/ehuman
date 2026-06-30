@@ -33,7 +33,7 @@ public class VectorDatabaseInitializer {
 //                stmt.execute("SELECT load_extension('./sqlite/vector.dll')");
 //                log.info("Vector extension loaded successfully");
 //            }
-//
+////
 //            // 2. 初始化向量表
 //            try (Statement stmt = conn.createStatement()) {
 //                stmt.execute("SELECT vector_init('vector', 'embedding', 'dimension=4,type=FLOAT32,distance=cosine')");
@@ -51,7 +51,7 @@ public class VectorDatabaseInitializer {
 //                        "    1.0 - (v.distance / 2) AS similarity_score " +
 //                        " FROM vector as e\n " +
 //                        " JOIN vector_quantize_scan('vector', 'embedding', vector_as_f32('[0.1, 0.2, 0.3, 0.4]'), 20) AS v\n" +
-//                        " ON e.id = v.rowid");
+//                        " ON e.rowid = v.rowid");
 //                log.info("Vector initialized successfully");
 //                ResultSet rs = stmt.getResultSet();
 //                while (rs.next()) {
