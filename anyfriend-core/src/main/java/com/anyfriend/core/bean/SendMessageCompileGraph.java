@@ -123,7 +123,7 @@ public class SendMessageCompileGraph {
                                 jobManager.addJob("callNextSendMessageJob","system",
                                         commonAuxiliaryService.toCronExpression(result),
                                         "com.anyfriend.core.job.action.CallSendMessageJob",
-                                        JSON.toJSONString(state));
+                                        JSON.toJSONString(state.data()));
                             } catch (Exception e) {
                                 log.error("修改 callNextSendMessageJob 报错{}",e.getMessage());
                             }
