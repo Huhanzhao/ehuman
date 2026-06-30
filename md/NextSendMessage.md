@@ -30,6 +30,6 @@
 
 ### 5.当前时间
 {currentTime}
-**注意：** nextSendTime的时间不能早于当前时间
+**注意：** nextSendTime的时间不能早于当前时间，太晚可以第二天主动联系
 
 

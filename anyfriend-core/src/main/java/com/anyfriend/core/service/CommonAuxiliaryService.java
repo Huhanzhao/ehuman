@@ -52,7 +52,7 @@ public class CommonAuxiliaryService {
             1. {
                  "nextSend" : true,
                  "nextSendTime": "2026-06-29 18:25:00",
-                 "topic": "问对方为什么不回我消息"
+                 "topic": "问对方在干嘛"
                }
             2. {
                   "nextSend" : true,
