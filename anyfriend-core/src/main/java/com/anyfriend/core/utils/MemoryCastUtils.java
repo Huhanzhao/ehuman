@@ -42,8 +42,24 @@ public class MemoryCastUtils {
     public static List<TbAiChatMemoryDo> fillSystemMessage(List<TbAiChatMemoryDo> memoryDoList) {
         // 消息拼接成ai user 交替的， memoryDoList 是降序limit之后反转的
         List<TbAiChatMemoryDo> resultList = new ArrayList<>();
+
+        boolean todayFirstMessage = true;
         for (int i = 0; i < memoryDoList.size(); i++) {
             TbAiChatMemoryDo currentMemoryDo = memoryDoList.get(i);
+
+            boolean isToday = currentMemoryDo.getCreateTime()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .equals(LocalDate.now());
+            if (isToday && todayFirstMessage){
+                resultList.add(new TbAiChatMemoryDo()
+                        .setRole(MessageType.SYSTEM.getValue())
+                        .setMessage("========第二天=======")
+                        .setCreateTime(new Date())
+                );
+                todayFirstMessage = false;
+            }
 
             long minutes = 0;
             TbAiChatMemoryDo lastMemoryDo = null;

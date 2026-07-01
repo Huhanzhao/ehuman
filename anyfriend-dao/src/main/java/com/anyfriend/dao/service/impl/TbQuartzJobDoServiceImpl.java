@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 public class TbQuartzJobDoServiceImpl extends ServiceImpl<TbQuartzJobDoMapper, TbQuartzJobDo>
     implements TbQuartzJobDoService {
     @Override
-    public TbQuartzJobDo getByName(String jobName) {
-        return lambdaQuery().eq(TbQuartzJobDo::getJobName, jobName).one();
+    public TbQuartzJobDo getByStartName(String jobName) {
+        return lambdaQuery().like(TbQuartzJobDo::getJobName, jobName).last("limit 1").one();
     }
 }

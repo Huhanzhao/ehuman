@@ -113,14 +113,14 @@ public class SendMessageCompileGraph {
                         // 添加一个五分钟之后的定时任务（五分钟没有用户回复再去执行主动消息的任务）
                         CompletableFuture.runAsync(() -> {
                             try {
-                                jobManager.deleteJob("callNextSendMessageJob","system");
+                                jobManager.deleteJobByStartString("callNextSendMessageJob_");
 
                                 // 当前时间 + 5分钟
                                 LocalDateTime now = LocalDateTime.now();
                                 LocalDateTime future = now.plusMinutes(5);
                                 // 格式化
                                 String result = future.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                                jobManager.addJob("callNextSendMessageJob","system",
+                                jobManager.addJob("callNextSendMessageJob_" + System.currentTimeMillis(),"system",
                                         commonAuxiliaryService.toCronExpression(result),
                                         "com.anyfriend.core.job.action.CallSendMessageJob",
                                         JSON.toJSONString(state.data()));

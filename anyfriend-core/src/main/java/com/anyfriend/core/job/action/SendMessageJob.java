@@ -3,13 +3,11 @@ package com.anyfriend.core.job.action;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.anyfriend.core.job.JobManager;
-import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbQuartzJobDo;
 import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbQuartzJobDoService;
 import com.anyfriend.dao.service.TbUserBotStatusDoService;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -18,9 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,14 +44,14 @@ public class SendMessageJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        String jobName = jobExecutionContext.getJobDetail().getKey().getName();  // todo 数据库增加唯一键
+        String jobName = jobExecutionContext.getJobDetail().getKey().getName();
         String jobGroup = jobExecutionContext.getJobDetail().getKey().getGroup();
 
         List<TbUserBotStatusDo> allStatus = tbUserBotStatusDoService.list();
         if (allStatus == null || allStatus.isEmpty()) {
             return;
         }
-        TbQuartzJobDo tbQuartzJobDo = tbQuartzJobDoService.getByName(jobName);
+        TbQuartzJobDo tbQuartzJobDo = tbQuartzJobDoService.getByStartName(jobName);
 
         for (TbUserBotStatusDo status : allStatus) {
             Long userId = status.getUserId();

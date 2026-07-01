@@ -28,7 +28,7 @@ public class CallSendMessageJob implements Job {
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         // 修改下次主动发送消息
-        TbQuartzJobDo callNextSendMessageJob = tbQuartzJobDoService.getByName("callNextSendMessageJob");
+        TbQuartzJobDo callNextSendMessageJob = tbQuartzJobDoService.getByStartName("callNextSendMessageJob_");
         String jobDetail = callNextSendMessageJob.getJobDetail();
         Map<String,Object> data = (Map<String,Object>) JSON.parse(jobDetail);
         OverAllState state = new OverAllState(data);
