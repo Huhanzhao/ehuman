@@ -34,7 +34,7 @@ public class CommonAuxiliaryService {
     private SendMessageUtil sendMessageUtil;
 
     private String formatOutPut = """
-            ## 输出格式
+            ## 输出格式(nextSend 必须为true，除非当前ai生气，或者用户多次不回复消息才能输出false)
             **用户回复消息之前不主动给对方发消息**：
             {
               "nextSend": false,
@@ -52,7 +52,7 @@ public class CommonAuxiliaryService {
             1. {
                  "nextSend" : true,
                  "nextSendTime": "2026-06-29 18:25:00",
-                 "topic": "问对方为什么不回我消息"
+                 "topic": "问对方在干嘛"
                }
             2. {
                   "nextSend" : true,
