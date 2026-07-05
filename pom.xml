@@ -23,7 +23,7 @@
         <mybatis.plus.version>3.5.14</mybatis.plus.version>
         <lombok.version>1.18.30</lombok.version>
         <spring-boot.version>3.5.3</spring-boot.version>
-        <sqlite.version>3.44.1.0</sqlite.version>
+        <sqlite.version>3.53.2.0</sqlite.version>
     </properties>
 
     <dependencyManagement>

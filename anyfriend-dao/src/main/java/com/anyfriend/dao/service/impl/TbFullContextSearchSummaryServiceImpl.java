@@ -1,9 +1,7 @@
 package com.anyfriend.dao.service.impl;
 
 import com.anyfriend.dao.entity.TbFullContextSearchSummaryDo;
-import com.anyfriend.dao.entity.TbGraphLogDo;
 import com.anyfriend.dao.mapper.TbFullContextSearchSummaryMapper;
-import com.anyfriend.dao.mapper.TbGraphLogDoMapper;
 import com.anyfriend.dao.service.TbFullContextSearchSummaryService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
