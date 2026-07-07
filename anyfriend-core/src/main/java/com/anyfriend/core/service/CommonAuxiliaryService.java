@@ -120,12 +120,12 @@ public class CommonAuxiliaryService {
     // todo 流水账总结 把上一段的流水账拼接上？？
     public boolean summaryMessages(Long userId){
         // 直接取所有没有总结过的消息拼接提示词
-        // 调用大模型总结
+        // 调用大模型总结 要注意信息密度，密度低的对话区分出来
         // 保存提示词向量化
         return true;
     }
 
-    // todo 维护一个情景记忆，原来的对话总结表可以不要了
+    // 维护一个情景记忆，原来的对话总结表可以不要了 情景记忆先不要了 只使用流水账向量检索先看看效果
 
     /**
      * 将日期时间字符串转换为 Cron 表达式

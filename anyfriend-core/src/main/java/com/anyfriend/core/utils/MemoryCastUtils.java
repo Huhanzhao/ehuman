@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MemoryCastUtils {
+public class MemoryCastUtils {  // todo memoryString格式优化
 
     public static String memoryCastToString(List<TbAiChatMemoryDo> memoryDoList) {
         List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(memoryDoList);
@@ -77,12 +77,7 @@ public class MemoryCastUtils {
                 resultList.add(currentMemoryDo);
             }else{
                 // 如果没有超过5分钟
-                // 就判断消息类型，一样的消息类型并且间隔小于一分钟就用换行合并在一起
-                if (currentMemoryDo.getRole().equals(lastMemoryDo.getRole()) && minutes < 1){
-                    resultList.getLast().setMessage(resultList.getLast().getMessage() + "\n" + currentMemoryDo.getMessage());
-                }else{
-                    resultList.add(currentMemoryDo);
-                }
+                resultList.add(currentMemoryDo);
             }
         }
         // 最后一条消息后面跟上系统时间

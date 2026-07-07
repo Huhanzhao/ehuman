@@ -78,7 +78,7 @@ public class SendMessageCompileGraph {
             // 创建消息生成节点
             LlmNode messageGenerate = getLlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
                     NodeEnum.MASTER,
-                    state -> {  // todo 保存消息的时候平成一个消息保存，去除消息的拼接消息逻辑 ，拼接只加上旁白
+                    state -> { // todo 记忆改成提示词形式的
                         Long userId = (Long)state.value("userId").orElse(0L);
                         List<Message> messageList =  MemoryCastUtils.memoryCastToMessages(
                                 tbAiChatMemoryService.getMessageList(userId, 15));
