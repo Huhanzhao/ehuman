@@ -1,5 +1,7 @@
 package com.anyfriend.dao.service;
 
+import com.anyfriend.dao.entity.TbMessageVectorSearchDo;
+
 import java.util.Date;
 import java.util.List;
 
@@ -12,5 +14,5 @@ public interface DBVectorOperationService {
 
     boolean saveVector(Long userId, String vector, String context, Date createTime);
 
-    List<String> searchVector(Long userId, String vector, Integer topK, Double minScore);
+    List<TbMessageVectorSearchDo> searchVector(Long userId, String vector, Integer topK, Double minScore);
 }

@@ -1,5 +1,6 @@
 package com.anyfriend.dao.service.impl;
 
+import com.anyfriend.dao.entity.TbMessageVectorSearchDo;
 import com.anyfriend.dao.service.DBVectorOperationService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.jdbc.SQL;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -26,7 +28,7 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
     private DataSource dataSource;
 
     @Value("${sqlite.vector}")
-    private String vectorPlugin;
+    private String vectorPlugin;  // todo local 加上属性
 
     @Override
     public boolean saveVector(Long userId, String vector, String context, Date createTime) {
@@ -78,7 +80,7 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
     }
 
     @Override
-    public List<String> searchVector(Long userId, String vector, Integer topK, Double minScore) {
+    public List<TbMessageVectorSearchDo> searchVector(Long userId, String vector, Integer topK, Double minScore) {
         try (Connection connection = dataSource.getConnection()){
             Statement stmt = connection.createStatement();
 
@@ -107,25 +109,19 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
             preparedStatement.setInt(4, topK);
 
             ResultSet resultSet = preparedStatement.executeQuery();
-            int rowNum = 0;
-            while (resultSet.next()) {
-                rowNum++;
-                String id = resultSet.getString("id");
-                String context = resultSet.getString("context");
-                float distance = resultSet.getFloat("distance");
-                float similarity = resultSet.getFloat("similarity_score");
-                String createTime = resultSet.getString("create_time");
+            List<TbMessageVectorSearchDo> resultList = new ArrayList<>();
 
-                System.out.println("=== 第 " + rowNum + " 条 ===");
-                System.out.println("ID: " + id);
-                System.out.println("Context: " + context);
-                System.out.println("Distance: " + distance);
-                System.out.println("Similarity Score: " + similarity);
-                System.out.println("Create Time: " + createTime);
-                System.out.println();
+            while (resultSet.next()) {
+                TbMessageVectorSearchDo entity = new TbMessageVectorSearchDo();
+                entity.setId(resultSet.getString("id"));
+                entity.setContext(resultSet.getString("context"));
+                entity.setDistance(resultSet.getFloat("distance"));
+                entity.setSimilarityScore(resultSet.getFloat("similarity_score"));
+                entity.setCreateTime(resultSet.getString("create_time"));
+                resultList.add(entity);
             }
             log.info("查询成功");
-            return null;
+            return resultList;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

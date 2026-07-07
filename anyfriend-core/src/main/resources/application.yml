@@ -50,3 +50,5 @@ bot:
 proxy:
   host: host.docker.internal
   port: 7890
+sqlite:
+  vector: vector.so
