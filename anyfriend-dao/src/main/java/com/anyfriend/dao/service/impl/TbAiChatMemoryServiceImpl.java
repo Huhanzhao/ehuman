@@ -36,6 +36,11 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
                 .eq(TbAiChatMemoryDo::getMemoryId, memoryId)
                 .like(TbAiChatMemoryDo::getMessage, message));
     }
+
+    @Override
+    public List<TbAiChatMemoryDo> getAllNoVectorMessageList(Long userId) {
+        return lambdaQuery().eq(TbAiChatMemoryDo::getMemoryId,userId).orderByAsc(TbAiChatMemoryDo::getCreateTime).list();
+    }
 }
 
 

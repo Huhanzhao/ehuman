@@ -4,8 +4,13 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.fastjson2.JSON;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.job.JobManager;
+import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
+import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.entity.TbMessageSummaryVectorDo;
 import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.service.TbAiChatMemoryService;
+import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -18,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -32,6 +39,9 @@ public class CommonAuxiliaryService {
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
+
+    @Autowired
+    private TbMessageSummaryVectorDoService tbMessageSummaryVectorDoService;
 
     private String formatOutPut = """
             ## 输出格式(nextSend 必须为true，除非当前ai生气，或者用户多次不回复消息才能输出false)
@@ -73,6 +83,8 @@ public class CommonAuxiliaryService {
                "reason": "一直骂我，再也不想理你了"
                }
             """;
+    @Autowired
+    private TbAiChatMemoryService tbAiChatMemoryService;
 
     //  更新下次主动发送消息的信息
     @Transactional
@@ -119,13 +131,46 @@ public class CommonAuxiliaryService {
 
     // todo 流水账总结 把上一段的流水账拼接上？？
     public boolean summaryMessages(Long userId){
-        // 直接取所有没有总结过的消息拼接提示词
-        // 调用大模型总结 要注意信息密度，密度低的对话区分出来
-        // 保存提示词向量化
+        // todo 缓存标记 防止重复处理
+        if (true)return false;
+
+        // 直接取所有没有总结过的消息拼接提示词 //创建时间升序排列
+        List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getAllNoVectorMessageList(userId);
+        int messageListSize = messageList.size();
+
+        // 如果消息总数都不超过20条，直接返回
+        if (messageListSize <= 20) {
+            return false;
+        }
+
+        // 循环处理，每次取20条
+        int processedCount = 0;
+        while (processedCount < messageListSize) {
+            // 计算剩余消息数量
+            int remaining = messageListSize - processedCount;
+
+            // 如果剩余不足20条，结束循环
+            if (remaining <= 20) {
+                break;
+            }
+            Map<String,String> promptParams = new HashMap<>();
+            // 取出当前批次的20条
+            List<TbAiChatMemoryDo> batch = messageList.subList(processedCount, processedCount + 20);
+            String memoryString = MemoryCastUtils.memoryCastToString(batch,false);
+            promptParams.put("memoryString", memoryString);
+
+            // 查询最近的一次流水账
+            TbMessageSummaryVectorDo lastDo = tbMessageSummaryVectorDoService.getLastOneByUserId();
+            promptParams.put("lastMemoryString",lastDo == null? "":lastDo.getContext());
+            // todo 调用大模型总结 要注意信息密度，密度低的对话区分出来  todo 把单节点调用大模型的方法抽取出来？
+            // todo 保存向量
+
+            // 标记这20条已处理
+            processedCount += 20;
+        }
+        // todo 标记消息已经向量化
         return true;
     }
-
-    // 维护一个情景记忆，原来的对话总结表可以不要了 情景记忆先不要了 只使用流水账向量检索先看看效果
 
     /**
      * 将日期时间字符串转换为 Cron 表达式

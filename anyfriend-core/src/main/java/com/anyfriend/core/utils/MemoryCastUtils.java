@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 
 public class MemoryCastUtils {  // todo memoryString格式优化
 
-    public static String memoryCastToString(List<TbAiChatMemoryDo> memoryDoList) {
-        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage(memoryDoList);
+    public static String memoryCastToString(List<TbAiChatMemoryDo> memoryDoList, Boolean fillSystemMessage) {
+        List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage ? fillSystemMessage(memoryDoList) : memoryDoList;
         StringBuilder result = new StringBuilder();
         tbAiChatMemoryDos.forEach(memoryDo -> {
             result.append(memoryDo.getRole()).append(" : ").append(memoryDo.getMessage())

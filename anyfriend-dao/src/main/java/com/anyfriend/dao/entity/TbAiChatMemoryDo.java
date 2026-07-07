@@ -36,6 +36,7 @@ public class TbAiChatMemoryDo {
      */
     private String role;
 
+    private Boolean vectored;  // todo 改表结构
     /**
      * 创建时间
      */

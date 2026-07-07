@@ -14,4 +14,6 @@ public interface TbAiChatMemoryService extends IService<TbAiChatMemoryDo> {
     List<TbAiChatMemoryDo> getMessageList(Long userId,Integer pageSize);
 
     void removeByMemoryIdAndLikeMessage(Long memoryId, String message);
+
+    List<TbAiChatMemoryDo> getAllNoVectorMessageList(Long userId);
 }

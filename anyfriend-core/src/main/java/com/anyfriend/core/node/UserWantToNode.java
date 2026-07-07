@@ -3,18 +3,21 @@ package com.anyfriend.core.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
+import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -24,14 +27,17 @@ public class UserWantToNode implements NodeAction {
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
+    private final CommonAuxiliaryService commonAuxiliaryService;
+
     @Override
     public Map<String, Object> apply (OverAllState state){
         Long userId = (Long) state.value("userId").orElse(0L);
         Boolean initiative = (Boolean)state.value("initiative").orElse(false);
         // 查询历史消息
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
-        String memoryString = MemoryCastUtils.memoryCastToString(messageList);
-        // todo 直接在这判断是否全是未总结的消息 是的话直接异步执行
+        String memoryString = MemoryCastUtils.memoryCastToString(messageList,true);
+        // 异步调用流水账记录
+        CompletableFuture.runAsync(() -> commonAuxiliaryService.summaryMessages(userId));
         if (initiative){
             // 主动发送消息跳过
             return Map.of("userWantTo", "next","memoryString", memoryString);
