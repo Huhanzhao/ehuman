@@ -2,14 +2,15 @@ package com.anyfriend.dao.service.impl;
 
 import com.anyfriend.dao.service.DBVectorOperationService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.jdbc.SQL;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -24,17 +25,18 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
     @Autowired
     private DataSource dataSource;
 
+    @Value("${sqlite.vector}")
+    private String vectorPlugin;
+
     @Override
-    public boolean saveVector(String userId, String vector, String context) {
+    public boolean saveVector(Long userId, String vector, String context, Date createTime) {
         try (Connection connection = dataSource.getConnection()){
             Statement stmt = connection.createStatement();
             // 加载向量拓展
             loadVectorExtension(stmt);
 
             // 插入数据
-            stmt.execute("INSERT INTO vector (id,embedding, context)\n" +
-                    "VALUES (1222,vector_as_f32('[0.3, 0.2, 0.8, 0.4]'), 'aaaaa');");
-            log.info("插入数据成功");
+            insertIntoMessagesVector(connection,userId, vector, context, createTime);
 
             // 初始化向量
             vectorInit(stmt);
@@ -46,32 +48,65 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
         }
         return true;
     }
+    private void insertIntoMessagesVector(Connection connection,Long userId, String embedding, String context, Date createTime) {
+        String sql = "INSERT INTO tb_message_summary_vector (user_id,embedding, context,create_time)\n" +
+                "VALUES (?,vector_as_f32(?), ?,?);";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, userId);
+            stmt.setString(2, embedding);
+            stmt.setString(3, context);
+            // 格式化为字符串存储
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String timeStr = sdf.format(createTime);
+            stmt.setString(4, timeStr);  // 存为 TEXT
+            stmt.executeUpdate();
+            log.info("插入数据成功");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private void vectorQuantize(Statement stmt) throws SQLException {
-        stmt.execute("SELECT vector_quantize('vector', 'embedding'); ");
+        stmt.execute("SELECT vector_quantize('tb_message_summary_vector', 'embedding'); ");
         log.info("量化成功");
     }
 
     private void vectorInit(Statement stmt) throws SQLException {
-        stmt.execute("SELECT vector_init('vector', 'embedding', 'dimension=4,type=FLOAT32,distance=cosine');");
+        // todo 修改维度
+        stmt.execute("SELECT vector_init('tb_message_summary_vector', 'embedding', 'dimension=4,type=FLOAT32,distance=cosine');");
         log.info("初始化成功");
     }
 
     @Override
-    public List<String> searchVector(String userId, String vector, Integer topK, Integer minScore) {
+    public List<String> searchVector(Long userId, String vector, Integer topK, Double minScore) {
         try (Connection connection = dataSource.getConnection()){
             Statement stmt = connection.createStatement();
-            ResultSet resultSet = stmt.executeQuery("SELECT \n" +
+
+            // 加载向量拓展
+            loadVectorExtension(stmt);
+
+            // 查询
+            String sql = "SELECT \n" +
                     "    e.id,\n" +
+                    "    e.user_id,\n" +
                     "    e.context,\n" +
                     "    v.distance,\n" +
                     "    -- 将距离转换为 0-1 之间的相似度分数\n" +
-                    "    1.0 - (v.distance / 2) AS similarity_score\n" +
-                    "FROM 'vector' e\n" +
-                    "JOIN vector_quantize_scan('vector', 'embedding', vector_as_f32('[0.1, 0.2, 0.3, 0.4]'), 20) AS v\n" +
-                    "ON e.rowid = v.rowid\n" +
+                    "    1.0 - (v.distance / 2) AS similarity_score,\n" +
+                    "    e.create_time\n" +
+                    "FROM tb_message_summary_vector e\n" +
+                    "JOIN vector_quantize_scan('tb_message_summary_vector', 'embedding', vector_as_f32(?), 10000) AS v\n" +
+                    "ON e.id = v.rowid\n" +
+                    "where e.user_id = ?\n and similarity_score > ?" +
                     "-- 按分数从高到低排序（即按距离从小到大）\n" +
-                    "ORDER BY similarity_score DESC;");
+                    "ORDER BY similarity_score DESC limit ?;";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, vector);
+            preparedStatement.setLong(2, userId);
+            preparedStatement.setDouble(3, minScore);
+            preparedStatement.setInt(4, topK);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
             int rowNum = 0;
             while (resultSet.next()) {
                 rowNum++;
@@ -79,12 +114,14 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
                 String context = resultSet.getString("context");
                 float distance = resultSet.getFloat("distance");
                 float similarity = resultSet.getFloat("similarity_score");
+                String createTime = resultSet.getString("create_time");
 
                 System.out.println("=== 第 " + rowNum + " 条 ===");
                 System.out.println("ID: " + id);
                 System.out.println("Context: " + context);
                 System.out.println("Distance: " + distance);
                 System.out.println("Similarity Score: " + similarity);
+                System.out.println("Create Time: " + createTime);
                 System.out.println();
             }
             log.info("查询成功");
@@ -96,7 +133,7 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
 
     private void loadVectorExtension(Statement stmt) throws SQLException {
         // todo 打包镜像换成对应linux插件
-        stmt.execute("SELECT load_extension('./sqlite/vector.dll')");
+        stmt.execute("SELECT load_extension('./sqlite/" + vectorPlugin + "')");
         log.info("加载向量拓展成功");
     }
 }

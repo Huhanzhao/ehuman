@@ -1,5 +1,6 @@
 package com.anyfriend.dao.service;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -9,7 +10,7 @@ import java.util.List;
  */
 public interface DBVectorOperationService {
 
-    boolean saveVector(String userId, String vector, String context);
+    boolean saveVector(Long userId, String vector, String context, Date createTime);
 
-    List<String> searchVector(String userId, String vector, Integer topK, Integer minScore);
+    List<String> searchVector(Long userId, String vector, Integer topK, Double minScore);
 }
