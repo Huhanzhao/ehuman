@@ -53,15 +53,22 @@ public class SendMessageUtil {
 
         log.info("aiMessage: {}", message);
         String[] splitMessages = message.split("\n");
+        StringBuilder resultMessage = new StringBuilder();
         for (String splitMessage : splitMessages) {
             if (splitMessage.isEmpty()) continue;
             splitMessage  = splitMessage.replaceAll("。", "").trim();
             if (splitMessage.startsWith("<voice") && splitMessage.endsWith("</voice>")){
                 sendVoiceMsg(userId,splitMessage);
+                resultMessage.append(splitMessage).append("\n");
                 continue;
             }
             if (splitMessage.startsWith("<emoji")){
-                sendStickerMsg(userId,splitMessage);
+                String stickerMsg = sendStickerMsg(userId,splitMessage);
+                if (stickerMsg != null) {
+                    resultMessage.append(stickerMsg).append("\n");
+                }else{
+                    resultMessage.append(splitMessage).append("\n");
+                }
                 continue;
             }
 
@@ -80,13 +87,14 @@ public class SendMessageUtil {
             }else if (splitMessage.startsWith("<text>") && splitMessage.endsWith("</text>")){
                 bot.sendPrivateMsg(userId,msg.replaceAll("<text>","").replaceAll("</text>",""),false);
             }
-            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(splitMessage));
+            resultMessage.append(splitMessage).append("\n");
         }
+        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(resultMessage.toString().trim()));
     }
 
 
     // 发送表情包消息
-    public void sendStickerMsg(Long userId, String message) {
+    public String sendStickerMsg(Long userId, String message) {
 
         Pattern pattern = Pattern.compile("emo=\"([^\"]+)\"");
         Matcher matcher = pattern.matcher(message);
@@ -103,7 +111,7 @@ public class SendMessageUtil {
             // 存在随机获取一个表情文件
             try {
                 List<Path> emojiList = Files.list(Paths.get(emojiPath)).toList();
-                if (emojiList.isEmpty()) return;
+                if (emojiList.isEmpty()) return null;
 
                 // 创建 Random 对象
                 Random random = new Random();
@@ -124,13 +132,14 @@ public class SendMessageUtil {
                         "\">" +
                         fileName +
                         "</emoji>";
-                tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(saveMessage));
+                return saveMessage;
             } catch (IOException e) {
                 log.info("获取文件异常，跳过表情消息");
             }
         }else{
             log.info("没找表情包，跳过消息");
         }
+        return null;
     }
 
     // 给自己发送给消息
@@ -194,9 +203,8 @@ public class SendMessageUtil {
             sendMegToSelf("插件输出错误");
         }
 
-        // 发送消息 保存历史记录
+        // 发送消息
         botContainer.robots.get(Long.valueOf(System.getProperty("BOT_ID"))).sendPrivateMsg(userId,build,false);
-        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(message));
     }
 
     // 发送系统消息
