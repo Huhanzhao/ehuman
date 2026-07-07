@@ -145,7 +145,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
         String userInfoSection = (existingUserInfo != null && !existingUserInfo.isBlank())
                 ? "\n用户已有的画像信息：\n" + existingUserInfo
                 : "\n该用户暂无画像信息。";
-
+        // todo 总结昨天没有记录流水账的信息
         String prompt = "请根据用户昨天的聊天记录完成以下任务：\n" +
                 "1. 好感度评分：评分范围只能-5或者+5，正数表示好感度增加，负数表示好感度减少。" +
                 "评估维度：聊天频率、态度友好程度、话题积极性、互动质量。\n" +

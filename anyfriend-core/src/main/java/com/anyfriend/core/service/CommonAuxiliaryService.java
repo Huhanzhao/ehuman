@@ -117,6 +117,10 @@ public class CommonAuxiliaryService {
         return "";
     }
 
+    // todo 流水账总结 每隔20条消息调用一次 调整上下文为20？ 维护一个情景记忆，原来的对话总结表可以不要了
+    public boolean summaryMessages(Long userId){
+        return true;
+    }
 
     /**
      * 将日期时间字符串转换为 Cron 表达式
