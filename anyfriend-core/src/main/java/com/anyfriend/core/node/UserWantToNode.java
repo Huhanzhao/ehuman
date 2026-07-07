@@ -31,6 +31,7 @@ public class UserWantToNode implements NodeAction {
         // 查询历史消息
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList);
+        // todo 直接在这判断是否全是未总结的消息 是的话直接异步执行
         if (initiative){
             // 主动发送消息跳过
             return Map.of("userWantTo", "next","memoryString", memoryString);

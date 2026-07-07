@@ -23,6 +23,7 @@ import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +78,7 @@ public class SendMessageCompileGraph {
             // 创建消息生成节点
             LlmNode messageGenerate = getLlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
                     NodeEnum.MASTER,
-                    state -> {
+                    state -> {  // todo 保存消息的时候平成一个消息保存，去除消息的拼接消息逻辑 ，拼接只加上旁白
                         Long userId = (Long)state.value("userId").orElse(0L);
                         List<Message> messageList =  MemoryCastUtils.memoryCastToMessages(
                                 tbAiChatMemoryService.getMessageList(userId, 15));
@@ -110,24 +111,8 @@ public class SendMessageCompileGraph {
                         }
                         sendMessageUtil.sendChatMsg(userId, message);
 
-                        // 添加一个五分钟之后的定时任务（五分钟没有用户回复再去执行主动消息的任务）
-                        CompletableFuture.runAsync(() -> {
-                            try {
-                                jobManager.deleteJobByStartString("callNextSendMessageJob_");
-
-                                // 当前时间 + 5分钟
-                                LocalDateTime now = LocalDateTime.now();
-                                LocalDateTime future = now.plusMinutes(5);
-                                // 格式化
-                                String result = future.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                                jobManager.addJob("callNextSendMessageJob_" + System.currentTimeMillis(),"system",
-                                        commonAuxiliaryService.toCronExpression(result),
-                                        "com.anyfriend.core.job.action.CallSendMessageJob",
-                                        JSON.toJSONString(state.data()));
-                            } catch (Exception e) {
-                                log.error("修改 callNextSendMessageJob 报错{}",e.getMessage());
-                            }
-                        });
+                        // 对话之后的异步工作
+                        doAsyncAfterSendMessage(state);
                         return Map.of();
                     }))
 
@@ -187,6 +172,27 @@ public class SendMessageCompileGraph {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void doAsyncAfterSendMessage(OverAllState state) {
+        // 添加一个五分钟之后的定时任务（五分钟没有用户回复再去执行要不要主动发送消息的任务）
+        CompletableFuture.runAsync(() -> {
+            try {
+                jobManager.deleteJobByStartString("callNextSendMessageJob_");
+
+                // 当前时间 + 5分钟
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime future = now.plusMinutes(5);
+                // 格式化
+                String result = future.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                jobManager.addJob("callNextSendMessageJob_" + System.currentTimeMillis(),"system",
+                        commonAuxiliaryService.toCronExpression(result),
+                        "com.anyfriend.core.job.action.CallSendMessageJob",
+                        JSON.toJSONString(state.data()));
+            } catch (Exception e) {
+                log.error("修改 callNextSendMessageJob 报错{}",e.getMessage());
+            }
+        });
     }
 
     public LlmNode getLlmNode(LlmNodeTypeEnum nodeTypeEnum, NodeEnum nodeEnum, BeforeLlmCallback beforeLlmCallback, AfterLlmCallback afterLlmCallback) {
