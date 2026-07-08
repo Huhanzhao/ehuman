@@ -12,7 +12,8 @@ public enum NodeEnum {
     MASTER("master",1),
     AUXILIARY("auxiliary",2),
     IMAGE_ANALYSIS("ImageAnalysisNode",3),
-    TTS("TTS",4);
+    TTS("TTS",4),
+    EMBEDDING("embedding",5),;  // todo 增加导航配置
 
     private final String nodeName;
 

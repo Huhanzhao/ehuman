@@ -10,26 +10,26 @@ import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbMessageSummaryVectorDo;
+import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.enums.LlmNodeTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.DBVectorOperationService;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
+import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -53,8 +53,10 @@ public class CommonAuxiliaryService {
     @Autowired
     private DBVectorOperationService dbVectorOperationService;
 
+    @Autowired
+    private TbUserModelConfigDoService tbUserModelConfigDoService;
+
     //  更新下次主动发送消息的信息
-    @Transactional
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
         LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, NodeEnum.AUXILIARY, chatClientFactory);
 
@@ -131,8 +133,8 @@ public class CommonAuxiliaryService {
                 LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.SUMMARY_MESSAGES, NodeEnum.AUXILIARY, chatClientFactory);
                 String content = llmNode.invoke(userId, promptParams);
 
-                // 保存向量 // todo 做一个生成向量的service
-                dbVectorOperationService.saveVector(userId,"",content,batch.getFirst().getCreateTime());
+                // 保存向量
+                embeddingContextAndSave(userId,content,batch.getFirst().getCreateTime());
 
                 // 标记这20条已处理
                 processedCount += 20;
@@ -144,6 +146,29 @@ public class CommonAuxiliaryService {
         }finally {
             LocalCacheUtil.getLocalCacheUtil().remove(userId + "_SummaryMessages");
         }
+    }
+
+    public void embeddingContextAndSave(Long userId, String content, Date messageTime){
+        // 查询向量化的key
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.EMBEDDING);
+        if (modelConfigDo == null){
+            throw new RuntimeException("没有向量模型,userId:" + userId);
+        }
+
+        OpenAiApi openAiApi = OpenAiApi.builder()
+                .apiKey(modelConfigDo.getApiKey())
+                .baseUrl(modelConfigDo.getBaseUrl()).build();
+
+        OpenAiEmbeddingOptions openAiEmbeddingOptions = OpenAiEmbeddingOptions.builder()
+                .model(modelConfigDo.getModel()).dimensions(1024)
+                .build();
+        OpenAiEmbeddingModel openAiEmbeddingModel = new OpenAiEmbeddingModel(openAiApi, MetadataMode.NONE,openAiEmbeddingOptions);
+
+        EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of(content),openAiEmbeddingOptions);
+        EmbeddingResponse response = openAiEmbeddingModel.call(embeddingRequest);
+        float[] output = response.getResult().getOutput();
+
+        dbVectorOperationService.saveVector(userId, Arrays.toString(output),content,messageTime);
     }
 
     /**

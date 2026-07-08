@@ -74,8 +74,8 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
     }
 
     private void vectorInit(Statement stmt) throws SQLException {
-        // todo 修改维度
-        stmt.execute("SELECT vector_init('tb_message_summary_vector', 'embedding', 'dimension=4,type=FLOAT32,distance=cosine');");
+        // 修改维度
+        stmt.execute("SELECT vector_init('tb_message_summary_vector', 'embedding', 'dimension=1024,type=FLOAT32,distance=cosine');");
         log.info("初始化成功");
     }
 

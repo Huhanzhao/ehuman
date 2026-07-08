@@ -53,7 +53,7 @@ public class ChatClientFactory {
             List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);
             if (modelConfigDos.isEmpty()){
                 log.warn("请先配置apikey");
-                sendMessageUtil.sendMegToSelf("请先配置apikey");
+                sendMessageUtil.sendSystemMsg(userId,"请先配置apikey");
                 throw new RuntimeException("请先配置apikey");
             }
             modelConfigDo = modelConfigDos.getFirst();
