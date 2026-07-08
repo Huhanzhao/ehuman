@@ -12,6 +12,7 @@ import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
+import com.anyfriend.dao.enums.ChatModelCategoryEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.anyfriend.dao.enums.ChatModelCategoryEnum.*;
+import static com.anyfriend.dao.enums.NodeEnum.EMBEDDING;
 
 @Component
 @AllArgsConstructor
@@ -57,11 +59,12 @@ public class SystemGraph {
         SystemInterruptionNode cateGoryNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
                 .interruptKey("category")
                 .nodeName("cateGoryNode")
-                .inputPrompt("请输入要设置模型类别的序号：\n1.Gpt协议聊天模型\n2.claude协议聊天模型\n3.gpt协议图片识别\n4.TTS文字转语音")
+                .inputPrompt("请输入要设置模型类别的序号：\n1.Gpt协议聊天模型\n2.claude协议聊天模型\n3.gpt协议图片识别\n4.TTS文字转语音\n5.Embedding模型")
                 .inputMapping(Map.of("1", GPT.getCategory(),
                         "2", CLAUDE.getCategory(),
                         "3",IMAGE.getCategory(),
-                        "4",TTS.getCategory()))
+                        "4",TTS.getCategory(),
+                        "5", ChatModelCategoryEnum.EMBEDDING.getCategory()))
                 .build();
 
         // 收集模型名字节点
@@ -115,8 +118,8 @@ public class SystemGraph {
         // 1. 需要切换的节点类型 主，辅助，图片识别，语音合成
         SystemInterruptionNode nodeTypeNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
-                .inputPrompt("请输入要切换的节点类型序号：\n1.主节点\n2.辅助节点\n3.图片识别节点\n4.语音合成节点")
-                .inputMapping(Map.of("1", NodeEnum.MASTER.name(), "2", NodeEnum.AUXILIARY.name(), "3", NodeEnum.IMAGE_ANALYSIS.name(), "4", NodeEnum.TTS.name()))
+                .inputPrompt("请输入要切换的节点类型序号：\n1.主节点\n2.辅助节点\n3.图片识别节点\n4.语音合成节点\n5.Embedding模型")
+                .inputMapping(Map.of("1", NodeEnum.MASTER.name(), "2", NodeEnum.AUXILIARY.name(), "3", NodeEnum.IMAGE_ANALYSIS.name(), "4", NodeEnum.TTS.name(), "5", NodeEnum.EMBEDDING.name()))
                 .nodeName("nodeTypeNode")
                 .interruptKey("nodeType").build();
 

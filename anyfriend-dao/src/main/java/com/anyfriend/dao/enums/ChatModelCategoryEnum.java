@@ -11,6 +11,7 @@ public enum ChatModelCategoryEnum {
     GPT("gpt"),
     CLAUDE("claude"),
     TTS("tts"),
+    EMBEDDING("embedding"),
     GROK("grok");
 
     private final String category;
