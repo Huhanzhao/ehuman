@@ -113,7 +113,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         try {
             ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
             String prompt = String.format(MOOD_ANALYSIS_PROMPT, lifeDetail, memoryString);
-            String content = chatClient.prompt(prompt).call().content();
+            String content = chatClient.prompt(prompt).call().content();// todo 模型调用改成invoke
             log.info("心情分析原始结果: {}", content);
 
             int moodCode = extractMoodCode(content, currentMood.getCode());

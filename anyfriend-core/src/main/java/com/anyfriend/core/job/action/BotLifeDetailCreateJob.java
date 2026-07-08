@@ -81,7 +81,7 @@ public class BotLifeDetailCreateJob implements Job {
 
         // 获取bot角色设定
         String botRole = tbBotPromptDoService.getRolePrompt();
-
+        // todo 模型调用改成invoke
         // 调用AI生成今天的生活细节
         String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的生活安排。\n\n" +
                 "## 角色信息\n" +

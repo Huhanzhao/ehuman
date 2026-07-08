@@ -91,7 +91,12 @@ public class CommonAuxiliaryService {
     }
 
     public boolean summaryMessages(Long userId){
-        if(true) return true; // todo 别忘记去掉
+        // 查询向量化的key
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.EMBEDDING);
+        if (modelConfigDo == null){
+            sendMessageUtil.sendSystemMsg(userId,"没有向量模型跳过");
+            return false;
+        }
         // 缓存标记 防止重复处理
         Object summaryWorkFlag = LocalCacheUtil.getLocalCacheUtil().get(userId + "_SummaryMessages");
         if (summaryWorkFlag != null){
@@ -134,7 +139,7 @@ public class CommonAuxiliaryService {
                 String content = llmNode.invoke(userId, promptParams);
 
                 // 保存向量
-                embeddingContextAndSave(userId,content,batch.getFirst().getCreateTime());
+                embeddingContextAndSave(userId,content,batch.getFirst().getCreateTime(),modelConfigDo);
 
                 // 标记这20条已处理
                 processedCount += 20;
@@ -148,13 +153,7 @@ public class CommonAuxiliaryService {
         }
     }
 
-    public void embeddingContextAndSave(Long userId, String content, Date messageTime){
-        // 查询向量化的key
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.EMBEDDING);
-        if (modelConfigDo == null){
-            throw new RuntimeException("没有向量模型,userId:" + userId);
-        }
-
+    public void embeddingContextAndSave(Long userId, String content, Date messageTime, TbUserModelConfigDo modelConfigDo){
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .apiKey(modelConfigDo.getApiKey())
                 .baseUrl(modelConfigDo.getBaseUrl()).build();

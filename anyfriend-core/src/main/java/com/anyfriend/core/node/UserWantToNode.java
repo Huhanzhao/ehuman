@@ -41,7 +41,7 @@ public class UserWantToNode implements NodeAction {
         if (initiative){
             // 主动发送消息跳过
             return Map.of("userWantTo", "next","memoryString", memoryString);
-        }
+        }// todo 模型调用改成invoke
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
         PromptTemplate promptTemplate = PromptTemplate.builder().template(
                 """

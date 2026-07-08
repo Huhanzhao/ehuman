@@ -73,7 +73,7 @@ public class ImageAnalysisNode implements NodeAction {
                             .build();
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
-                }
+                } // todo 提示词抽取md文件放到文件夹里面
                 String systemPrompt = """
                     # 你是一个图片分析专家，请分析图片是否为表情包并描述图片 并且按照要求格式输出
                     本次消息的String格式：""" + userInput + """
