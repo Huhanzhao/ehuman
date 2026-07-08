@@ -41,6 +41,11 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
     public List<TbAiChatMemoryDo> getAllNoVectorMessageList(Long userId) {
         return lambdaQuery().eq(TbAiChatMemoryDo::getMemoryId,userId).orderByAsc(TbAiChatMemoryDo::getCreateTime).list();
     }
+
+    @Override
+    public void setVectorFlagByIds(List<Long> idList) {
+        lambdaUpdate().set(TbAiChatMemoryDo::getVectored,true).in(TbAiChatMemoryDo::getId, idList).update();
+    }
 }
 
 

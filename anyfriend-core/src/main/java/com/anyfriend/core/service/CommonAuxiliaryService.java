@@ -5,12 +5,14 @@ import com.alibaba.fastjson2.JSON;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.job.JobManager;
 import com.anyfriend.core.node.LlmNode;
+import com.anyfriend.core.utils.LocalCacheUtil;
 import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbMessageSummaryVectorDo;
 import com.anyfriend.dao.enums.LlmNodeTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.service.DBVectorOperationService;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +50,9 @@ public class CommonAuxiliaryService {
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
 
+    @Autowired
+    private DBVectorOperationService dbVectorOperationService;
+
     //  更新下次主动发送消息的信息
     @Transactional
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
@@ -84,47 +89,61 @@ public class CommonAuxiliaryService {
     }
 
     public boolean summaryMessages(Long userId){
-        // todo 缓存标记 防止重复处理
-        if (true)return false;
-
-        // 直接取所有没有总结过的消息拼接提示词 //创建时间升序排列
-        List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getAllNoVectorMessageList(userId);
-        int messageListSize = messageList.size();
-
-        // 如果消息总数都不超过20条，直接返回
-        if (messageListSize <= 20) {
+        if(true) return true; // todo 别忘记去掉
+        // 缓存标记 防止重复处理
+        Object summaryWorkFlag = LocalCacheUtil.getLocalCacheUtil().get(userId + "_SummaryMessages");
+        if (summaryWorkFlag != null){
             return false;
         }
+        LocalCacheUtil.getLocalCacheUtil().put(userId + "_SummaryMessages",true);
 
-        // 循环处理，每次取20条
-        int processedCount = 0;
-        while (processedCount < messageListSize) {
-            // 计算剩余消息数量
-            int remaining = messageListSize - processedCount;
+        try{
+            // 直接取所有没有总结过的消息拼接提示词 //创建时间升序排列
+            List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getAllNoVectorMessageList(userId);
+            int messageListSize = messageList.size();
 
-            // 如果剩余不足20条，结束循环
-            if (remaining <= 20) {
-                break;
+            // 如果消息总数都不超过20条，直接返回
+            if (messageListSize <= 20) {
+                return false;
             }
-            Map<String,Object> promptParams = new HashMap<>();
-            // 取出当前批次的20条
-            List<TbAiChatMemoryDo> batch = messageList.subList(processedCount, processedCount + 20);
-            String memoryString = MemoryCastUtils.memoryCastToString(batch,false);
-            promptParams.put("memoryString", memoryString);
 
-            // 查询最近的一次流水账
-            TbMessageSummaryVectorDo lastDo = tbMessageSummaryVectorDoService.getLastOneByUserId();
-            promptParams.put("lastMemoryString",lastDo == null? "":lastDo.getContext());
-            // 调用大模型总结
-            LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.SUMMARY_MESSAGES, NodeEnum.AUXILIARY, chatClientFactory);
-            String content = llmNode.invoke(userId, promptParams);
-            // todo 保存向量
+            // 循环处理，每次取20条
+            int processedCount = 0;
+            while (processedCount < messageListSize) {
+                // 计算剩余消息数量
+                int remaining = messageListSize - processedCount;
 
-            // 标记这20条已处理
-            processedCount += 20;
+                // 如果剩余不足20条，结束循环
+                if (remaining <= 20) {
+                    break;
+                }
+                Map<String,Object> promptParams = new HashMap<>();
+                // 取出当前批次的20条
+                List<TbAiChatMemoryDo> batch = messageList.subList(processedCount, processedCount + 20);
+                String memoryString = MemoryCastUtils.memoryCastToString(batch,false);
+                promptParams.put("memoryString", memoryString);
+
+                // 查询最近的一次流水账
+                TbMessageSummaryVectorDo lastDo = tbMessageSummaryVectorDoService.getLastOneByUserId();
+                promptParams.put("lastMemoryString",lastDo == null? "":lastDo.getContext());
+
+                // 调用大模型总结
+                LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.SUMMARY_MESSAGES, NodeEnum.AUXILIARY, chatClientFactory);
+                String content = llmNode.invoke(userId, promptParams);
+
+                // 保存向量 // todo 做一个生成向量的service
+                dbVectorOperationService.saveVector(userId,"",content,batch.getFirst().getCreateTime());
+
+                // 标记这20条已处理
+                processedCount += 20;
+                // 标记消息已经向量化
+                List<Long> idList = batch.stream().map(TbAiChatMemoryDo::getId).toList();
+                tbAiChatMemoryService.setVectorFlagByIds(idList);
+            }
+            return true;
+        }finally {
+            LocalCacheUtil.getLocalCacheUtil().remove(userId + "_SummaryMessages");
         }
-        // todo 标记消息已经向量化
-        return true;
     }
 
     /**
