@@ -208,6 +208,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private String getYesterdayChatSummary(Long userId) {
         LocalDateTime yesterdayStart = LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime yesterdayEnd = LocalDateTime.now().minusDays(1).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        // todo 修改逻辑 昨天的总结不要了，查询最近两段或者一段总结
         TbUserMessageSummaryDo summary = tbUserMessageSummaryDoService.getOne(
                 Wrappers.<TbUserMessageSummaryDo>lambdaQuery()
                         .eq(TbUserMessageSummaryDo::getUserId, userId)

@@ -5,7 +5,6 @@ import com.anyfriend.core.node.test.test1;
 import com.anyfriend.core.node.test.test2;
 import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.SendMessageUtil;
-import com.anyfriend.dao.service.TbFullContextSearchSummaryService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.core.Bot;

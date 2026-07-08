@@ -58,6 +58,7 @@ public class BotLifeDetailCreateJob implements Job {
         // 查询近三天的聊天记录总结
         LocalDate today = LocalDate.now();
         Date threeDaysAgo = Date.from(today.minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        // todo 总结需要修改
         List<TbUserMessageSummaryDo> summaries = tbUserMessageSummaryDoService.list(
                 Wrappers.<TbUserMessageSummaryDo>lambdaQuery()
                         .ge(TbUserMessageSummaryDo::getCreateTime, threeDaysAgo)
