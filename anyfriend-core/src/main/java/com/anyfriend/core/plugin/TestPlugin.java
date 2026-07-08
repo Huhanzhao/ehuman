@@ -36,9 +36,6 @@ public class TestPlugin extends BotPlugin {
     @Autowired
     private CommonAuxiliaryService commonAuxiliaryService;
 
-    @Autowired
-    private TbFullContextSearchSummaryService tbFullContextSearchSummaryService;
-
 
     @PrivateMessageHandler
     @MessageHandlerFilter
