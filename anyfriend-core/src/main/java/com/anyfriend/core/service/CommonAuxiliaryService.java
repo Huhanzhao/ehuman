@@ -83,7 +83,6 @@ public class CommonAuxiliaryService {
         return "";
     }
 
-    // todo 流水账总结 把上一段的流水账拼接上？？
     public boolean summaryMessages(Long userId){
         // todo 缓存标记 防止重复处理
         if (true)return false;
@@ -107,7 +106,7 @@ public class CommonAuxiliaryService {
             if (remaining <= 20) {
                 break;
             }
-            Map<String,String> promptParams = new HashMap<>();
+            Map<String,Object> promptParams = new HashMap<>();
             // 取出当前批次的20条
             List<TbAiChatMemoryDo> batch = messageList.subList(processedCount, processedCount + 20);
             String memoryString = MemoryCastUtils.memoryCastToString(batch,false);
@@ -116,7 +115,9 @@ public class CommonAuxiliaryService {
             // 查询最近的一次流水账
             TbMessageSummaryVectorDo lastDo = tbMessageSummaryVectorDoService.getLastOneByUserId();
             promptParams.put("lastMemoryString",lastDo == null? "":lastDo.getContext());
-            // todo 调用大模型总结 要注意信息密度，密度低的对话区分出来  todo 把单节点调用大模型的方法抽取出来？
+            // 调用大模型总结
+            LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.SUMMARY_MESSAGES, NodeEnum.AUXILIARY, chatClientFactory);
+            String content = llmNode.invoke(userId, promptParams);
             // todo 保存向量
 
             // 标记这20条已处理

@@ -22,6 +22,7 @@ public enum LlmNodeTypeEnum {
     COMBINED_CHECK("combinedCheckNode", "./md/CombinedCheckPrompt.md", "combinedCheckOutput"),
 
     // -----------单次调用节点
+    SUMMARY_MESSAGES("SummaryMessage", "./md/SummaryMessagePrompt.md"),
     UPDATE_NEXT_SEND_MESSAGE_INFO("updateNextSendMessageInfo", "./md/NextSendMessage.md");
 
 
