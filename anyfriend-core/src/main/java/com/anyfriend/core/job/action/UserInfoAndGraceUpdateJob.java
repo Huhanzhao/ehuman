@@ -100,7 +100,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
                     TbUserMessageSummaryDo summary = new TbUserMessageSummaryDo();
                     summary.setUserId(userId);
                     summary.setSummary(evaluation.summary());
-                    // todo 修改逻辑 不往这个表存了
+                    // todo 修改逻辑 不往这个表存了 最后如果不足二十条，直接取最后二十条
                     tbUserMessageSummaryDoService.save(summary);
                 }
 
