@@ -4,10 +4,12 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.fastjson2.JSON;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.job.JobManager;
+import com.anyfriend.core.node.LlmNode;
 import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbMessageSummaryVectorDo;
+import com.anyfriend.dao.enums.LlmNodeTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
@@ -43,68 +45,20 @@ public class CommonAuxiliaryService {
     @Autowired
     private TbMessageSummaryVectorDoService tbMessageSummaryVectorDoService;
 
-    private String formatOutPut = """
-            ## 输出格式(nextSend 必须为true，除非当前ai生气，或者用户多次不回复消息才能输出false)
-            **用户回复消息之前不主动给对方发消息**：
-            {
-              "nextSend": false,
-              "reason": "xxx"
-            }
-                        
-            **用户回复消息之前主动给对方发消息**：
-            {
-              "nextSend" : true,
-              "nextSendTime": "2026-06-28 00:00:00",
-              "topic": "xxx"
-            }
-                        
-            ## 实例
-            1. {
-                 "nextSend" : true,
-                 "nextSendTime": "2026-06-29 18:25:00",
-                 "topic": "问对方在干嘛"
-               }
-            2. {
-                  "nextSend" : true,
-                  "nextSendTime": "2026-06-30 18:30:00",
-                  "topic": "问对方为什么不回我消息"
-               }
-            3. {
-                  "nextSend" : true,
-                  "nextSendTime": "2026-06-30 18:30:00",
-                  "topic": "分享生活"
-                  }
-            4. {
-                 "nextSend": false,
-                 "reason": "不理我我也不理你"
-               }
-            5. {
-               "nextSend": false,
-               "reason": "一直骂我，再也不想理你了"
-               }
-            """;
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
 
     //  更新下次主动发送消息的信息
     @Transactional
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
-        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
+        LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, NodeEnum.AUXILIARY, chatClientFactory);
+
+        Map<String, Object> promptParam = state.data();
         String memoryString = state.value("memoryString", String.class).get();
         String generateMessage = state.value("generateMessage", String.class).get().trim();
-        PromptTemplate promptTemplate = null;
-        try {
-            promptTemplate = PromptTemplate.builder().template(
-                    Files.readString(Paths.get("./md/NextSendMessage.md"))).build();
-        } catch (IOException e) {
-            log.error("读取文件异常");
-            throw new RuntimeException("读取文件异常");
-        }
-        state.updateState(Map.of("memoryString", memoryString + "assistant : " + generateMessage));
-        Map<String, Object> data = state.data();
-        String prompt = promptTemplate.render(data) + formatOutPut;
-        log.info(prompt);
-        String output = chatClient.prompt(prompt).call().content();
+        promptParam.put("memoryString", memoryString + "assistant : " + generateMessage);
+
+        String output = llmNode.invoke(userId,promptParam);
         log.info("定时任务更新输出结果:{}", output);
 
         // json解析

@@ -12,17 +12,29 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum LlmNodeTypeEnum {
-
-    MEMORY_CHECK("memoryCheck", "./md/MemoryCheckPrompt.md", "memoryCheckOutput",0),
-    FORMAT_OUTPUT("formatOutPut", "./md/FormatOutPutPrompt.md", "formatOutPut",0),
-    ROLE_REVERSAL_CHECK("roleReversalCheck", "./md/RoleReversalCheckPrompt.md", "roleReversalCheckOutput",0),
+    // ----------图节点
+    MEMORY_CHECK("memoryCheck", "./md/MemoryCheckPrompt.md", "memoryCheckOutput"),
+    FORMAT_OUTPUT("formatOutPut", "./md/FormatOutPutPrompt.md", "formatOutPut"),
+    ROLE_REVERSAL_CHECK("roleReversalCheck", "./md/RoleReversalCheckPrompt.md", "roleReversalCheckOutput"),
     MESSAGE_GENERATE("messageGenerateNode", "./md/MessageGeneratePrompt.md", "generateMessage",15),
-    INITIATIVE_MESSAGE_GENERATE("initiativeMessageGenerateNode", "./md/InitiativeMessageGeneratePrompt.md", "generateMessage",0),
-    INTERACTION_CHECK("interactionCheckOutput", "./md/InteractionCheckPrompt.md", "interactionCheckOutput",0),
-    COMBINED_CHECK("combinedCheckNode", "./md/CombinedCheckPrompt.md", "combinedCheckOutput",0);
+    INITIATIVE_MESSAGE_GENERATE("initiativeMessageGenerateNode", "./md/InitiativeMessageGeneratePrompt.md", "generateMessage"),
+    INTERACTION_CHECK("interactionCheckOutput", "./md/InteractionCheckPrompt.md", "interactionCheckOutput"),
+    COMBINED_CHECK("combinedCheckNode", "./md/CombinedCheckPrompt.md", "combinedCheckOutput"),
+
+    // -----------单次调用节点
+    UPDATE_NEXT_SEND_MESSAGE_INFO("updateNextSendMessageInfo", "./md/NextSendMessage.md");
+
 
     private final String nodeName;
     private final String promptTemplatePath;
     private final String outputKey;
     private final Integer historyMessagesCount;
+
+    LlmNodeTypeEnum(String nodeName, String promptTemplatePath){
+        this(nodeName,promptTemplatePath,"outPutKey",0);
+    }
+
+    LlmNodeTypeEnum(String nodeName, String promptTemplatePath, String outputKey){
+        this(nodeName,promptTemplatePath,outputKey,0);
+    }
 }

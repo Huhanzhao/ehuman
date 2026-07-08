@@ -5,14 +5,17 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.service.BeforeLlmCallback;
+import com.anyfriend.dao.enums.LlmNodeTypeEnum;
 import com.anyfriend.dao.enums.NodeEnum;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @Author: huhanzhao
@@ -21,25 +24,21 @@ import java.util.Map;
  */
 
 @Slf4j
-@AllArgsConstructor
-@Builder
 public class LlmNode implements NodeAction {
 
-    private String nodeName;
+    private final String nodeName;
 
-    private PromptTemplate promptTemplate;
+    private final PromptTemplate promptTemplate;
 
-    private String outPutKey;
+    private final String outPutKey;
 
-    private NodeEnum nodeEnum;
+    private final NodeEnum nodeEnum;
 
-    private String userMessage;
+    private final ChatClientFactory chatClientFactory;
 
-    private ChatClientFactory chatClientFactory;
+    private final BeforeLlmCallback beforeLlmCallback;
 
-    private BeforeLlmCallback beforeLlmCallback;
-
-    private AfterLlmCallback afterLlmCallback;
+    private final AfterLlmCallback afterLlmCallback;
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -78,4 +77,54 @@ public class LlmNode implements NodeAction {
         return Map.of(this.outPutKey, content);
     }
 
+    // 单节点调用
+    public String invoke(Long userId,Map<String, Object> promptParams){
+        // 调用大模型
+        String prompt = fillPromptTemplate(promptParams, this.promptTemplate);
+        log.info("单节点调用 llmNodeName: {},prompt:{}",this.nodeName, prompt);
+
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, nodeEnum);
+
+        String content = chatClient.prompt(prompt).call().content();
+        log.info("单节点调用 llmNode: {},outPut:{}",this.nodeName, content);
+
+        return content;
+    }
+
+    private String fillPromptTemplate(Map<String,Object> promptParams, PromptTemplate promptTemplate){
+        AtomicReference<String> template = new AtomicReference<>(promptTemplate.getTemplate());
+        promptParams.forEach((key, value) -> {
+            if (template.get().contains("{" + key + "}")){
+                template.set(template.get().replaceAll("{" + key + "}", value.toString()));
+            }
+        });
+        return template.get();
+    }
+
+
+    public LlmNode(LlmNodeTypeEnum nodeTypeEnum,
+                              NodeEnum nodeEnum,
+                              BeforeLlmCallback beforeLlmCallback,
+                              AfterLlmCallback afterLlmCallback,
+                              ChatClientFactory chatClientFactory
+    ) {
+        try {
+            this.promptTemplate = PromptTemplate.builder().template(
+                    Files.readString(Paths.get(nodeTypeEnum.getPromptTemplatePath()))).build();
+            this.nodeName = nodeTypeEnum.getNodeName();
+            this.outPutKey = nodeTypeEnum.getOutputKey();
+            this.beforeLlmCallback = beforeLlmCallback;
+            this.afterLlmCallback = afterLlmCallback;
+            this.nodeEnum = nodeEnum;
+            this.chatClientFactory = chatClientFactory;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public LlmNode(LlmNodeTypeEnum nodeTypeEnum,
+                   NodeEnum nodeEnum,
+                   ChatClientFactory chatClientFactory){
+        this(nodeTypeEnum,nodeEnum,null,null,chatClientFactory);
+    }
 }

@@ -32,4 +32,43 @@
 {currentTime}
 **注意：** nextSendTime的时间不能早于当前时间，太晚可以第二天主动联系
 
+## 输出格式(nextSend 必须为true，除非当前ai生气，或者用户多次不回复消息才能输出false)
+**用户回复消息之前不主动给对方发消息**：
+{
+  "nextSend": false,
+  "reason": "xxx"
+}
+            
+**用户回复消息之前主动给对方发消息**：
+{
+  "nextSend" : true,
+  "nextSendTime": "2026-06-28 00:00:00",
+  "topic": "xxx"
+}
+            
+## 实例
+1. {
+     "nextSend" : true,
+     "nextSendTime": "2026-06-29 18:25:00",
+     "topic": "问对方在干嘛"
+   }
+2. {
+      "nextSend" : true,
+      "nextSendTime": "2026-06-30 18:30:00",
+      "topic": "问对方为什么不回我消息"
+   }
+3. {
+      "nextSend" : true,
+      "nextSendTime": "2026-06-30 18:30:00",
+      "topic": "分享生活"
+      }
+4. {
+     "nextSend": false,
+     "reason": "不理我我也不理你"
+   }
+5. {
+   "nextSend": false,
+   "reason": "一直骂我，再也不想理你了"
+   }
+
 

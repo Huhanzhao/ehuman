@@ -76,7 +76,7 @@ public class SendMessageCompileGraph {
 
         try {
             // 创建消息生成节点
-            LlmNode messageGenerate = getLlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
+            LlmNode messageGenerate = new LlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
                     NodeEnum.MASTER,
                     state -> { // todo 记忆改成提示词形式的
                         Long userId = (Long)state.value("userId").orElse(0L);
@@ -84,19 +84,20 @@ public class SendMessageCompileGraph {
                                 tbAiChatMemoryService.getMessageList(userId, 15));
                         return new BeforeLlmCallback.BeforeCallBackEntity(messageList, null,null);
                     },
-                    null);
+                    null,
+                    chatClientFactory);
 
             // 合并检查节点
-            LlmNode combinedCheckNode = getLlmNode(LlmNodeTypeEnum.COMBINED_CHECK, NodeEnum.AUXILIARY, null, null);
+            LlmNode combinedCheckNode = new LlmNode(LlmNodeTypeEnum.COMBINED_CHECK, NodeEnum.AUXILIARY, chatClientFactory);
 
             // 主动发消息生成节点
-            LlmNode initiativeMessageGenerateNode = getLlmNode(LlmNodeTypeEnum.INITIATIVE_MESSAGE_GENERATE, NodeEnum.MASTER, null, null);
+            LlmNode initiativeMessageGenerateNode = new LlmNode(LlmNodeTypeEnum.INITIATIVE_MESSAGE_GENERATE, NodeEnum.MASTER, chatClientFactory);
 
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerate))
                     .addNode("initiativeMessageGenerateNode", node_async(initiativeMessageGenerateNode))
-                    .addNode("formatOutPutLlmNode", node_async(getLlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.AUXILIARY,null,null)))
+                    .addNode("formatOutPutLlmNode", node_async(new LlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.AUXILIARY,chatClientFactory)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
@@ -193,24 +194,5 @@ public class SendMessageCompileGraph {
                 log.error("修改 callNextSendMessageJob 报错{}",e.getMessage());
             }
         });
-    }
-
-    public LlmNode getLlmNode(LlmNodeTypeEnum nodeTypeEnum, NodeEnum nodeEnum, BeforeLlmCallback beforeLlmCallback, AfterLlmCallback afterLlmCallback) {
-        PromptTemplate promptTemplate = null;
-        try {
-            promptTemplate = PromptTemplate.builder().template(
-                    Files.readString(Paths.get(nodeTypeEnum.getPromptTemplatePath()))).build();
-            LlmNode.LlmNodeBuilder llmNodeBuilder = LlmNode.builder()
-                    .nodeName(nodeTypeEnum.getNodeName())
-                    .promptTemplate(promptTemplate)
-                    .outPutKey(nodeTypeEnum.getOutputKey())
-                    .beforeLlmCallback(beforeLlmCallback)
-                    .afterLlmCallback(afterLlmCallback)
-                    .nodeEnum(nodeEnum)
-                    .chatClientFactory(chatClientFactory);
-            return llmNodeBuilder.build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
