@@ -18,8 +18,12 @@ public class MemoryCastUtils {  // todo memoryString格式优化
         List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage ? fillSystemMessage(memoryDoList) : memoryDoList;
         StringBuilder result = new StringBuilder();
         tbAiChatMemoryDos.forEach(memoryDo -> {
-            result.append(memoryDo.getRole()).append(" : ").append(memoryDo.getMessage())
-                    .append("\n");
+            if (memoryDo.getRole().equals(MessageType.SYSTEM.getValue())){
+                result.append("=======").append(memoryDo.getMessage()).append("=======").append("\n");
+            }else{
+                result.append(memoryDo.getRole()).append(" : ").append(memoryDo.getMessage())
+                        .append("\n\n");
+            }
         });
         return result.toString();
     }
@@ -46,21 +50,6 @@ public class MemoryCastUtils {  // todo memoryString格式优化
         boolean todayFirstMessage = true;
         for (int i = 0; i < memoryDoList.size(); i++) {
             TbAiChatMemoryDo currentMemoryDo = memoryDoList.get(i);
-
-            boolean isToday = currentMemoryDo.getCreateTime()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-                    .equals(LocalDate.now());
-            if (isToday && todayFirstMessage){
-                resultList.add(new TbAiChatMemoryDo()
-                        .setRole(MessageType.SYSTEM.getValue())
-                        .setMessage("========第二天=======")
-                        .setCreateTime(new Date())
-                );
-                todayFirstMessage = false;
-            }
-
             long minutes = 0;
             TbAiChatMemoryDo lastMemoryDo = null;
             if (i != 0){

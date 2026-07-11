@@ -1,8 +1,10 @@
 package com.anyfriend.core.job.action;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.anyfriend.core.job.JobManager;
+import com.anyfriend.core.utils.LocalCacheUtil;
 import com.anyfriend.dao.entity.TbQuartzJobDo;
 import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
@@ -15,6 +17,8 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +40,8 @@ public class SendMessageJob implements Job {
     @Autowired
     private JobManager jobManager;
 
+    private LocalCacheUtil localCacheUtil = LocalCacheUtil.getLocalCacheUtil();
+
     private final CompiledGraph sendMessageCompiledGraph;
 
     public SendMessageJob(@Qualifier("sendMessageCompiledGraph")CompiledGraph sendMessageCompiledGraph){
@@ -54,17 +60,36 @@ public class SendMessageJob implements Job {
         TbQuartzJobDo tbQuartzJobDo = tbQuartzJobDoService.getByStartName(jobName);
 
         for (TbUserBotStatusDo status : allStatus) {
+            // 判断是不是有正在运行的图 有的话取消发送消息
             Long userId = status.getUserId();
+            if (localCacheUtil.containsKey(userId + "_Graph")){
+                return;
+            }
 
             String chatId = UUID.randomUUID().toString();
             // 配置线程 ID
             var invokeConfig = RunnableConfig.builder()
                     .threadId(chatId)
                     .build();
-            sendMessageCompiledGraph.invoke(
-                    Map.of("userId", userId,  "initiative", true,"topic",tbQuartzJobDo.getJobDetail()),
+            Flux<NodeOutput> stream = sendMessageCompiledGraph.stream(
+                    Map.of("userId", userId, "initiative", true, "topic", tbQuartzJobDo.getJobDetail()),
                     invokeConfig
+            ).subscribeOn(Schedulers.boundedElastic());
+
+            // 异步处理每个输出
+            var disposable = stream.subscribe(
+                    output -> {
+                        log.info("当前迭代节点: " + output);
+                    },
+                    error -> log.error("流错误: " + error.getMessage()),
+                    () -> {
+                        localCacheUtil.remove(userId + "_Graph");
+                        log.info("流完成");
+                    }
             );
+
+            log.info("标记会话");
+            localCacheUtil.put(userId + "_Graph", disposable);
         }
 
         // 执行完毕删除任务

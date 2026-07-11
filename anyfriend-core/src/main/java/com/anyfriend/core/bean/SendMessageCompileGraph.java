@@ -12,7 +12,6 @@ import com.anyfriend.core.node.BotStatusSearchNode;
 import com.anyfriend.core.node.CheckAggregateNode;
 import com.anyfriend.core.node.LlmNode;
 import com.anyfriend.core.node.UserWantToNode;
-import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.MemoryCastUtils;
@@ -23,13 +22,10 @@ import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -82,7 +78,7 @@ public class SendMessageCompileGraph {
                         Long userId = (Long)state.value("userId").orElse(0L);
                         List<Message> messageList =  MemoryCastUtils.memoryCastToMessages(
                                 tbAiChatMemoryService.getMessageList(userId, 15));
-                        return new BeforeLlmCallback.BeforeCallBackEntity(messageList, null,null);
+                        return new BeforeLlmCallback.BeforeCallBackEntity(null, null,null);
                     },
                     null,
                     chatClientFactory);

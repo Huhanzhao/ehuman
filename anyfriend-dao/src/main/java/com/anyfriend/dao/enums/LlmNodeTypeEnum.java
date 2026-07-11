@@ -16,7 +16,7 @@ public enum LlmNodeTypeEnum {
     MEMORY_CHECK("memoryCheck", "./md/MemoryCheckPrompt.md", "memoryCheckOutput"),
     FORMAT_OUTPUT("formatOutPut", "./md/FormatOutPutPrompt.md", "formatOutPut"),
     ROLE_REVERSAL_CHECK("roleReversalCheck", "./md/RoleReversalCheckPrompt.md", "roleReversalCheckOutput"),
-    MESSAGE_GENERATE("messageGenerateNode", "./md/MessageGeneratePrompt.md", "generateMessage",15),
+    MESSAGE_GENERATE("messageGenerateNode", "./md/MessageGeneratePromptV2.md", "generateMessage",15),
     INITIATIVE_MESSAGE_GENERATE("initiativeMessageGenerateNode", "./md/InitiativeMessageGeneratePrompt.md", "generateMessage"),
     INTERACTION_CHECK("interactionCheckOutput", "./md/InteractionCheckPrompt.md", "interactionCheckOutput"),
     COMBINED_CHECK("combinedCheckNode", "./md/CombinedCheckPrompt.md", "combinedCheckOutput"),

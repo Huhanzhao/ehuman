@@ -110,7 +110,7 @@ public class CommonAuxiliaryService {
 
             // 如果消息总数都不超过20条，直接返回
             if (messageListSize <= 20) {
-                log.info("消息数量不足20条，直接返回");
+                log.info("消息数量不足20条，跳过总结");
                 return false;
             }
 
