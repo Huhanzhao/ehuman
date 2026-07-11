@@ -60,12 +60,11 @@ public class CommonAuxiliaryService {
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
         LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, NodeEnum.AUXILIARY, chatClientFactory);
 
-        Map<String, Object> promptParam = state.data();
         String memoryString = state.value("memoryString", String.class).get();
         String generateMessage = state.value("generateMessage", String.class).get().trim();
-        promptParam.put("memoryString", memoryString + "assistant : " + generateMessage);
+        state.updateState(Map.of("memoryString", memoryString + "assistant : " + generateMessage));
 
-        String output = llmNode.invoke(userId,promptParam);
+        String output = llmNode.invoke(userId,state.data());
         log.info("定时任务更新输出结果:{}", output);
 
         // json解析
@@ -94,7 +93,7 @@ public class CommonAuxiliaryService {
         // 查询向量化的key
         TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.EMBEDDING);
         if (modelConfigDo == null){
-            sendMessageUtil.sendSystemMsg(userId,"没有向量模型跳过");
+            log.info("没有向量模型跳过");
             return false;
         }
         // 缓存标记 防止重复处理
@@ -111,6 +110,7 @@ public class CommonAuxiliaryService {
 
             // 如果消息总数都不超过20条，直接返回
             if (messageListSize <= 20) {
+                log.info("消息数量不足20条，直接返回");
                 return false;
             }
 
@@ -122,6 +122,7 @@ public class CommonAuxiliaryService {
 
                 // 如果剩余不足20条，结束循环
                 if (remaining <= 20) {
+                    log.info("剩余消息数量不足20条，结束循环");
                     break;
                 }
                 Map<String,Object> promptParams = new HashMap<>();
@@ -131,12 +132,20 @@ public class CommonAuxiliaryService {
                 promptParams.put("memoryString", memoryString);
 
                 // 查询最近的一次流水账
-                TbMessageSummaryVectorDo lastDo = tbMessageSummaryVectorDoService.getLastOneByUserId();
+                TbMessageSummaryVectorDo lastDo = tbMessageSummaryVectorDoService.getLastOneByUserId(userId);
                 promptParams.put("lastMemoryString",lastDo == null? "":lastDo.getContext());
 
                 // 调用大模型总结
+                log.info("开始向量化消息");
                 LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.SUMMARY_MESSAGES, NodeEnum.AUXILIARY, chatClientFactory);
-                String content = llmNode.invoke(userId, promptParams);
+                String content;
+                try {
+                    content = llmNode.invoke(userId, promptParams);
+                }catch (Exception e){
+                    log.error("向量化消息失败：{}",e.getMessage());
+                    sendMessageUtil.sendMegToSelf("向量化消息失败");
+                    throw new RuntimeException("向量化消息失败");
+                }
 
                 // 保存向量
                 embeddingContextAndSave(userId,content,batch.getFirst().getCreateTime(),modelConfigDo);
@@ -146,6 +155,7 @@ public class CommonAuxiliaryService {
                 // 标记消息已经向量化
                 List<Long> idList = batch.stream().map(TbAiChatMemoryDo::getId).toList();
                 tbAiChatMemoryService.setVectorFlagByIds(idList);
+                log.info("消息向量化结束，剩余消息{}条",remaining - 20);
             }
             return true;
         }finally {

@@ -3,7 +3,6 @@ package com.anyfriend.dao.service.impl;
 import com.anyfriend.dao.entity.TbMessageVectorSearchDo;
 import com.anyfriend.dao.service.DBVectorOperationService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.jdbc.SQL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,7 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
     private DataSource dataSource;
 
     @Value("${sqlite.vector}")
-    private String vectorPlugin;  // todo local 加上属性
+    private String vectorPlugin;
 
     @Override
     public boolean saveVector(Long userId, String vector, String context, Date createTime) {

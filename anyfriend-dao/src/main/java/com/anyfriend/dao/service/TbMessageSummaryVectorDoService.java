@@ -10,6 +10,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface TbMessageSummaryVectorDoService extends IService<TbMessageSummaryVectorDo> {
 
-    TbMessageSummaryVectorDo getLastOneByUserId();
+    TbMessageSummaryVectorDo getLastOneByUserId(Long userId);
 
 }

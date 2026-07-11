@@ -95,7 +95,7 @@ public class LlmNode implements NodeAction {
         AtomicReference<String> template = new AtomicReference<>(promptTemplate.getTemplate());
         promptParams.forEach((key, value) -> {
             if (template.get().contains("{" + key + "}")){
-                template.set(template.get().replaceAll("{" + key + "}", value.toString()));
+                template.set(template.get().replace("{" + key + "}", value.toString()));
             }
         });
         return template.get();

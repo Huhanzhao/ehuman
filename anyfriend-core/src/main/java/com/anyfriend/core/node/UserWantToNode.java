@@ -10,7 +10,6 @@ import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
@@ -37,7 +36,12 @@ public class UserWantToNode implements NodeAction {
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList,true);
         // 异步调用流水账记录
-        CompletableFuture.runAsync(() -> commonAuxiliaryService.summaryMessages(userId));
+        CompletableFuture.runAsync(() -> commonAuxiliaryService.summaryMessages(userId))
+                .exceptionally(throwable -> {
+                    log.error("summaryMessages 异步执行失败，userId: {}", userId, throwable);
+                    throwable.printStackTrace();
+                    return null;
+                });
         if (initiative){
             // 主动发送消息跳过
             return Map.of("userWantTo", "next","memoryString", memoryString);

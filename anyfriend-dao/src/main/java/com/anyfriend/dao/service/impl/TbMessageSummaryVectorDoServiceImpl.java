@@ -1,10 +1,9 @@
 package com.anyfriend.dao.service.impl;
 
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.anyfriend.dao.entity.TbMessageSummaryVectorDo;
-import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
 import com.anyfriend.dao.mapper.TbMessageSummaryVectorDoMapper;
+import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,8 +16,14 @@ public class TbMessageSummaryVectorDoServiceImpl extends ServiceImpl<TbMessageSu
     implements TbMessageSummaryVectorDoService{
 
     @Override
-    public TbMessageSummaryVectorDo getLastOneByUserId() {
-        return lambdaQuery().orderByDesc(TbMessageSummaryVectorDo::getCreateTime).last("limit 1").one();
+    public TbMessageSummaryVectorDo getLastOneByUserId(Long userId) {
+        return lambdaQuery()
+                .select(TbMessageSummaryVectorDo::getId,
+                        TbMessageSummaryVectorDo::getUserId,
+                        TbMessageSummaryVectorDo::getContext,
+                        TbMessageSummaryVectorDo::getCreateTime)
+                .eq(TbMessageSummaryVectorDo::getUserId, userId)
+                .orderByDesc(TbMessageSummaryVectorDo::getCreateTime).last("limit 1").one();
     }
 }
 

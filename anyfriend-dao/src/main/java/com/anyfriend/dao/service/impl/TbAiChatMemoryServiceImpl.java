@@ -1,12 +1,11 @@
 package com.anyfriend.dao.service.impl;
 
-import com.alibaba.fastjson2.util.DateUtils;
+import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.mapper.TbAiChatMemoryMapper;
+import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.anyfriend.dao.entity.TbAiChatMemoryDo;
-import com.anyfriend.dao.service.TbAiChatMemoryService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,7 +38,10 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
 
     @Override
     public List<TbAiChatMemoryDo> getAllNoVectorMessageList(Long userId) {
-        return lambdaQuery().eq(TbAiChatMemoryDo::getMemoryId,userId).orderByAsc(TbAiChatMemoryDo::getCreateTime).list();
+        return lambdaQuery().eq(TbAiChatMemoryDo::getMemoryId,userId)
+                .eq(TbAiChatMemoryDo::getVectored,false)
+                .orderByAsc(TbAiChatMemoryDo::getCreateTime)
+                .list();
     }
 
     @Override
