@@ -12,9 +12,7 @@ import com.anyfriend.core.node.BotStatusSearchNode;
 import com.anyfriend.core.node.CheckAggregateNode;
 import com.anyfriend.core.node.LlmNode;
 import com.anyfriend.core.node.UserWantToNode;
-import com.anyfriend.core.service.BeforeLlmCallback;
 import com.anyfriend.core.service.CommonAuxiliaryService;
-import com.anyfriend.core.utils.MemoryCastUtils;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.LlmNodeTypeEnum;
@@ -22,7 +20,6 @@ import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +29,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -74,13 +70,6 @@ public class SendMessageCompileGraph {
             // 创建消息生成节点
             LlmNode messageGenerate = new LlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
                     NodeEnum.MASTER,
-                    state -> { // todo 记忆改成提示词形式的
-                        Long userId = (Long)state.value("userId").orElse(0L);
-                        List<Message> messageList =  MemoryCastUtils.memoryCastToMessages(
-                                tbAiChatMemoryService.getMessageList(userId, 15));
-                        return new BeforeLlmCallback.BeforeCallBackEntity(null, null,null);
-                    },
-                    null,
                     chatClientFactory);
 
             // 合并检查节点

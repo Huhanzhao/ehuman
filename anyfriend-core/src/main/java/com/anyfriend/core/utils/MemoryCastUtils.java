@@ -79,10 +79,10 @@ public class MemoryCastUtils {  // todo memoryString格式优化
 
     /**
      * 将时间转换为相对当前时间的可读字符串
-     * 今天：中午 12:00
-     * 昨天：昨天 8:30
-     * 前天：前天 14:00
-     * 更早：6月10日 14:00
+     * 今天：6月10日 中午 12:00
+     * 昨天：6月9日 昨天 8:30
+     * 前天：6月8日 前天 14:00
+     * 更早：6月7日 14:00
      */
     public static String formatRelativeTime(Date time) {
         if (time == null) return "";
@@ -97,20 +97,21 @@ public class MemoryCastUtils {  // todo memoryString格式优化
 
         long daysBetween = Duration.between(targetDate.atStartOfDay(), today.atStartOfDay()).toDays();
 
+        String dateStr = dateTime.getMonthValue() + "月" + dateTime.getDayOfMonth() + "日";
         String timeStr = String.format("%d:%02d", dateTime.getHour(), dateTime.getMinute());
 
         if (daysBetween == 0) {
-            // 今天
-            return getTimePeriod(dateTime.getHour()) + " " + timeStr;
+            // 今天：6月10日 中午 12:00
+            return dateStr + " " + getTimePeriod(dateTime.getHour()) + " " + timeStr;
         } else if (daysBetween == 1) {
-            // 昨天
-            return "昨天 " + timeStr;
+            // 昨天：6月9日 昨天 8:30
+            return dateStr + " 昨天 " + timeStr;
         } else if (daysBetween == 2) {
-            // 前天
-            return "前天 " + timeStr;
+            // 前天：6月8日 前天 14:00
+            return dateStr + " 前天 " + timeStr;
         } else {
-            // 更早：几月几日 几点几分
-            return dateTime.getMonthValue() + "月" + dateTime.getDayOfMonth() + "日 " + timeStr;
+            // 更早：6月7日 14:00
+            return dateStr + " " + timeStr;
         }
     }
 

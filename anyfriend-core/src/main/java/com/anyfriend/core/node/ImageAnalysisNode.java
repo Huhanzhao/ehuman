@@ -88,6 +88,9 @@ public class ImageAnalysisNode implements NodeAction {
                     """;
                 String content = chatClient.prompt(systemPrompt).messages(message).call().content();
                 log.info("图片描述：" + content);
+                if (content.isEmpty()){
+                    throw new RuntimeException("图片描述为空");
+                }
 
                 Pattern resultPattern = Pattern.compile(
                         "<emoji\\s+emo=\"([^\"]+)\">(.*?)</emoji>"
