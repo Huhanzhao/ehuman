@@ -102,7 +102,7 @@ public class SendMessageCompileGraph {
                         return Map.of();
                     }))
 
-                    .addEdge(StateGraph.START, "userWantToNode")
+                    .addEdge(StateGraph.START, "userWantToNode")  // todo 判断意图识别的节点 是否必要rag，添加rag的步骤
                     .addEdge("userWantToNode", "botStatusSearchNode")
                     .addEdge("userWantToNode", "memoryVectorSearchNode")
                     .addEdge("userWantToNode", "graphSearchNode")
