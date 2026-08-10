@@ -86,6 +86,12 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
             // 加载向量拓展
             loadVectorExtension(stmt);
 
+            // 初始化向量
+            vectorInit(stmt);
+
+            // 重新索引
+            vectorQuantize(stmt);
+
             // 查询
             String sql = "SELECT \n" +
                     "    e.id,\n" +

@@ -4,7 +4,9 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.anyfriend.core.node.test.test1;
 import com.anyfriend.core.node.test.test2;
 import com.anyfriend.core.service.CommonAuxiliaryService;
+import com.anyfriend.core.service.EmbeddingService;
 import com.anyfriend.core.utils.SendMessageUtil;
+import com.anyfriend.dao.service.DBVectorOperationService;
 import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
@@ -40,12 +42,25 @@ public class TestPlugin extends BotPlugin {
     @Autowired
     private TbMessageSummaryVectorDoService tbMessageSummaryVectorDoService;
 
+    @Autowired
+    private EmbeddingService embeddingService;
+
+    @Autowired
+    private DBVectorOperationService dbVectorOperationService;
+
 
     @PrivateMessageHandler
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot, PrivateMessageEvent event)  {
 
+//        // 调用向量模型 向量化问题
+//        float[] floats = embeddingService.embeddingText(event.getUserId(), event.getMessage());
+//        // 检索记忆
+//        List<TbMessageVectorSearchDo> tbMessageVectorSearchDos = dbVectorOperationService.searchVector(event.getUserId(),
+//                Arrays.toString(floats),
+//                2,
+//                0.6);
         return MESSAGE_IGNORE;
     }
 

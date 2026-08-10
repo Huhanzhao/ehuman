@@ -14,9 +14,14 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import static com.anyfriend.dao.enums.LlmNodeTypeEnum.USER_WANT_TO;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -29,7 +34,7 @@ public class UserWantToNode implements NodeAction {
     private final CommonAuxiliaryService commonAuxiliaryService;
 
     @Override
-    public Map<String, Object> apply (OverAllState state){
+    public Map<String, Object> apply (OverAllState state) throws IOException {
         Long userId = (Long) state.value("userId").orElse(0L);
         Boolean initiative = (Boolean)state.value("initiative").orElse(false);
         // 查询历史消息
@@ -45,36 +50,11 @@ public class UserWantToNode implements NodeAction {
         if (initiative){
             // 主动发送消息跳过
             return Map.of("userWantTo", "next","memoryString", memoryString);
-        }// todo 模型调用改成invoke
+        }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
         PromptTemplate promptTemplate = PromptTemplate.builder().template(
-                """
-                       ## 你是聊天结束意图判断模块
-                                   
-                       ## 任务
-                       判断用户当前消息是否需要回复
-                       
-                       ## 输入
-                       - 历史消息：{memoryString}
-                       - 用户当前消息：（由调用方传入）
-                       
-                       ## 输出规则
-                       只输出以下两个单词之一，不输出任何其他内容：
-                       
-                       - `exit`：不需要回复（对话已结束）
-                       - `next`：需要回复（其他所有情况）
-                       
-                       ## 判定标准
-                       **exit（对话结束）** 必须同时满足：
-                       - 用户明确表达结束（晚安/拜拜/再见等）
-                       - AI在前序消息中已回复过同样的结束语
-                       
-                       **next（需要回复）** 包括：
-                       - 用户未说结束语
-                       - 用户说了结束语但AI尚未回复
-                       - 暧昧、试探等任何其他内容
-                        """
-        ).build();
+                Files.readString(Paths.get(USER_WANT_TO.getPromptTemplatePath()))).build();
+
         String prompt = promptTemplate.render(Map.of("memoryString", memoryString));
         String content = chatClient.prompt(prompt)
                 .user(" 以上是用户与ai对话历史，请分析会话是否结束，是否需要ai回复").call().content();

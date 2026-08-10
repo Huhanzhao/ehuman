@@ -23,6 +23,7 @@ public enum LlmNodeTypeEnum {
 
     // -----------单次调用节点
     SUMMARY_MESSAGES("SummaryMessage", "./md/SummaryMessagePrompt.md"),
+    USER_WANT_TO("userWantTo", "./md/UserWantToPrompt.md"),
     UPDATE_NEXT_SEND_MESSAGE_INFO("updateNextSendMessageInfo", "./md/NextSendMessage.md");
 
 

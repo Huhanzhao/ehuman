@@ -18,12 +18,6 @@ import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -55,6 +49,9 @@ public class CommonAuxiliaryService {
 
     @Autowired
     private TbUserModelConfigDoService tbUserModelConfigDoService;
+
+    @Autowired
+    private EmbeddingService embeddingService;
 
     //  更新下次主动发送消息的信息
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
@@ -148,7 +145,8 @@ public class CommonAuxiliaryService {
                 }
 
                 // 保存向量
-                embeddingContextAndSave(userId,content,batch.getFirst().getCreateTime(),modelConfigDo);
+                float[] floats = embeddingService.embeddingText(userId, content);
+                dbVectorOperationService.saveVector(userId, Arrays.toString(floats),content,batch.getFirst().getCreateTime());
 
                 // 标记这20条已处理
                 processedCount += 20;
@@ -161,23 +159,6 @@ public class CommonAuxiliaryService {
         }finally {
             LocalCacheUtil.getLocalCacheUtil().remove(userId + "_SummaryMessages");
         }
-    }
-
-    public void embeddingContextAndSave(Long userId, String content, Date messageTime, TbUserModelConfigDo modelConfigDo){
-        OpenAiApi openAiApi = OpenAiApi.builder()
-                .apiKey(modelConfigDo.getApiKey())
-                .baseUrl(modelConfigDo.getBaseUrl()).build();
-
-        OpenAiEmbeddingOptions openAiEmbeddingOptions = OpenAiEmbeddingOptions.builder()
-                .model(modelConfigDo.getModel()).dimensions(1024)
-                .build();
-        OpenAiEmbeddingModel openAiEmbeddingModel = new OpenAiEmbeddingModel(openAiApi, MetadataMode.NONE,openAiEmbeddingOptions);
-
-        EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of(content),openAiEmbeddingOptions);
-        EmbeddingResponse response = openAiEmbeddingModel.call(embeddingRequest);
-        float[] output = response.getResult().getOutput();
-
-        dbVectorOperationService.saveVector(userId, Arrays.toString(output),content,messageTime);
     }
 
     /**

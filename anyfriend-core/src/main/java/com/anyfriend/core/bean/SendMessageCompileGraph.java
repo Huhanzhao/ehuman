@@ -8,10 +8,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.fastjson2.JSON;
 import com.anyfriend.core.config.NodeStatePersistenceListener;
 import com.anyfriend.core.job.JobManager;
-import com.anyfriend.core.node.BotStatusSearchNode;
-import com.anyfriend.core.node.CheckAggregateNode;
-import com.anyfriend.core.node.LlmNode;
-import com.anyfriend.core.node.UserWantToNode;
+import com.anyfriend.core.node.*;
 import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
@@ -45,6 +42,7 @@ public class SendMessageCompileGraph {
     private final SendMessageUtil sendMessageUtil;
     private final TbAiChatMemoryService tbAiChatMemoryService;
     private final CommonAuxiliaryService commonAuxiliaryService;
+    private final MemoryVectorSearchNode memoryVectorSearchNode;
 
     private final ChatClientFactory chatClientFactory;
     private final NodeStatePersistenceListener nodeStatePersistenceListener;
@@ -84,7 +82,7 @@ public class SendMessageCompileGraph {
                     .addNode("initiativeMessageGenerateNode", node_async(initiativeMessageGenerateNode))
                     .addNode("formatOutPutLlmNode", node_async(new LlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.AUXILIARY,chatClientFactory)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
-                    .addNode("memoryVectorSearchNode", node_async(state -> Map.of()))  // todo 待完善
+                    .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
                     .addNode("initiativeOrNotNode", node_async(state -> Map.of()))  // 主动被动中转节点
                     .addNode("combinedCheckNode", node_async(combinedCheckNode))
