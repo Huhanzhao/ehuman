@@ -3,7 +3,7 @@ package com.anyfriend.core.utils;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
@@ -158,7 +158,7 @@ public class SendMessageUtil {
     // 发送语音消息
     public void sendVoiceMsg(Long userId, String message){
         // 查询当前启用的插件名字和参考声音url
-        TbUserModelConfigDo ttsModel = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.TTS);
+        TbUserModelConfigDo ttsModel = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.TTS);
         List<TbUserReferAudioDo> enableAudioList = tbUserReferAudioDoService.getReferAudioByUserId(userId,true);
         if (enableAudioList.isEmpty()) {
             log.error("no enable audio");

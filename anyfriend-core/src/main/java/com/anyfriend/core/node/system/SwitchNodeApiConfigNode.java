@@ -6,7 +6,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.enums.ChatModelCategoryEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -46,12 +46,12 @@ public class SwitchNodeApiConfigNode extends SystemInterruptionNode{
         String userInput = state.value("userInput",String.class).orElse("").trim();
         Long userId = Long.valueOf(state.value("userId", String.class).orElse(""));
         InterruptionMetadata interruption = null;
-        NodeEnum nodeEnum = NodeEnum.valueOf((String) state.value("nodeType").orElse(""));
+        LlmTypeEnum llmTypeEnum = LlmTypeEnum.valueOf((String) state.value("nodeType").orElse(""));
         ChatModelCategoryEnum categoryEnum = null;
-        if (nodeEnum.equals(NodeEnum.IMAGE_ANALYSIS)){
+        if (llmTypeEnum.equals(LlmTypeEnum.IMAGE_ANALYSIS)){
             categoryEnum = IMAGE;
         }
-        if (nodeEnum.equals(NodeEnum.TTS)){
+        if (llmTypeEnum.equals(LlmTypeEnum.TTS)){
             categoryEnum = TTS;
         }
         List<TbUserModelConfigDo> modelConfigList = tbUserModelConfigDoService.getDisableApiConfigByCategory(userId, categoryEnum);
@@ -99,7 +99,7 @@ public class SwitchNodeApiConfigNode extends SystemInterruptionNode{
 
         // 保存
         TbUserModelConfigDo tbUserModelConfigDo = modelConfigList.get(index - 1);
-        tbUserModelConfigDo.setNodeEnum(nodeEnum);
+        tbUserModelConfigDo.setLlmTypeEnum(llmTypeEnum);
         tbUserModelConfigDoService.changeApiModelById(userId,tbUserModelConfigDo,categoryEnum);
         // 3. 切换完毕
         sendMessageUtil.sendSystemMsg(userId,"更新成功");

@@ -5,22 +5,16 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
-import com.anyfriend.dao.enums.ChatModelCategoryEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
-import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-
-import static com.anyfriend.dao.enums.ChatModelCategoryEnum.IMAGE;
-import static com.anyfriend.dao.enums.ChatModelCategoryEnum.TTS;
 
 /**
  * @Author: huhanzhao
@@ -62,7 +56,7 @@ public class CollectReferAudioTypeNode extends SystemInterruptionNode{
         InterruptionMetadata interruption = null;
         if (userInput.isEmpty()) {
             // 中断等待用户输入
-            TbUserModelConfigDo byUserIdAndNodeNum = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.TTS);
+            TbUserModelConfigDo byUserIdAndNodeNum = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.TTS);
             String enableTTSPlugin = "没有启用的TTS插件";
             if (byUserIdAndNodeNum != null){
                 enableTTSPlugin = byUserIdAndNodeNum.getModel();

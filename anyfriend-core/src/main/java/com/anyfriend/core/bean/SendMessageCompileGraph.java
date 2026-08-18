@@ -12,8 +12,8 @@ import com.anyfriend.core.node.*;
 import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
-import com.anyfriend.dao.enums.LlmNodeTypeEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmChatEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,24 +66,24 @@ public class SendMessageCompileGraph {
 
         try {
             // 创建消息生成节点
-            LlmNode messageGenerate = new LlmNode(LlmNodeTypeEnum.MESSAGE_GENERATE,
-                    NodeEnum.MASTER,
+            LlmNode messageGenerate = new LlmNode(LlmChatEnum.MESSAGE_GENERATE,
+                    LlmTypeEnum.MASTER,
                     chatClientFactory);
 
             // 合并检查节点
-            LlmNode combinedCheckNode = new LlmNode(LlmNodeTypeEnum.COMBINED_CHECK, NodeEnum.AUXILIARY, chatClientFactory);
+            LlmNode combinedCheckNode = new LlmNode(LlmChatEnum.COMBINED_CHECK, LlmTypeEnum.AUXILIARY, chatClientFactory);
 
             // 主动发消息生成节点
-            LlmNode initiativeMessageGenerateNode = new LlmNode(LlmNodeTypeEnum.INITIATIVE_MESSAGE_GENERATE, NodeEnum.MASTER, chatClientFactory);
+            LlmNode initiativeMessageGenerateNode = new LlmNode(LlmChatEnum.INITIATIVE_MESSAGE_GENERATE, LlmTypeEnum.MASTER, chatClientFactory);
 
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerate))
                     .addNode("initiativeMessageGenerateNode", node_async(initiativeMessageGenerateNode))
-                    .addNode("formatOutPutLlmNode", node_async(new LlmNode(LlmNodeTypeEnum.FORMAT_OUTPUT, NodeEnum.AUXILIARY,chatClientFactory)))
+                    .addNode("formatOutPutLlmNode", node_async(new LlmNode(LlmChatEnum.FORMAT_OUTPUT, LlmTypeEnum.AUXILIARY,chatClientFactory)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
-                    .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 待完善
+                    .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 图搜索
                     .addNode("initiativeOrNotNode", node_async(state -> Map.of()))  // 主动被动中转节点
                     .addNode("combinedCheckNode", node_async(combinedCheckNode))
                     .addNode("checkAggregateNode", node_async(checkAggregateNode))
@@ -100,7 +100,7 @@ public class SendMessageCompileGraph {
                         return Map.of();
                     }))
 
-                    .addEdge(StateGraph.START, "userWantToNode")  // todo 判断意图识别的节点 是否必要rag，添加rag的步骤
+                    .addEdge(StateGraph.START, "userWantToNode")
                     .addEdge("userWantToNode", "botStatusSearchNode")
                     .addEdge("userWantToNode", "memoryVectorSearchNode")
                     .addEdge("userWantToNode", "graphSearchNode")

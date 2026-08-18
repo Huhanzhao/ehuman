@@ -3,7 +3,7 @@ package com.anyfriend.core.job.action;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.*;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.*;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
@@ -159,7 +159,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
                 "评分: <数字>\n原因: <一句话说明>\n总结: <聊天内容总结>\n画像: <用户画像信息或\"无\">";
 
         try {
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
+            ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.AUXILIARY);
             String content = chatClient.prompt(prompt).call().content();
             log.info("AI评估好感度结果：{}", content);
             return parseEvaluation(content);

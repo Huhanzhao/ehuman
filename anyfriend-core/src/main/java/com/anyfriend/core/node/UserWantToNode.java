@@ -5,8 +5,9 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.MemoryCastUtils;
+import com.anyfriend.core.utils.PromptReadUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,13 +16,11 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static com.anyfriend.dao.enums.LlmNodeTypeEnum.USER_WANT_TO;
+import static com.anyfriend.dao.enums.LlmChatEnum.USER_WANT_TO;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -51,9 +50,8 @@ public class UserWantToNode implements NodeAction {
             // 主动发送消息跳过
             return Map.of("userWantTo", "next","memoryString", memoryString);
         }
-        ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
-        PromptTemplate promptTemplate = PromptTemplate.builder().template(
-                Files.readString(Paths.get(USER_WANT_TO.getPromptTemplatePath()))).build();
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.AUXILIARY);
+        PromptTemplate promptTemplate = PromptReadUtil.readPrompt(USER_WANT_TO);
 
         String prompt = promptTemplate.render(Map.of("memoryString", memoryString));
         String content = chatClient.prompt(prompt)

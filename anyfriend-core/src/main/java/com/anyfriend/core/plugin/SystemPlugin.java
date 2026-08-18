@@ -9,7 +9,7 @@ import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserBotStatusDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.*;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
@@ -375,7 +375,7 @@ public class SystemPlugin extends BotPlugin {
             msg.append("无");
         }
         for (TbUserModelConfigDo tbUserModelConfigDo : list) {
-            msg.append(NodeEnum.getByNameNodeNum(tbUserModelConfigDo.getNodeEnum().getNodeNum()))
+            msg.append(LlmTypeEnum.getByNameNodeNum(tbUserModelConfigDo.getLlmTypeEnum().getNodeNum()))
                     .append(":")
                     .append(tbUserModelConfigDo.getModel())
                     .append("\n");

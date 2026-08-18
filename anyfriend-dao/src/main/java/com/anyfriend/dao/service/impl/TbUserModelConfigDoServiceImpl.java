@@ -1,7 +1,7 @@
 package com.anyfriend.dao.service.impl;
 
 import com.anyfriend.dao.enums.ChatModelCategoryEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.mapper.TbUserModelConfigDoMapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.anyfriend.dao.enums.NodeEnum.*;
+import static com.anyfriend.dao.enums.LlmTypeEnum.*;
 
 /**
 * @author Lenovo
@@ -26,17 +26,17 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     implements TbUserModelConfigDoService{
 
     @Override
-    public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, NodeEnum nodeEnum) {
+    public TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, LlmTypeEnum llmTypeEnum) {
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getNodeEnum, nodeEnum)
+                .eq(TbUserModelConfigDo::getLlmTypeEnum, llmTypeEnum)
                 .one();
     }
 
     @Override
     public List<TbUserModelConfigDo> getByUserId(Long userId) {
         return lambdaQuery()
-                .isNotNull(TbUserModelConfigDo::getNodeEnum)
+                .isNotNull(TbUserModelConfigDo::getLlmTypeEnum)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .list();
     }
@@ -45,17 +45,17 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId) {
         return lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .ne(TbUserModelConfigDo::getNodeEnum,DISABLE)
-                .orderByAsc(TbUserModelConfigDo::getNodeEnum)
+                .ne(TbUserModelConfigDo::getLlmTypeEnum,DISABLE)
+                .orderByAsc(TbUserModelConfigDo::getLlmTypeEnum)
                 .list();
     }
 
     @Override
-    public void clearNodeNumByUserIdAndNodeNum(Long userId,  NodeEnum nodeEnum) {
+    public void clearNodeNumByUserIdAndNodeNum(Long userId,  LlmTypeEnum llmTypeEnum) {
         lambdaUpdate()
-                .set(TbUserModelConfigDo::getNodeEnum, null)
+                .set(TbUserModelConfigDo::getLlmTypeEnum, null)
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getNodeEnum,  nodeEnum)
+                .eq(TbUserModelConfigDo::getLlmTypeEnum, llmTypeEnum)
                 .update();
     }
 
@@ -63,7 +63,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize) {
         Page<TbUserModelConfigDo> page = new Page<>(pageNum, pageSize);
         return lambdaQuery()
-                .eq(TbUserModelConfigDo::getNodeEnum,DISABLE)
+                .eq(TbUserModelConfigDo::getLlmTypeEnum,DISABLE)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .page(page);
     }
@@ -72,11 +72,11 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     public List<TbUserModelConfigDo> getDisableApiConfigByCategory(Long userId, ChatModelCategoryEnum categoryEnum) {
         LambdaQueryChainWrapper<TbUserModelConfigDo> eq = lambdaQuery()
                 .eq(TbUserModelConfigDo::getUserId,userId)
-                .eq(TbUserModelConfigDo::getNodeEnum,DISABLE);
+                .eq(TbUserModelConfigDo::getLlmTypeEnum,DISABLE);
         if (categoryEnum != null){
             eq.eq(TbUserModelConfigDo::getCategory, categoryEnum.getCategory());
         }else{
-            eq.ne(TbUserModelConfigDo::getNodeEnum,IMAGE_ANALYSIS).ne(TbUserModelConfigDo::getNodeEnum,TTS);
+            eq.ne(TbUserModelConfigDo::getLlmTypeEnum,IMAGE_ANALYSIS).ne(TbUserModelConfigDo::getLlmTypeEnum,TTS);
         }
 
         return eq.list();
@@ -86,12 +86,12 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     @Transactional
     public void changeApiModelById(Long userId, TbUserModelConfigDo tbUserModelConfigDo,ChatModelCategoryEnum chatModelCategoryEnum) {
         LambdaUpdateChainWrapper<TbUserModelConfigDo> eq =
-                lambdaUpdate().set(TbUserModelConfigDo::getNodeEnum, DISABLE)
-                        .eq(TbUserModelConfigDo::getNodeEnum, tbUserModelConfigDo.getNodeEnum())
+                lambdaUpdate().set(TbUserModelConfigDo::getLlmTypeEnum, DISABLE)
+                        .eq(TbUserModelConfigDo::getLlmTypeEnum, tbUserModelConfigDo.getLlmTypeEnum())
                 .eq(TbUserModelConfigDo::getUserId, userId);
         // 设置所有 nodeNum为0
         if (chatModelCategoryEnum == null){
-            eq.ne(TbUserModelConfigDo::getNodeEnum,IMAGE_ANALYSIS).ne(TbUserModelConfigDo::getNodeEnum,TTS);
+            eq.ne(TbUserModelConfigDo::getLlmTypeEnum,IMAGE_ANALYSIS).ne(TbUserModelConfigDo::getLlmTypeEnum,TTS);
         }else{
             eq.eq(TbUserModelConfigDo::getCategory, chatModelCategoryEnum.getCategory());
         }

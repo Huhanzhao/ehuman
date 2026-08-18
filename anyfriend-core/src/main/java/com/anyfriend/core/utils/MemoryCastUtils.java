@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MemoryCastUtils {  // todo memoryString格式优化
+public class MemoryCastUtils {
 
     public static String memoryCastToString(List<TbAiChatMemoryDo> memoryDoList, Boolean fillSystemMessage) {
         List<TbAiChatMemoryDo> tbAiChatMemoryDos = fillSystemMessage ? fillSystemMessage(memoryDoList) : memoryDoList;

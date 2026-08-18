@@ -6,9 +6,11 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.utils.LocalCacheUtil;
+import com.anyfriend.core.utils.PromptReadUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.FeatureTypeEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmChatEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserFeatureButtonDoService;
@@ -16,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,6 +33,8 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.anyfriend.dao.enums.FeatureTypeEnum.IMAGE_ANALYSIS;
 
 @Component
 @Slf4j
@@ -54,7 +59,7 @@ public class ImageAnalysisNode implements NodeAction {
 
         if (userInput.startsWith("[CQ:image")){
             try{
-                boolean enableByUserId = tbUserFeatureButtonDoService.isEnableByUserId(userId, FeatureTypeEnum.IMAGE_ANALYSIS);
+                boolean enableByUserId = tbUserFeatureButtonDoService.isEnableByUserId(userId, IMAGE_ANALYSIS);
                 if (!enableByUserId){
                     throw new RuntimeException("没有启用图片解析");
                 }
@@ -62,7 +67,7 @@ public class ImageAnalysisNode implements NodeAction {
                 Matcher matcher = pattern.matcher(userInput.replaceAll("&amp;","&"));
                 matcher.find();
 
-                ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.IMAGE_ANALYSIS);
+                ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.IMAGE_ANALYSIS);
 
                 String path = matcher.group(1);
                 Message message = null;
@@ -73,19 +78,9 @@ public class ImageAnalysisNode implements NodeAction {
                             .build();
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
-                } // todo 提示词抽取md文件放到文件夹里面
-                String systemPrompt = """
-                    # 你是一个图片分析专家，请分析图片是否为表情包并描述图片 并且按照要求格式输出
-                    本次消息的String格式：""" + userInput + """
-                    
-                    ## 要求：
-                       1. 简短描述图片内容，内容用<image></image> 或者<emoji></emoji>标签包裹
-                       2. 判断图片是否为表情包，如果是表情包就给<emoji>标签加上属性 emo:xxx, 是普通图片就用image标签
-                       
-                       例如：
-                         <emoji emo="吃瓜">一个熊猫穿着黄色衣服拿着西瓜</emoji>
-                         <image>在高铁站的照片，有很多人</image>
-                    """;
+                }
+                PromptTemplate systemPromptTemplate = PromptReadUtil.readPrompt(LlmChatEnum.IMAGE_ANALYSIS);
+                String systemPrompt = systemPromptTemplate.render(Map.of("userInput", userInput));
                 String content = chatClient.prompt(systemPrompt).messages(message).call().content();
                 log.info("图片描述：" + content);
                 if (content.isEmpty()){

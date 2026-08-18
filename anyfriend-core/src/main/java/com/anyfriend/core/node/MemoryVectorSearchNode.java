@@ -37,13 +37,23 @@ public class MemoryVectorSearchNode implements NodeAction {
 
         // 调用向量模型 向量化问题
         float[] floats = embeddingService.embeddingText(userId, userInput);
+        if (floats == null){
+            log.info("没有向量模型跳过");
+            return Map.of();
+        }
+
         // 检索记忆
         List<TbMessageVectorSearchDo> tbMessageVectorSearchDos = dbVectorOperationService.searchVector(userId,
                 Arrays.toString(floats),
                 2,
-                0.7);
+                0.8);
 
-        // todo 修改检索记忆的格式 xxxxxshijian : sdfksdfslkfjk
-        return Map.of("userInput", userInput, "vectorMemory", tbMessageVectorSearchDos);
+        // 修改检索记忆的格式
+        StringBuilder stringBuilder = new StringBuilder();
+        for (TbMessageVectorSearchDo tbMessageVectorSearchDo : tbMessageVectorSearchDos) {
+            stringBuilder.append("时间：").append(tbMessageVectorSearchDo.getCreateTime()).append(" ")
+                    .append(tbMessageVectorSearchDo.getContext()).append("\n");
+        }
+        return Map.of("userInput", userInput, "vectorMemory", stringBuilder.toString());
     }
 }

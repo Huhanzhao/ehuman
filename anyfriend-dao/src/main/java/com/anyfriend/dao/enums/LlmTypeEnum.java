@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum NodeEnum {
+public enum LlmTypeEnum {
 
     DISABLE("disable",0),
     MASTER("master",1),
@@ -21,7 +21,7 @@ public enum NodeEnum {
     private final Integer nodeNum;
 
     public static String getByNameNodeNum(Integer nodeNum){
-        for (NodeEnum value : values()) {
+        for (LlmTypeEnum value : values()) {
             if (nodeNum.equals(value.getNodeNum())){
                 return value.getNodeName();
             }

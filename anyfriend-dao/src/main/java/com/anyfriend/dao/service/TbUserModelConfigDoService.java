@@ -2,7 +2,7 @@ package com.anyfriend.dao.service;
 
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.enums.ChatModelCategoryEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -15,13 +15,13 @@ import java.util.List;
 */
 public interface TbUserModelConfigDoService extends IService<TbUserModelConfigDo> {
 
-    TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, NodeEnum nodeEnum);
+    TbUserModelConfigDo getByUserIdAndNodeNum(Long userId, LlmTypeEnum llmTypeEnum);
 
     List<TbUserModelConfigDo> getByUserId(Long userId);
 
     List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId);
 
-    void clearNodeNumByUserIdAndNodeNum(Long userId,  NodeEnum nodeEnum);
+    void clearNodeNumByUserIdAndNodeNum(Long userId,  LlmTypeEnum llmTypeEnum);
 
     Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize);
 

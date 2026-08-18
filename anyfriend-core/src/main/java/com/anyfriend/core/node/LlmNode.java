@@ -5,15 +5,13 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.core.service.AfterLlmCallback;
 import com.anyfriend.core.service.BeforeLlmCallback;
-import com.anyfriend.dao.enums.LlmNodeTypeEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.core.utils.PromptReadUtil;
+import com.anyfriend.dao.enums.LlmChatEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,7 +30,7 @@ public class LlmNode implements NodeAction {
 
     private final String outPutKey;
 
-    private final NodeEnum nodeEnum;
+    private final LlmTypeEnum llmTypeEnum;
 
     private final ChatClientFactory chatClientFactory;
 
@@ -56,7 +54,7 @@ public class LlmNode implements NodeAction {
 
         log.info("llmNode: {},prompt:{}",this.nodeName, prompt);
 
-        ChatClient chatClient = chatClientFactory.createChatClient((Long) state.value("userId").get(), nodeEnum);
+        ChatClient chatClient = chatClientFactory.createChatClient((Long) state.value("userId").get(), llmTypeEnum);
 
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt(prompt);
         if (beforeCallBackEntity != null && beforeCallBackEntity.userMessage() != null){
@@ -83,7 +81,7 @@ public class LlmNode implements NodeAction {
         String prompt = fillPromptTemplate(promptParams, this.promptTemplate);
         log.info("单节点调用 llmNodeName: {},prompt:{}",this.nodeName, prompt);
 
-        ChatClient chatClient = chatClientFactory.createChatClient(userId, nodeEnum);
+        ChatClient chatClient = chatClientFactory.createChatClient(userId, llmTypeEnum);
 
         String content = chatClient.prompt(prompt).call().content();
         log.info("单节点调用 llmNode: {},outPut:{}",this.nodeName, content);
@@ -102,29 +100,24 @@ public class LlmNode implements NodeAction {
     }
 
 
-    public LlmNode(LlmNodeTypeEnum nodeTypeEnum,
-                              NodeEnum nodeEnum,
-                              BeforeLlmCallback beforeLlmCallback,
-                              AfterLlmCallback afterLlmCallback,
-                              ChatClientFactory chatClientFactory
+    public LlmNode(LlmChatEnum nodeTypeEnum,
+                   LlmTypeEnum llmTypeEnum,
+                   BeforeLlmCallback beforeLlmCallback,
+                   AfterLlmCallback afterLlmCallback,
+                   ChatClientFactory chatClientFactory
     ) {
-        try {
-            this.promptTemplate = PromptTemplate.builder().template(
-                    Files.readString(Paths.get(nodeTypeEnum.getPromptTemplatePath()))).build();
-            this.nodeName = nodeTypeEnum.getNodeName();
-            this.outPutKey = nodeTypeEnum.getOutputKey();
-            this.beforeLlmCallback = beforeLlmCallback;
-            this.afterLlmCallback = afterLlmCallback;
-            this.nodeEnum = nodeEnum;
-            this.chatClientFactory = chatClientFactory;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.promptTemplate = PromptReadUtil.readPrompt(nodeTypeEnum);
+        this.nodeName = nodeTypeEnum.getNodeName();
+        this.outPutKey = nodeTypeEnum.getOutputKey();
+        this.beforeLlmCallback = beforeLlmCallback;
+        this.afterLlmCallback = afterLlmCallback;
+        this.llmTypeEnum = llmTypeEnum;
+        this.chatClientFactory = chatClientFactory;
     }
 
-    public LlmNode(LlmNodeTypeEnum nodeTypeEnum,
-                   NodeEnum nodeEnum,
+    public LlmNode(LlmChatEnum nodeTypeEnum,
+                   LlmTypeEnum llmTypeEnum,
                    ChatClientFactory chatClientFactory){
-        this(nodeTypeEnum,nodeEnum,null,null,chatClientFactory);
+        this(nodeTypeEnum, llmTypeEnum,null,null,chatClientFactory);
     }
 }

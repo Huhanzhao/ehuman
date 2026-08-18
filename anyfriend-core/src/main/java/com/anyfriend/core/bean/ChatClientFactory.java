@@ -3,7 +3,7 @@ package com.anyfriend.core.bean;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbChatConfigDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbChatConfigDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +46,8 @@ public class ChatClientFactory {
     @Autowired
     private SendMessageUtil sendMessageUtil;
 
-    public ChatClient createChatClient(Long userId, NodeEnum nodeEnum) {
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, nodeEnum);
+    public ChatClient createChatClient(Long userId, LlmTypeEnum llmTypeEnum) {
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, llmTypeEnum);
         // 没有配置某节点模型 随便取一个模型
         if (modelConfigDo == null){
             List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);

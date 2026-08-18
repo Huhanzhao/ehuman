@@ -133,7 +133,7 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
     }
 
     private void loadVectorExtension(Statement stmt) throws SQLException {
-        // todo 打包镜像换成对应linux插件
+        // 打包镜像换成对应linux插件
         stmt.execute("SELECT load_extension('./sqlite/" + vectorPlugin + "')");
         log.info("加载向量拓展成功");
     }

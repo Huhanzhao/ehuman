@@ -13,7 +13,7 @@ import com.anyfriend.dao.entity.TbBotPromptDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.enums.ChatModelCategoryEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.anyfriend.dao.enums.ChatModelCategoryEnum.*;
-import static com.anyfriend.dao.enums.NodeEnum.EMBEDDING;
 
 @Component
 @AllArgsConstructor
@@ -119,7 +118,7 @@ public class SystemGraph {
         SystemInterruptionNode nodeTypeNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
                 .inputPrompt("请输入要切换的节点类型序号：\n1.主节点\n2.辅助节点\n3.图片识别节点\n4.语音合成节点\n5.Embedding模型")
-                .inputMapping(Map.of("1", NodeEnum.MASTER.name(), "2", NodeEnum.AUXILIARY.name(), "3", NodeEnum.IMAGE_ANALYSIS.name(), "4", NodeEnum.TTS.name(), "5", NodeEnum.EMBEDDING.name()))
+                .inputMapping(Map.of("1", LlmTypeEnum.MASTER.name(), "2", LlmTypeEnum.AUXILIARY.name(), "3", LlmTypeEnum.IMAGE_ANALYSIS.name(), "4", LlmTypeEnum.TTS.name(), "5", LlmTypeEnum.EMBEDDING.name()))
                 .nodeName("nodeTypeNode")
                 .interruptKey("nodeType").build();
 

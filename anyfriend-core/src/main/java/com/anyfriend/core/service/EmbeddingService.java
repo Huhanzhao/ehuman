@@ -1,7 +1,7 @@
 package com.anyfriend.core.service;
 
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class EmbeddingService {
     private final TbUserModelConfigDoService tbUserModelConfigDoService;
 
     public float[] embeddingText(Long userId, String text){
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.EMBEDDING);
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.EMBEDDING);
         if (modelConfigDo == null){
             log.info("没有向量模型跳过");
             return null;

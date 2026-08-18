@@ -5,7 +5,7 @@ import com.anyfriend.core.job.JobManager;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbBotLifeDetailDo;
 import com.anyfriend.dao.entity.TbUserMessageSummaryDo;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbBotLifeDetailDoService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserBotStatusDoService;
@@ -90,7 +90,7 @@ public class BotLifeDetailCreateJob implements Job {
                 "\n\n" +
                 "## 近三天的聊天记录总结\n" + summaryText +
                 "\n## 要求\n" +
-                "1. 生成一整天24小时的生活细节，从00:00到24:00\n" +
+                "1. 生成一整天24小时的生活细节，从00:00到23:59\n" +
                 "2. 用户与机器人是异地，只生成机器人自己的生活细节，不要涉及到与用户的互动，也不要生成类似发照片，语音，电话，消息或者等待用户消息类似的情节\n" +
                 "3. 每个时间段要具体、真实、贴近角色的日常生活 （比如吃饭 睡觉 玩手机 和朋友聊天等）\n" +
                 "4. 根据近期聊天内容适当融入相关情节（比如聊到过的话题、用户提到的事情等）\n" +
@@ -109,7 +109,7 @@ public class BotLifeDetailCreateJob implements Job {
         try {
             // 使用userId来获取chatClient
             Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
+            ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.AUXILIARY);
             String content = chatClient.prompt(prompt).call().content();
             log.info("AI生成的生活细节:\n{}", content);
 

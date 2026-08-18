@@ -1,7 +1,7 @@
 package com.anyfriend.dao.entity;
 
 import com.anyfriend.dao.config.SqliteDateTypeHandler;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -33,7 +33,7 @@ public class TbUserModelConfigDo {
      * 
      */
     @TableField("node_num")
-    private NodeEnum nodeEnum;
+    private LlmTypeEnum llmTypeEnum;
 
     /**
      * 

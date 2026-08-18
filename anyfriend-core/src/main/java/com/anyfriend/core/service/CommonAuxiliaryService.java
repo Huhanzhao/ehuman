@@ -11,8 +11,8 @@ import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbMessageSummaryVectorDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
-import com.anyfriend.dao.enums.LlmNodeTypeEnum;
-import com.anyfriend.dao.enums.NodeEnum;
+import com.anyfriend.dao.enums.LlmChatEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.DBVectorOperationService;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
@@ -55,7 +55,7 @@ public class CommonAuxiliaryService {
 
     //  更新下次主动发送消息的信息
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
-        LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, NodeEnum.AUXILIARY, chatClientFactory);
+        LlmNode llmNode = new LlmNode(LlmChatEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, LlmTypeEnum.AUXILIARY, chatClientFactory);
 
         String memoryString = state.value("memoryString", String.class).get();
         String generateMessage = state.value("generateMessage", String.class).get().trim();
@@ -88,7 +88,7 @@ public class CommonAuxiliaryService {
 
     public boolean summaryMessages(Long userId){
         // 查询向量化的key
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, NodeEnum.EMBEDDING);
+        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.EMBEDDING);
         if (modelConfigDo == null){
             log.info("没有向量模型跳过");
             return false;
@@ -134,7 +134,7 @@ public class CommonAuxiliaryService {
 
                 // 调用大模型总结
                 log.info("开始向量化消息");
-                LlmNode llmNode = new LlmNode(LlmNodeTypeEnum.SUMMARY_MESSAGES, NodeEnum.AUXILIARY, chatClientFactory);
+                LlmNode llmNode = new LlmNode(LlmChatEnum.SUMMARY_MESSAGES, LlmTypeEnum.AUXILIARY, chatClientFactory);
                 String content;
                 try {
                     content = llmNode.invoke(userId, promptParams);

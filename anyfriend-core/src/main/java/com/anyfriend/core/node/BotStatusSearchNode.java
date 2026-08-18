@@ -6,14 +6,14 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.anyfriend.core.bean.ChatClientFactory;
 import com.anyfriend.dao.entity.*;
 import com.anyfriend.dao.enums.FamiliarityEnum;
+import com.anyfriend.dao.enums.LlmChatEnum;
+import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.enums.MoodEnum;
-import com.anyfriend.dao.enums.NodeEnum;
 import com.anyfriend.dao.service.*;
 import com.anyfriend.plugin.SystemPath;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -39,34 +39,6 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private static final Pattern MOOD_PATTERN = Pattern.compile("心情[:：]\\s*([0-4])");
     private static final Pattern MOOD_FALLBACK_PATTERN = Pattern.compile("[0-4]");
     private static final Pattern REASON_PATTERN = Pattern.compile("原因[:：]\\s*(.+)");
-
-    private static final String MOOD_ANALYSIS_PROMPT = """
-            你是一个心情分析专家，负责分析情绪陪伴机器人当前应该处于什么心情。
-
-            ## 心情选项
-            0 - 平静：日常状态，没有明显情绪波动
-            1 - 开心：遇到好事、收到关心、有趣的话题
-            2 - 悲伤：受到委屈、想念、感伤的话题
-            3 - 愤怒：被冒犯、被辱骂、被不尊重
-            4 - 烦躁：被打扰、不耐烦、压力大
-
-            ## 当前状态
-            机器人正在做的事情：%s
-            ## 最近的对话
-            %s
-
-            ## 分析要求
-            1. 结合机器人正在做的事情和对话内容，判断当前最合理的心情
-            2. 心情变化不要太剧烈，除非对话中有强烈的情绪触发
-
-            ## 输出格式
-            心情为平静时只输出一行：
-            心情: 0
-            心情不平静时输出两行：
-            心情: 数字
-            原因: 简短原因（一句话）
-
-            不要输出其他内容。""";
 
     private final ChatClientFactory chatClientFactory;
     private final TbUserBotStatusDoService tbUserBotStatusDoService;
@@ -111,9 +83,8 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     private MoodAnalysisResult analyzeMood(Long userId,MoodEnum currentMood, String lifeDetail, String memoryString) {
         try {
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, NodeEnum.AUXILIARY);
-            String prompt = String.format(MOOD_ANALYSIS_PROMPT, lifeDetail, memoryString);
-            String content = chatClient.prompt(prompt).call().content();// todo 模型调用改成invoke
+            String content = new LlmNode(LlmChatEnum.MOOD_ANALYSIS, LlmTypeEnum.AUXILIARY, chatClientFactory)
+                    .invoke(userId, Map.of("memoryString",memoryString,"lifeDetail",lifeDetail));
             log.info("心情分析原始结果: {}", content);
 
             int moodCode = extractMoodCode(content, currentMood.getCode());

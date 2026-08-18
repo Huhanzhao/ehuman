@@ -11,7 +11,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum LlmNodeTypeEnum {
+public enum LlmChatEnum {
     // ----------图节点
     MEMORY_CHECK("memoryCheck", "./md/MemoryCheckPrompt.md", "memoryCheckOutput"),
     FORMAT_OUTPUT("formatOutPut", "./md/FormatOutPutPrompt.md", "formatOutPut"),
@@ -24,7 +24,9 @@ public enum LlmNodeTypeEnum {
     // -----------单次调用节点
     SUMMARY_MESSAGES("SummaryMessage", "./md/SummaryMessagePrompt.md"),
     USER_WANT_TO("userWantTo", "./md/UserWantToPrompt.md"),
-    UPDATE_NEXT_SEND_MESSAGE_INFO("updateNextSendMessageInfo", "./md/NextSendMessage.md");
+    UPDATE_NEXT_SEND_MESSAGE_INFO("updateNextSendMessageInfo", "./md/NextSendMessage.md"),
+    MOOD_ANALYSIS("moodAnalysis", "./md/MoodAnalysis.md"),
+    IMAGE_ANALYSIS("imageAnalysis", "./md/ImageAnalysisPrompt.md");
 
 
     private final String nodeName;
@@ -32,11 +34,11 @@ public enum LlmNodeTypeEnum {
     private final String outputKey;
     private final Integer historyMessagesCount;
 
-    LlmNodeTypeEnum(String nodeName, String promptTemplatePath){
+    LlmChatEnum(String nodeName, String promptTemplatePath){
         this(nodeName,promptTemplatePath,"outPutKey",0);
     }
 
-    LlmNodeTypeEnum(String nodeName, String promptTemplatePath, String outputKey){
+    LlmChatEnum(String nodeName, String promptTemplatePath, String outputKey){
         this(nodeName,promptTemplatePath,outputKey,0);
     }
 }
