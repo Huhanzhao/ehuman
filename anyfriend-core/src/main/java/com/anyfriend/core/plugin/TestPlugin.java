@@ -47,12 +47,12 @@ public class TestPlugin extends BotPlugin {
 
     @Autowired
     private DBVectorOperationService dbVectorOperationService;
-
-
     @PrivateMessageHandler
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot, PrivateMessageEvent event)  {
+
+
 
 //        // 调用向量模型 向量化问题
 //        float[] floats = embeddingService.embeddingText(event.getUserId(), event.getMessage());

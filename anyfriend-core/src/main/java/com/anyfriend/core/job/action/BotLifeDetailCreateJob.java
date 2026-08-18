@@ -1,29 +1,26 @@
 package com.anyfriend.core.job.action;
 
 import com.anyfriend.core.bean.ChatClientFactory;
-import com.anyfriend.core.job.JobManager;
+import com.anyfriend.core.node.LlmNode;
 import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbBotLifeDetailDo;
-import com.anyfriend.dao.entity.TbUserMessageSummaryDo;
+import com.anyfriend.dao.enums.LlmChatEnum;
 import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.TbBotLifeDetailDoService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserBotStatusDoService;
-import com.anyfriend.dao.service.TbUserMessageSummaryDoService;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,13 +32,7 @@ public class BotLifeDetailCreateJob implements Job {
     private TbBotLifeDetailDoService tbBotLifeDetailDoService;
 
     @Autowired
-    private TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
-
-    @Autowired
     private ChatClientFactory chatClientFactory;
-
-    @Autowired
-    private JobManager jobManager;
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
@@ -55,26 +46,7 @@ public class BotLifeDetailCreateJob implements Job {
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
-        // 查询近三天的聊天记录总结
         LocalDate today = LocalDate.now();
-        Date threeDaysAgo = Date.from(today.minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant());
-        // todo 总结需要修改
-        List<TbUserMessageSummaryDo> summaries = tbUserMessageSummaryDoService.list(
-                Wrappers.<TbUserMessageSummaryDo>lambdaQuery()
-                        .ge(TbUserMessageSummaryDo::getCreateTime, threeDaysAgo)
-                        .orderByDesc(TbUserMessageSummaryDo::getCreateTime)
-        );
-
-        StringBuilder summaryText = new StringBuilder();
-        if (summaries != null && !summaries.isEmpty()) {
-            SimpleDateFormat sdf = new SimpleDateFormat("MM月dd日");
-            for (TbUserMessageSummaryDo s : summaries) {
-                String date = s.getCreateTime() != null ? sdf.format(s.getCreateTime()) : "未知日期";
-                summaryText.append(date).append(": ").append(s.getSummary()).append("\n");
-            }
-        } else {
-            summaryText.append("暂无近期聊天记录。");
-        }
 
         // 生成今天的日期字符串
         String todayStr = today.getYear() + "年" + today.getMonthValue() + "月" + today.getDayOfMonth() + "日";
@@ -82,35 +54,14 @@ public class BotLifeDetailCreateJob implements Job {
 
         // 获取bot角色设定
         String botRole = tbBotPromptDoService.getRolePrompt();
-        // todo 模型调用改成invoke
         // 调用AI生成今天的生活细节
-        String prompt = "你是一个虚拟生活规划师。请为以下角色（情感陪伴机器人）生成今天（" + todayStr + " " + weekDay + "）的生活安排。\n\n" +
-                "## 角色信息\n" +
-                botRole +
-                "\n\n" +
-                "## 近三天的聊天记录总结\n" + summaryText +
-                "\n## 要求\n" +
-                "1. 生成一整天24小时的生活细节，从00:00到23:59\n" +
-                "2. 用户与机器人是异地，只生成机器人自己的生活细节，不要涉及到与用户的互动，也不要生成类似发照片，语音，电话，消息或者等待用户消息类似的情节\n" +
-                "3. 每个时间段要具体、真实、贴近角色的日常生活 （比如吃饭 睡觉 玩手机 和朋友聊天等）\n" +
-                "4. 根据近期聊天内容适当融入相关情节（比如聊到过的话题、用户提到的事情等）\n" +
-                "5. 时间段要细致划分，一天至少15-20条记录，覆盖全天\n" +
-                "6. 每条描述只说做了什么，10字以内\n\n" +
-                "## 输出格式\n" +
-                "严格按以下格式输出，每行一条，不要输出其他内容：\n" +
-                "HH:mm-HH:mm: 生活细节描述\n" +
-                "HH:mm-HH:mm: 生活细节描述\n" +
-                "...\n\n" +
-                "示例：\n" +
-                "00:00-07:30: 在宿舍睡觉，玩了会手机\n" +
-                "07:30-08:00: 起床洗漱\n" +
-                "08:00-08:30: 和室友去食堂吃早餐";
-
+        LlmNode lifeDetailGenerateNode = new LlmNode(LlmChatEnum.LIFE_DETAIL_GENERATE, LlmTypeEnum.AUXILIARY, chatClientFactory);
         try {
             // 使用userId来获取chatClient
             Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.AUXILIARY);
-            String content = chatClient.prompt(prompt).call().content();
+            String content = lifeDetailGenerateNode.invoke(userId,Map.of("todayStr",todayStr,
+                    "weekDay",weekDay,
+                    "botRole",botRole));
             log.info("AI生成的生活细节:\n{}", content);
 
             // 解析并保存

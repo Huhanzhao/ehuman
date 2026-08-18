@@ -4,7 +4,10 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.anyfriend.core.bean.ChatClientFactory;
-import com.anyfriend.dao.entity.*;
+import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.entity.TbBotLifeDetailDo;
+import com.anyfriend.dao.entity.TbUserBotStatusDo;
+import com.anyfriend.dao.entity.TbUserInfoDo;
 import com.anyfriend.dao.enums.FamiliarityEnum;
 import com.anyfriend.dao.enums.LlmChatEnum;
 import com.anyfriend.dao.enums.LlmTypeEnum;
@@ -44,7 +47,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private final TbUserBotStatusDoService tbUserBotStatusDoService;
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
     private final TbUserInfoDoService tbUserInfoDoService;
-    private final TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
+    private final TbMessageSummaryVectorDoService tbMessageSummaryVectorDoService;
     private final TbBotPromptDoService tbBotPromptDoService;
     private final TbAiChatMemoryService tbAiChatMemoryService;
     private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
@@ -136,7 +139,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         result.put("currentTime", buildTimeInfo());
         result.put("currentActivity", lifeDetail.isBlank() ? "" : "你现在正在" + lifeDetail);
         result.put("userInfo", getUserInfo(userId));
-        result.put("yesterdayChatSummary", getYesterdayChatSummary(userId));
+        result.put("recentChatSummary", getRecentChatSummary(userId));
         result.put("daysTogether", getDaysTogetherInfo(userId));
         result.put("stickerTypes", getStickerTypes());
         result.put("failReason", "");
@@ -176,19 +179,9 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         return infoList.isEmpty() ? "无" : infoList.getFirst();
     }
 
-    private String getYesterdayChatSummary(Long userId) {
-        LocalDateTime yesterdayStart = LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime yesterdayEnd = LocalDateTime.now().minusDays(1).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        // todo 修改逻辑 昨天的总结不要了，查询最近两段或者一段总结
-        TbUserMessageSummaryDo summary = tbUserMessageSummaryDoService.getOne(
-                Wrappers.<TbUserMessageSummaryDo>lambdaQuery()
-                        .eq(TbUserMessageSummaryDo::getUserId, userId)
-                        .ge(TbUserMessageSummaryDo::getCreateTime, yesterdayStart)
-                        .le(TbUserMessageSummaryDo::getCreateTime, yesterdayEnd)
-                        .orderByDesc(TbUserMessageSummaryDo::getCreateTime)
-                        .last("limit 1")
-        );
-        return summary != null ? summary.getSummary() : "无";
+    private String getRecentChatSummary(Long userId) {
+        String recentSummary =tbMessageSummaryVectorDoService.getRecentSummaryByUserId(userId, 2);
+        return !recentSummary.isEmpty() ? recentSummary : "无";
     }
 
     private String getDaysTogetherInfo(Long userId) {

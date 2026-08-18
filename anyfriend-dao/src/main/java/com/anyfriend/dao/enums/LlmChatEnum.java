@@ -26,7 +26,8 @@ public enum LlmChatEnum {
     USER_WANT_TO("userWantTo", "./md/UserWantToPrompt.md"),
     UPDATE_NEXT_SEND_MESSAGE_INFO("updateNextSendMessageInfo", "./md/NextSendMessage.md"),
     MOOD_ANALYSIS("moodAnalysis", "./md/MoodAnalysis.md"),
-    IMAGE_ANALYSIS("imageAnalysis", "./md/ImageAnalysisPrompt.md");
+    IMAGE_ANALYSIS("imageAnalysis", "./md/ImageAnalysisPrompt.md"),
+    LIFE_DETAIL_GENERATE("lifeDetailGenerate", "./md/BotLifeDetailPrompt.md");
 
 
     private final String nodeName;

@@ -12,4 +12,5 @@ public interface TbMessageSummaryVectorDoService extends IService<TbMessageSumma
 
     TbMessageSummaryVectorDo getLastOneByUserId(Long userId);
 
+    String getRecentSummaryByUserId(Long userId, Integer pageSize);
 }

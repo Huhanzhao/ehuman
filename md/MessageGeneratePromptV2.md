@@ -43,6 +43,9 @@
 ### 向量库检索记忆
 {vectorMemory}
 
+### 最近情景记忆
+{recentChatSummary}
+
 
 ## STEP4：根据以下要求调整符合格式的消息
 ### 格式要求
