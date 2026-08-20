@@ -46,7 +46,7 @@ public class MemoryVectorSearchNode implements NodeAction {
         List<TbMessageVectorSearchDo> tbMessageVectorSearchDos = dbVectorOperationService.searchVector(userId,
                 Arrays.toString(floats),
                 2,
-                0.8);
+                0.7);
 
         // 修改检索记忆的格式
         StringBuilder stringBuilder = new StringBuilder();
