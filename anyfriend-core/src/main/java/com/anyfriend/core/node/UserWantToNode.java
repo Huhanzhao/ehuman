@@ -40,7 +40,7 @@ public class UserWantToNode implements NodeAction {
         List<TbAiChatMemoryDo> messageList = tbAiChatMemoryService.getMessageList(userId, 15);
         String memoryString = MemoryCastUtils.memoryCastToString(messageList,true);
         // 异步调用流水账记录
-        CompletableFuture.runAsync(() -> commonAuxiliaryService.summaryMessages(userId))
+        CompletableFuture.runAsync(() -> commonAuxiliaryService.summaryMessages(userId,20))
                 .exceptionally(throwable -> {
                     log.error("summaryMessages 异步执行失败，userId: {}", userId, throwable);
                     throwable.printStackTrace();

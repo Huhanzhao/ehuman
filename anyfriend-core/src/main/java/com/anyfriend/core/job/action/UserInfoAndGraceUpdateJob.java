@@ -1,8 +1,14 @@
 package com.anyfriend.core.job.action;
 
 import com.anyfriend.core.bean.ChatClientFactory;
+import com.anyfriend.core.node.LlmNode;
+import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.utils.SendMessageUtil;
-import com.anyfriend.dao.entity.*;
+import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.entity.TbUpdateGraceHistoryDo;
+import com.anyfriend.dao.entity.TbUserBotStatusDo;
+import com.anyfriend.dao.entity.TbUserInfoDo;
+import com.anyfriend.dao.enums.LlmChatEnum;
 import com.anyfriend.dao.enums.LlmTypeEnum;
 import com.anyfriend.dao.service.*;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -10,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +23,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +51,11 @@ public class UserInfoAndGraceUpdateJob implements Job {
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
+
+    @Autowired
+    private CommonAuxiliaryService commonAuxiliaryService;
+
+
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -86,7 +97,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
                     continue;
                 }
             } else {
-                // 有消息，用AI评分、生成总结、提取用户画像
+                // 有消息，用AI评分、提取用户画像
                 List<TbUserInfoDo> existingInfoList = tbUserInfoDoService.getUserInfoByUserId(userId);
                 String existingInfo = (existingInfoList != null && !existingInfoList.isEmpty())
                         ? existingInfoList.getFirst().getUserInfo() : null;
@@ -95,14 +106,8 @@ public class UserInfoAndGraceUpdateJob implements Job {
                 delta = evaluation.delta();
                 reason = evaluation.reason();
 
-                // 保存昨日聊天总结
-                if (evaluation.summary() != null && !evaluation.summary().isBlank()) {
-                    TbUserMessageSummaryDo summary = new TbUserMessageSummaryDo();
-                    summary.setUserId(userId);
-                    summary.setSummary(evaluation.summary());
-                    // todo 修改逻辑 不往这个表存了 最后如果不足二十条，直接取最后二十条
-                    tbUserMessageSummaryDoService.save(summary);
-                }
+                // 最后如果不足二十条，直接取最后二十条做向量化
+                commonAuxiliaryService.summaryMessages(userId,1);
 
                 // 保存或更新用户画像
                 if (evaluation.userInfo() != null && !evaluation.userInfo().isBlank()) {
@@ -142,36 +147,18 @@ public class UserInfoAndGraceUpdateJob implements Job {
         for (TbAiChatMemoryDo msg : messages) {
             chatLog.append(msg.getRole()).append(": ").append(msg.getMessage()).append("\n");
         }
-        // todo 模型调用改成invoke
         String userInfoSection = (existingUserInfo != null && !existingUserInfo.isBlank())
                 ? "\n用户已有的画像信息：\n" + existingUserInfo
                 : "\n该用户暂无画像信息。";
-        // todo 总结昨天没有记录流水账的信息  检查之前用到了总结消息的定时任务，逻辑是否需要修改
-        String prompt = "请根据用户昨天的聊天记录完成以下任务：\n" +
-                "1. 好感度评分：评分范围只能-5或者+5，正数表示好感度增加，负数表示好感度减少。" +
-                "评估维度：聊天频率、态度友好程度、话题积极性、互动质量。\n" +
-                "2. 聊天总结：用简洁的语言总结今天的聊天内容（100字左右），不要忽略主要情节，例如：与用户讨论电影情节...用户嫌弃ai太笨...晚上互道晚安然后睡觉。\n" +
-                "3. 用户画像更新：分析聊天记录中是否有值得补充的用户画像信息（如性格特点、兴趣爱好、职业、年龄、习惯偏好等）。" +
-                "如果已有画像信息，把需要新增的画像信息和原来整理在一起；如果没有新信息则输出原来信息即可。\n" +
-                userInfoSection +
-                "\n今天用户的聊天记录如下：\n" + chatLog +
-                "\n请严格按以下格式输出，不要输出其他内容：\n" +
-                "评分: <数字>\n原因: <一句话说明>\n总结: <聊天内容总结>\n画像: <用户画像信息或\"无\">";
-
-        try {
-            ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.AUXILIARY);
-            String content = chatClient.prompt(prompt).call().content();
-            log.info("AI评估好感度结果：{}", content);
-            return parseEvaluation(content);
-        } catch (Exception e) {
-            log.error("AI评估好感度失败，userId={}", userId, e);
-            return new AiEvaluation(0, "AI评估失败，默认不调整", null, null);
-        }
+        LlmNode llmNode = new LlmNode(LlmChatEnum.USER_WANT_TO, LlmTypeEnum.AUXILIARY, chatClientFactory);
+        String content = llmNode.invoke(userId, Map.of("userInfoSection",userInfoSection,"chatLog",chatLog.toString()));
+        log.info("AI评估结果: {}", content);
+        return parseEvaluation(content);
     }
 
     private AiEvaluation parseEvaluation(String content) {
         if (content == null || content.isBlank()) {
-            return new AiEvaluation(0, "AI返回为空", null, null);
+            return new AiEvaluation(0, "AI返回为空", null);
         }
 
         // 提取评分
@@ -190,14 +177,6 @@ public class UserInfoAndGraceUpdateJob implements Job {
             reason = reasonMatcher.group(1).trim();
         }
 
-        // 提取总结
-        String summary = null;
-        Pattern summaryPattern = Pattern.compile("总结[:：]\\s*(.+)");
-        Matcher summaryMatcher = summaryPattern.matcher(content);
-        if (summaryMatcher.find()) {
-            summary = summaryMatcher.group(1).trim();
-        }
-
         // 提取画像
         String userInfo = null;
         Pattern userInfoPattern = Pattern.compile("画像[:：]\\s*(.+)");
@@ -206,7 +185,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
             userInfo = userInfoMatcher.group(1).trim();
         }
 
-        return new AiEvaluation(delta, reason, summary, userInfo);
+        return new AiEvaluation(delta, reason, userInfo);
     }
 
     private void saveOrUpdateUserInfo(Long userId, String newInfo) {
@@ -225,5 +204,5 @@ public class UserInfoAndGraceUpdateJob implements Job {
         }
     }
 
-    private record AiEvaluation(int delta, String reason, String summary, String userInfo) {}
+    private record AiEvaluation(int delta, String reason, String userInfo) {}
 }

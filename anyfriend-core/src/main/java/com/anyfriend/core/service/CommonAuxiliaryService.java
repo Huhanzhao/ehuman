@@ -66,7 +66,10 @@ public class CommonAuxiliaryService {
 
         // json解析
         try {
-            Map<String,Object> resultMap = JSON.parseObject(output.replaceAll("\n","").trim());
+            Map<String,Object> resultMap = JSON.parseObject(output.replaceAll("\n","")
+                    .replaceAll("```","")
+                    .replaceAll("```json","")
+                    .trim());
             jobManager.deleteJobByStartString("nextSendMessage_");
             if ((Boolean) resultMap.get("nextSend")){
                 jobManager.addJob("nextSendMessage_" + System.currentTimeMillis(),
@@ -86,7 +89,7 @@ public class CommonAuxiliaryService {
         return "";
     }
 
-    public boolean summaryMessages(Long userId){
+    public boolean summaryMessages(Long userId, Integer firstBatchMinMassagesCount){
         // 查询向量化的key
         TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.EMBEDDING);
         if (modelConfigDo == null){
@@ -106,8 +109,8 @@ public class CommonAuxiliaryService {
             int messageListSize = messageList.size();
 
             // 如果消息总数都不超过20条，直接返回
-            if (messageListSize <= 20) {
-                log.info("消息数量不足20条，跳过总结");
+            if (messageListSize < firstBatchMinMassagesCount) {
+                log.info("消息数量不足{}条，跳过总结",firstBatchMinMassagesCount);
                 return false;
             }
 
@@ -118,13 +121,14 @@ public class CommonAuxiliaryService {
                 int remaining = messageListSize - processedCount;
 
                 // 如果剩余不足20条，结束循环
-                if (remaining <= 20) {
-                    log.info("剩余消息数量不足20条，结束循环");
+                if (remaining < firstBatchMinMassagesCount) {
+                    log.info("剩余消息数量不足{}条，结束循环",firstBatchMinMassagesCount);
                     break;
                 }
                 Map<String,Object> promptParams = new HashMap<>();
                 // 取出当前批次的20条
-                List<TbAiChatMemoryDo> batch = messageList.subList(processedCount, processedCount + 20);
+                List<TbAiChatMemoryDo> batch = messageList.subList(processedCount, Math.min(processedCount + 20, messageListSize));
+                Integer currentMessagesCount = batch.size();
                 String memoryString = MemoryCastUtils.memoryCastToString(batch,false);
                 promptParams.put("memoryString", memoryString);
 
@@ -149,11 +153,11 @@ public class CommonAuxiliaryService {
                 dbVectorOperationService.saveVector(userId, Arrays.toString(floats),content,batch.getFirst().getCreateTime());
 
                 // 标记这20条已处理
-                processedCount += 20;
+                processedCount += currentMessagesCount;
                 // 标记消息已经向量化
                 List<Long> idList = batch.stream().map(TbAiChatMemoryDo::getId).toList();
                 tbAiChatMemoryService.setVectorFlagByIds(idList);
-                log.info("消息向量化结束，剩余消息{}条",remaining - 20);
+                log.info("消息向量化结束，剩余消息{}条",remaining - currentMessagesCount);
             }
             return true;
         }finally {
