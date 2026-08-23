@@ -54,3 +54,5 @@ minio_data/**
 /anyfriend-plugin/plugin/classes/com/bot/plugin/*.class
 /sqlite/aiBot-local.db-shm
 /sqlite/aiBot-local.db-wal
+/sqlite/aiBot.db-shm
+/sqlite/aiBot.db-wal

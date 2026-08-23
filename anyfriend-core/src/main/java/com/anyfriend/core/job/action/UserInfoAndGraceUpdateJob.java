@@ -38,9 +38,6 @@ public class UserInfoAndGraceUpdateJob implements Job {
     private TbUpdateGraceHistoryDoService tbUpdateGraceHistoryDoService;
 
     @Autowired
-    private TbUserMessageSummaryDoService tbUserMessageSummaryDoService;
-
-    @Autowired
     private TbUserInfoDoService tbUserInfoDoService;
 
     @Autowired

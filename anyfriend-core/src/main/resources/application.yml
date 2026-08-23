@@ -1,4 +1,8 @@
 spring:
+  flyway:
+    enabled: true
+    clean-disabled: true
+    locations: classpath:db
   datasource:
     # SQLite 数据库连接配置
     url: jdbc:sqlite:./sqlite/aiBot.db?journal_mode=WAL&busy_timeout=30000&enable_load_extension=true

@@ -2,6 +2,8 @@ package com.anyfriend.dao.service.impl;
 
 import com.anyfriend.dao.entity.TbMessageVectorSearchDo;
 import com.anyfriend.dao.service.DBVectorOperationService;
+import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +30,9 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
 
     @Value("${sqlite.vector}")
     private String vectorPlugin;
+
+    @Autowired
+    private TbMessageSummaryVectorDoService tbMessageSummaryVectorDoService;
 
     @Override
     public boolean saveVector(Long userId, String vector, String context, Date createTime) {
@@ -137,4 +142,43 @@ public class DBVectorOperationServiceImpl implements DBVectorOperationService {
         stmt.execute("SELECT load_extension('./sqlite/" + vectorPlugin + "')");
         log.info("加载向量拓展成功");
     }
+
+    @PostConstruct
+    private void initVectorTable(){
+        try (Connection connection = dataSource.getConnection()){
+            Statement stmt = connection.createStatement();
+            // 加载向量拓展
+            loadVectorExtension(stmt);
+
+            //判断是否存在向量表
+            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " +
+                    "sqlite_master WHERE type='table' " +
+                    "AND name='tb_message_summary_vector'");
+
+            // 判断表是否存在
+            if (rs.next()) {
+                int count = rs.getInt(1);  // 或 rs.getInt("COUNT(*)")
+                if (count > 0) {
+                    log.info("向量表存在跳过初始化");
+                } else {
+                    log.info("向量表不存在开始初始化");
+                        // 创建向量表
+                    stmt.execute("""
+                        CREATE TABLE "tb_message_summary_vector" (
+                         "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                         "user_id" bigint NOT NULL,
+                         "embedding" BLOB,
+                         "context" TEXT,
+                         "create_time" date
+                        );
+                    """);
+                    log.info("初始化成功");
+                }
+            }
+            rs.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
