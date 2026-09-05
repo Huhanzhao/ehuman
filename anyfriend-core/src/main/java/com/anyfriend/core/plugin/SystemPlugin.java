@@ -192,26 +192,32 @@ public class SystemPlugin extends BotPlugin {
         // ===== 功能开关 =====
         if (userInput.equals("#开启语音合成")){
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
+            sendMessageUtil.sendSystemMsg(userId, "已开启语音合成");
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#关闭语音合成")){
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,false, VOICE_PLUGIN);
+            sendMessageUtil.sendSystemMsg(userId, "已关闭语音合成");
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#开启表情包拾取")){
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true,EMOJI_FETCH);
+            sendMessageUtil.sendSystemMsg(userId, "已开启表情包拾取");
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#关闭表情包拾取")){
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,false,EMOJI_FETCH);
+            sendMessageUtil.sendSystemMsg(userId, "已关闭表情包拾取");
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#开启图片解析")){
             tbUserFeatureButtonDoService.turnOnOrOffImageAnalyze(userId,true);
+            sendMessageUtil.sendSystemMsg(userId, "已开启图片解析");
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#关闭图片解析")){
             tbUserFeatureButtonDoService.turnOnOrOffImageAnalyze(userId,false);
+            sendMessageUtil.sendSystemMsg(userId, "已关闭图片解析");
             return MESSAGE_BLOCK;
         }
 

@@ -51,7 +51,9 @@ public class TestPlugin extends BotPlugin {
     @MessageHandlerFilter
     @Override
     public int onPrivateMessage(Bot bot, PrivateMessageEvent event)  {
-
+//
+//        sendMessageUtil.sendVoiceMsg(event.getUserId(),"<voice tone=\"开心\">"
+//                + event.getMessage() + "</voice>");
 
 
 //        // 调用向量模型 向量化问题

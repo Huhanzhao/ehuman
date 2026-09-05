@@ -56,3 +56,4 @@ minio_data/**
 /sqlite/aiBot-local.db-wal
 /sqlite/aiBot.db-shm
 /sqlite/aiBot.db-wal
+/sqlite/aiBot_local.db

@@ -20,7 +20,10 @@ public class TbUserFeatureButtonDoServiceImpl extends ServiceImpl<TbUserFeatureB
     @Override
     @Transactional
     public void turnOnOrOffFeature(Long userId, boolean enable, FeatureTypeEnum featureTypeEnum) {
-        boolean exists = lambdaQuery().eq(TbUserFeatureButtonDo::getUserId, userId).exists();
+        boolean exists = lambdaQuery()
+                .eq(TbUserFeatureButtonDo::getUserId, userId)
+                .eq(TbUserFeatureButtonDo::getFeatureTypeEnum,featureTypeEnum)
+                .exists();
         if (!exists) {
             TbUserFeatureButtonDo tbUserFeatureButtonDo = new TbUserFeatureButtonDo();
             tbUserFeatureButtonDo.setUserId(userId);
