@@ -18,4 +18,6 @@ public interface TbAiChatMemoryService extends IService<TbAiChatMemoryDo> {
     List<TbAiChatMemoryDo> getAllNoVectorMessageList(Long userId);
 
     void setVectorFlagByIds(List<Long> idList);
+
+    boolean existsUserYesterdayMessage(Long userId);
 }

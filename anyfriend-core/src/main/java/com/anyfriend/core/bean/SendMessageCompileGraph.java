@@ -14,6 +14,7 @@ import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.LlmChatEnum;
 import com.anyfriend.dao.enums.LlmTypeEnum;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -119,7 +120,8 @@ public class SendMessageCompileGraph {
 
                         if (generateMessage.startsWith("<silence>") && generateMessage.endsWith("</silence>")){
                             sendMessageUtil.sendMegToSelf(generateMessage);
-                            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(generateMessage));
+                            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId)
+                                    .setRole(MessageTypeEnum.AI_MESSAGE).setMessage(generateMessage));
                             return CompletableFuture.completedFuture("end");
                         }
                         return CompletableFuture.completedFuture("next");

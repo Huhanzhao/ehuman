@@ -1,6 +1,7 @@
 package com.anyfriend.dao.entity;
 
 import com.anyfriend.dao.config.SqliteDateTypeHandler;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -34,7 +35,7 @@ public class TbAiChatMemoryDo {
     /**
      * 角色
      */
-    private String role;
+    private MessageTypeEnum role;
 
     private Boolean vectored;
     /**

@@ -6,6 +6,7 @@ import com.anyfriend.core.utils.SendMessageUtil;
 import com.anyfriend.dao.entity.TbBotLifeDetailDo;
 import com.anyfriend.dao.enums.LlmChatEnum;
 import com.anyfriend.dao.enums.LlmTypeEnum;
+import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbBotLifeDetailDoService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserBotStatusDoService;
@@ -43,22 +44,37 @@ public class BotLifeDetailCreateJob implements Job {
     @Autowired
     private TbUserBotStatusDoService tbUserBotStatusDoService;
 
+    @Autowired
+    private TbAiChatMemoryService tbAiChatMemoryService;
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         LocalDate today = LocalDate.now();
+        // 使用userId来获取chatClient
+        Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
+
+        // 判断昨天是否有用户消息 有就生成今天的 没有就不生成了
+        boolean existsUserYesterdayMessage = tbAiChatMemoryService.existsUserYesterdayMessage(userId);
+        if(!existsUserYesterdayMessage){
+            // 昨天没有消息 不用生成生活细节，直接拷贝最近一天的生活细节
+            boolean copySuccess = tbBotLifeDetailDoService.copyLastDayDetail(botId);
+            if (copySuccess){
+                sendMessageUtil.sendMegToSelf("生活细节拷贝成功");
+                log.info("生活细节拷贝成功");
+                return;
+            }
+        }
 
         // 生成今天的日期字符串
         String todayStr = today.getYear() + "年" + today.getMonthValue() + "月" + today.getDayOfMonth() + "日";
         String weekDay = getWeekDay(today.getDayOfWeek().getValue() - 1);
 
-        // 获取bot角色设定
-        String botRole = tbBotPromptDoService.getRolePrompt();
         // 调用AI生成今天的生活细节
         LlmNode lifeDetailGenerateNode = new LlmNode(LlmChatEnum.LIFE_DETAIL_GENERATE, LlmTypeEnum.AUXILIARY, chatClientFactory);
+        // 获取bot角色设定
+        String botRole = tbBotPromptDoService.getRolePrompt();
         try {
-            // 使用userId来获取chatClient
-            Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
             String content = lifeDetailGenerateNode.invoke(userId,Map.of("todayStr",todayStr,
                     "weekDay",weekDay,
                     "botRole",botRole));

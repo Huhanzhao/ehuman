@@ -11,4 +11,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface TbBotLifeDetailDoService extends IService<TbBotLifeDetailDo> {
     String getCurrentActivity(Long botId);
 
+    boolean copyLastDayDetail(Long botId);
 }

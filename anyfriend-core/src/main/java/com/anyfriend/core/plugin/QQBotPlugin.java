@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.anyfriend.core.utils.LocalCacheUtil;
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
@@ -62,7 +63,8 @@ public class QQBotPlugin extends BotPlugin {
         // 保存用户消息
         if (!userInput.startsWith("[CQ:image")){
             // 不是图片直接保存 是图片在图片节点解析之后保存
-            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(event.getMessage()));
+            tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId)
+                    .setRole(MessageTypeEnum.USER_MESSAGE).setMessage(event.getMessage()));
         }else {
             LocalCacheUtil.getLocalCacheUtil().put(userId + "_image", true); // 标记正在解析图片 防止没有解析完毕被下次消息打断
         }

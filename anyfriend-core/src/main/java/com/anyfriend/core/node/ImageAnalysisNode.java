@@ -11,6 +11,7 @@ import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.enums.FeatureTypeEnum;
 import com.anyfriend.dao.enums.LlmChatEnum;
 import com.anyfriend.dao.enums.LlmTypeEnum;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbBotPromptDoService;
 import com.anyfriend.dao.service.TbUserFeatureButtonDoService;
@@ -103,7 +104,9 @@ public class ImageAnalysisNode implements NodeAction {
                 }
 
                 // 保存图片描述作为用户输入
-                tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("user").setMessage(content));
+                tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId)
+                        .setRole(MessageTypeEnum.USER_MESSAGE)
+                        .setMessage(content));
             }finally {
                 LocalCacheUtil.getLocalCacheUtil().remove(userId + "_image");
             }

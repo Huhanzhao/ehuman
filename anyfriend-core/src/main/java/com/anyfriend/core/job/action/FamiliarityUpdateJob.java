@@ -67,7 +67,7 @@ public class FamiliarityUpdateJob implements Job {
             } else {
                 // 检查是否同时有用户消息和AI消息
                 Set<String> roles = messages.stream()
-                        .map(TbAiChatMemoryDo::getRole)
+                        .map(message -> message.getRole().getRole())
                         .collect(Collectors.toSet());
                 boolean hasUserMsg = roles.contains("user");
                 boolean hasAiMsg = roles.contains("assistant");

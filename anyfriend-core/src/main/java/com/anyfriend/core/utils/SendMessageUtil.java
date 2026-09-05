@@ -4,6 +4,7 @@ import com.anyfriend.dao.entity.TbAiChatMemoryDo;
 import com.anyfriend.dao.entity.TbUserModelConfigDo;
 import com.anyfriend.dao.entity.TbUserReferAudioDo;
 import com.anyfriend.dao.enums.LlmTypeEnum;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
@@ -89,7 +90,8 @@ public class SendMessageUtil {
             }
             resultMessage.append(splitMessage).append("\n");
         }
-        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole("assistant").setMessage(resultMessage.toString().trim()));
+        tbAiChatMemoryService.save(new TbAiChatMemoryDo().setMemoryId(userId).setRole(MessageTypeEnum.AI_MESSAGE)
+                .setMessage(resultMessage.toString().trim()));
     }
 
 

@@ -1,13 +1,18 @@
 package com.anyfriend.dao.service.impl;
 
+import com.anyfriend.dao.entity.TbBotLifeDetailDo;
 import com.anyfriend.dao.mapper.TbBotLifeDetailDoMapper;
+import com.anyfriend.dao.service.TbBotLifeDetailDoService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.anyfriend.dao.entity.TbBotLifeDetailDo;
-import com.anyfriend.dao.service.TbBotLifeDetailDoService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 /**
 * @author Lenovo
@@ -30,6 +35,47 @@ public class TbBotLifeDetailDoServiceImpl extends ServiceImpl<TbBotLifeDetailDoM
                         .last("limit 1")
         );
         return currentLife != null ? currentLife.getDetail() : "";
+    }
+
+    @Override
+    public boolean copyLastDayDetail(Long botId) {
+        // 获取最后一条细节 时间倒序
+        TbBotLifeDetailDo lastOne = lambdaQuery()
+                .eq(TbBotLifeDetailDo::getBotId, botId)
+                .orderByDesc(TbBotLifeDetailDo::getCreateTime)
+                .one();
+
+        if (lastOne == null){
+            return false;
+        }
+
+        Date createTime = lastOne.getCreateTime();
+
+        // 将 Date 转换为 LocalDate（只取年月日）
+        LocalDate date = createTime.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        // 当天开始：00:00:00
+        LocalDateTime startOfDay = date.atStartOfDay();
+        // 当天结束：23:59:59.999999999
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        List<TbBotLifeDetailDo> list  = lambdaQuery()
+                .eq(TbBotLifeDetailDo::getBotId, botId)
+                .between(TbBotLifeDetailDo::getCreateTime, startOfDay, endOfDay)
+                .list();
+
+        // 清空 ID 和时间字段，让数据库自动生成或让填充器生效
+        list.forEach(item -> {
+            item.setId(null);           // 清空 ID，让数据库自增
+            item.setCreateTime(null);   // 清空创建时间，触发 insertFill
+            item.setUpdateTime(null);   // 清空修改时间，触发 insertFill
+        });
+
+        // 批量复制
+        this.saveBatch(list);
+        return true;
     }
 }
 

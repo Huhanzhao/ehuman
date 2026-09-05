@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@MapperScan(basePackages = "com.bot.service.mapper")
+@MapperScan(basePackages = "com.anyfriend.dao.mapper")
 public class MybatisPlusConfig {
     /**
      * MyBatis-Plus 分页插件

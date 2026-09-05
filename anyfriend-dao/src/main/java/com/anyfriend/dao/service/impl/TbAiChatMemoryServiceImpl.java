@@ -1,6 +1,7 @@
 package com.anyfriend.dao.service.impl;
 
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import com.anyfriend.dao.mapper.TbAiChatMemoryMapper;
 import com.anyfriend.dao.service.TbAiChatMemoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -8,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -47,6 +49,22 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
     @Override
     public void setVectorFlagByIds(List<Long> idList) {
         lambdaUpdate().set(TbAiChatMemoryDo::getVectored,true).in(TbAiChatMemoryDo::getId, idList).update();
+    }
+
+    @Override
+    public boolean existsUserYesterdayMessage(Long userId) {
+
+        // 直接用 JVM 默认时区（前提是 JVM 和数据库时区一致）
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime yesterdayStart = now.toLocalDate().minusDays(1).atStartOfDay();
+        LocalDateTime yesterdayEnd = now.toLocalDate().atStartOfDay().minusNanos(1);
+
+        return this.exists(
+                lambdaQuery()
+                        .eq(TbAiChatMemoryDo::getMemoryId,userId)
+                        .eq(TbAiChatMemoryDo::getRole, MessageTypeEnum.USER_MESSAGE)
+                        .between(TbAiChatMemoryDo::getCreateTime,yesterdayStart,yesterdayEnd)
+        );
     }
 }
 

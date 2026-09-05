@@ -1,6 +1,7 @@
 package com.anyfriend.core.utils;
 
 import com.anyfriend.dao.entity.TbAiChatMemoryDo;
+import com.anyfriend.dao.enums.MessageTypeEnum;
 import org.springframework.ai.chat.messages.*;
 
 import java.time.Duration;
@@ -62,7 +63,7 @@ public class MemoryCastUtils {
                 // 如果间隔超过五分钟 就插入一个系统消息提示时间
                 resultList.add(new TbAiChatMemoryDo()
                         .setMessage(formatRelativeTime(currentMemoryDo.getCreateTime()))
-                        .setRole(MessageType.SYSTEM.getValue()));
+                        .setRole(MessageTypeEnum.SYSTEM));
                 resultList.add(currentMemoryDo);
             }else{
                 // 如果没有超过5分钟
@@ -72,7 +73,7 @@ public class MemoryCastUtils {
         // 最后一条消息后面跟上系统时间
         resultList.add(new TbAiChatMemoryDo()
                 .setMessage("当前时间：" + formatRelativeTime(new Date()) + " 必须确保生成的消息内容符合当前时间")
-                .setRole(MessageType.SYSTEM.getValue()));
+                .setRole(MessageTypeEnum.SYSTEM));
 
         return resultList;
     }
