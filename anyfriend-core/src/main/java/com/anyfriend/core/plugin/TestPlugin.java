@@ -61,11 +61,11 @@ public class TestPlugin extends BotPlugin {
 //                2,
 //                0.6);
 
-//        return MESSAGE_IGNORE;
+        return MESSAGE_IGNORE;
 
-        sendMessageUtil.sendVoiceMsg(event.getUserId(),"<voice tone=\"开心\">"
-                + event.getMessage() + "</voice>");
-        return MESSAGE_BLOCK;
+//        sendMessageUtil.sendVoiceMsg(event.getUserId(),"<voice tone=\"开心\">"
+//                + event.getMessage() + "</voice>");
+//        return MESSAGE_BLOCK;
     }
 
 }
