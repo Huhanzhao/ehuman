@@ -5,6 +5,9 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,15 +20,36 @@ public class IndexTTS2 implements TtsPlugin {
     }
 
     @Override
-    public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey,String localPath) throws Exception {
+    public Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey,String localPath, String proxyHost) throws Exception {
         // 提交任务
         String taskId = submitTask(text, referVoicePath,apiKey);
 
         // 获取结果
         String resultPath = getResult(taskId,apiKey);
+        HttpResponse response;
+        try {
+            response = HttpRequest.get(resultPath).timeout(10000).execute();
+        }catch (Exception e){
+            Proxy proxy = new Proxy(
+                    Proxy.Type.HTTP,
+                    // 失败了使用代理访问 端口可自行配置
+                    new InetSocketAddress(proxyHost, 7890)
+            );
+            response = HttpRequest.get(resultPath).setProxy(proxy).execute();
+        }
+
+        if (response.getStatus() != 200){
+            log.error("voxcpm tts2 语音合成失败,resultPath:{}",resultPath);
+        }
+
+        // 直接获取响应体的字节数组
+        byte[] audioBytes = response.bodyBytes();
+
+        // 转 Base64
+        String base64 = Base64.getEncoder().encodeToString(audioBytes);
 
         // 公网url url传链接 base64传空字符串
-        return Map.of("base64","","url",resultPath);
+        return Map.of("base64",base64,"url","");
     }
 
     public String submitTask(String message, String voice,String apiKey) throws Exception {

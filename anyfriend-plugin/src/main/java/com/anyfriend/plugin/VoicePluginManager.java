@@ -305,10 +305,13 @@ public class VoicePluginManager {
     /**
      * 调用插件方法 - 提交任务
      */
-    public Map<String, String> textToSpeech(String pluginName, String text, String voice,String apiKey,String localPath) throws Exception {
+    public Map<String, String> textToSpeech(String pluginName, String text,
+                                            String voice,String apiKey,String localPath,
+                                            String proxyHost
+    ) throws Exception {
         TtsPlugin plugin = getPlugin(pluginName);
         log.info("调用插件 [{}].submitTask: text={}", pluginName, text);
-        return plugin.textToSpeech(text, voice,apiKey,localPath);
+        return plugin.textToSpeech(text, voice,apiKey,localPath,proxyHost);
     }
 
     /**

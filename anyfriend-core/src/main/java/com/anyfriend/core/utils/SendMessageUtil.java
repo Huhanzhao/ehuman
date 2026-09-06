@@ -16,6 +16,7 @@ import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,6 +45,9 @@ public class SendMessageUtil {
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
     private final SystemPath systemPath;
+
+    @Value("${proxy.host:127.0.0.1}")
+    private String proxyHost;
 
     // 发送文字消息
     public void sendChatMsg(Long userId, String message) {
@@ -184,7 +188,7 @@ public class SendMessageUtil {
                     splitMessage,
                     enableAudioList.getFirst().getReferAudioUrl(),
                     ttsModel.getApiKey(),
-                    systemPath.getClassesUseAudioPath() + enableAudioList.getFirst().getReferAudioName());
+                    systemPath.getClassesUseAudioPath() + enableAudioList.getFirst().getReferAudioName(),proxyHost);
         } catch (Exception e) {
             log.error("语音合成失败{}",e.getMessage());
             sendMegToSelf("语音合成失败" + e.getMessage());

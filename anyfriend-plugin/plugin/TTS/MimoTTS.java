@@ -21,7 +21,7 @@ public class MimoTTS implements TtsPlugin {
     }
 
     @Override
-    public Map<String, String> textToSpeech(String message, String referVoicePath, String apiKey, String localPath) throws Exception {
+    public Map<String, String> textToSpeech(String message, String referVoicePath, String apiKey, String localPath, String proxyHost) throws Exception {
         byte[] audioBytes = Files.readAllBytes(FileUtil.file(localPath).toPath());
         String voiceBase64 = Base64.getEncoder().encodeToString(audioBytes);
 

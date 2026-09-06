@@ -52,9 +52,6 @@ public class TestPlugin extends BotPlugin {
     @Override
     public int onPrivateMessage(Bot bot, PrivateMessageEvent event)  {
 //
-//        sendMessageUtil.sendVoiceMsg(event.getUserId(),"<voice tone=\"开心\">"
-//                + event.getMessage() + "</voice>");
-
 
 //        // 调用向量模型 向量化问题
 //        float[] floats = embeddingService.embeddingText(event.getUserId(), event.getMessage());
@@ -63,7 +60,12 @@ public class TestPlugin extends BotPlugin {
 //                Arrays.toString(floats),
 //                2,
 //                0.6);
-        return MESSAGE_IGNORE;
+
+//        return MESSAGE_IGNORE;
+
+        sendMessageUtil.sendVoiceMsg(event.getUserId(),"<voice tone=\"开心\">"
+                + event.getMessage() + "</voice>");
+        return MESSAGE_BLOCK;
     }
 
 }

@@ -15,5 +15,5 @@ public interface TtsPlugin {
     /**
      * 文字获取语音
      */
-    Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey,String localPath) throws Exception;
+    Map<String, String> textToSpeech(String text, String referVoicePath,String apiKey,String localPath,String proxyPath) throws Exception;
 }
