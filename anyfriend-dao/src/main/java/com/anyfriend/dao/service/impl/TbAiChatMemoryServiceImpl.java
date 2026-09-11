@@ -59,12 +59,10 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
         LocalDateTime yesterdayStart = now.toLocalDate().minusDays(1).atStartOfDay();
         LocalDateTime yesterdayEnd = now.toLocalDate().atStartOfDay().minusNanos(1);
 
-        return this.exists(
-                lambdaQuery()
+        return lambdaQuery()
                         .eq(TbAiChatMemoryDo::getMemoryId,userId)
                         .eq(TbAiChatMemoryDo::getRole, MessageTypeEnum.USER_MESSAGE)
-                        .between(TbAiChatMemoryDo::getCreateTime,yesterdayStart,yesterdayEnd)
-        );
+                        .between(TbAiChatMemoryDo::getCreateTime,yesterdayStart,yesterdayEnd).exists();
     }
 }
 

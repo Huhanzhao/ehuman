@@ -6,8 +6,7 @@ import com.anyfriend.core.node.test.test2;
 import com.anyfriend.core.service.CommonAuxiliaryService;
 import com.anyfriend.core.service.EmbeddingService;
 import com.anyfriend.core.utils.SendMessageUtil;
-import com.anyfriend.dao.service.DBVectorOperationService;
-import com.anyfriend.dao.service.TbMessageSummaryVectorDoService;
+import com.anyfriend.dao.service.*;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.core.Bot;
@@ -47,6 +46,15 @@ public class TestPlugin extends BotPlugin {
 
     @Autowired
     private DBVectorOperationService dbVectorOperationService;
+
+
+    @Autowired
+    private TbUserBotStatusDoService tbUserBotStatusDoService;
+    @Autowired
+    private TbAiChatMemoryService tbAiChatMemoryService;
+    @Autowired
+    private TbBotLifeDetailDoService tbBotLifeDetailDoService;
+
     @PrivateMessageHandler
     @MessageHandlerFilter
     @Override

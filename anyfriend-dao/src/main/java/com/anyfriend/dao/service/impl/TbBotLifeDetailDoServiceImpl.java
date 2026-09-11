@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class TbBotLifeDetailDoServiceImpl extends ServiceImpl<TbBotLifeDetailDoM
         // 获取最后一条细节 时间倒序
         TbBotLifeDetailDo lastOne = lambdaQuery()
                 .eq(TbBotLifeDetailDo::getBotId, botId)
-                .orderByDesc(TbBotLifeDetailDo::getCreateTime)
+                .orderByDesc(TbBotLifeDetailDo::getCreateTime).last("limit 1")
                 .one();
 
         if (lastOne == null){
@@ -55,6 +56,10 @@ public class TbBotLifeDetailDoServiceImpl extends ServiceImpl<TbBotLifeDetailDoM
         LocalDate date = createTime.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
+
+        LocalDate today = LocalDate.now();
+        // 相差天数（date 比 today 多几天）
+        long days = ChronoUnit.DAYS.between(date, today);
 
         // 当天开始：00:00:00
         LocalDateTime startOfDay = date.atStartOfDay();
@@ -71,6 +76,8 @@ public class TbBotLifeDetailDoServiceImpl extends ServiceImpl<TbBotLifeDetailDoM
             item.setId(null);           // 清空 ID，让数据库自增
             item.setCreateTime(null);   // 清空创建时间，触发 insertFill
             item.setUpdateTime(null);   // 清空修改时间，触发 insertFill
+            item.setStartTime(Date.from(item.getStartTime().toInstant().plus(days,ChronoUnit.DAYS)));
+            item.setEndTime(Date.from(item.getEndTime().toInstant().plus(days,ChronoUnit.DAYS)));
         });
 
         // 批量复制
