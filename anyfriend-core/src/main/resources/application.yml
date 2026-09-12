@@ -13,11 +13,7 @@ spring:
   application:
     name: ai-bot-service
   profiles:
-    active: local
-  config:
-    import:
-      - optional:application.yml
-      - optional:application-${spring.profiles.active}.yml
+    active: default
   ai:
     anthropic:
       api-key: sdfs

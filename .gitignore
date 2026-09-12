@@ -57,3 +57,7 @@ minio_data/**
 /sqlite/aiBot.db-shm
 /sqlite/aiBot.db-wal
 /sqlite/aiBot_local.db
+/anyfriend-core/src/main/resources/application-test.yml
+/sqlite/aiBot-test.db
+/sqlite/aiBot-test.db-shm
+/sqlite/aiBot-test.db-wal
