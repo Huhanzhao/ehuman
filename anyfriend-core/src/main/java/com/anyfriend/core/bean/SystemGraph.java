@@ -19,6 +19,7 @@ import com.anyfriend.dao.service.TbUserModelConfigDoService;
 import com.anyfriend.dao.service.TbUserReferAudioDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -156,7 +157,12 @@ public class SystemGraph {
         return getSystemGraph(List.of(roleNameNode, roleContentNode), List.of("name", "content"));
     }
 
-    // 获取系统收集信息中断节点图
+    /**
+     * 获取系统收集信息中断节点图
+     * @param nodes 节点list
+     * @param keys 除了userId userInput额外的replace key
+     * @return 编译好的graph
+     */
     private CompiledGraph getSystemGraph(List<SystemInterruptionNode> nodes, List<String> keys) {
         // 配置 KeyStrategyFactory 不配置会导致人类反馈拿不到状态
         KeyStrategyFactory keyStrategyFactory = () -> {
@@ -239,5 +245,42 @@ public class SystemGraph {
 
     public CompiledGraph getSwitchReferAudioGraph() {
         return getSystemGraph(List.of(collectReferAudioTypeNode,switchReferAudioNode),List.of("type"));
+    }
+
+    public CompiledGraph getQuickStartGraph() {
+        // 文件名
+        SystemInterruptionNode modelNameNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入deepseek模型名称")
+                .nodeName("modelNameNode")
+                .interruptKey("model").build();
+
+        // 参考音频类型
+        SystemInterruptionNode apiKeyNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入deepseek apikey")
+                .nodeName("apiKeyNode")
+                .interruptKey("apiKey")
+                .afterLlmCallback((state,llmOutPut) -> {
+                    // 保存配置
+                    Map<String,Object> data = state.data();
+                    Long userId = Long.valueOf(data.get("userId").toString());
+
+                    TbUserModelConfigDo tbUserModelConfigDo = mapper.convertValue(state.data(), TbUserModelConfigDo.class);
+                    tbUserModelConfigDo.setCategory(GPT.getCategory()).setBaseUrl("https://api.deepseek.com")
+                            .setNeedProxy(false).setLlmTypeEnum(LlmTypeEnum.MASTER);
+                    TbUserModelConfigDo tbUserModelConfigDo2 = new TbUserModelConfigDo();
+                    BeanUtils.copyProperties(tbUserModelConfigDo,tbUserModelConfigDo2);
+                    tbUserModelConfigDo2.setLlmTypeEnum(LlmTypeEnum.AUXILIARY);
+                    // 插入数据
+                    tbUserModelConfigDoService.saveBatch(List.of(tbUserModelConfigDo,tbUserModelConfigDo2));
+
+                    sendMessageUtil.sendSystemMsg(userId, "设置成功 可以开始聊天了");
+                    state.clear();
+                })
+                .build();
+
+        return getSystemGraph(List.of(modelNameNode,apiKeyNode),List.of("apikey","model"));
+
     }
 }

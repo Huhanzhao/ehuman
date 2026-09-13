@@ -94,7 +94,7 @@ public class QQBotPlugin extends BotPlugin {
                 output -> {
                     log.info("当前迭代节点: " + output);
                 },
-                error -> log.error("流错误: " + error.getMessage()),
+                error -> log.error("流错误", error),
                 () -> {
                     localCacheUtil.remove(userId + "_Graph");
                     log.info("流完成");

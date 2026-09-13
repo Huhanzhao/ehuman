@@ -81,6 +81,8 @@ public class SystemPlugin extends BotPlugin {
 
     private CompiledGraph createRoleGraph;
 
+    private CompiledGraph quickStartGraph;
+
     @PostConstruct
     public void init() {
         this.apiConfigGraph = systemGraph.getApiConfigGraph();
@@ -88,10 +90,12 @@ public class SystemPlugin extends BotPlugin {
         this.referAudioConfig = systemGraph.getReferAudioConfigGraph();
         this.switchReferAudioGraph = systemGraph.getSwitchReferAudioGraph();
         this.createRoleGraph = systemGraph.getCreateRoleGraph();
+        this.quickStartGraph = systemGraph.getQuickStartGraph();
     }
 
     private final String manu = "===== 基础命令 =====\n" +
             "# - 查看菜单\n" +
+            "#快速开始 - 配置deepseek模型快速开始\n" +
             "#exit - 退出当前引导\n\n" +
             "===== API配置 =====\n" +
             "#查询未启用api - 查看未启用的API配置\n" +
@@ -145,6 +149,9 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== API配置 =====
+        if (userInput.equals("#快速开始")){
+            return startNewGraph(userId, quickStartGraph);
+        }
         if (userInput.equals("#查询未启用api")){
             return getApiConfig(userId, userInput);
         }
@@ -353,7 +360,7 @@ public class SystemPlugin extends BotPlugin {
                     }
                 },
                 error -> {
-                    log.error("流错误: " + error);
+                    log.error("流错误", error);
                     sendMessageUtil.sendSystemMsg(userId,"系统错误已退出当前引导");
                     clearFlag(userId);
                 },

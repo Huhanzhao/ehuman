@@ -129,7 +129,11 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
         String target = state.value("target", String.class).orElse("");
 
         Map<String, Object> result = new HashMap<>();
-        result.put("botRole", tbBotPromptDoService.getRolePrompt());
+        String rolePrompt = tbBotPromptDoService.getRolePrompt();
+        if (rolePrompt == null){
+            throw new RuntimeException("人设为空");
+        }
+        result.put("botRole", rolePrompt);
         result.put("target", target);
         result.put("mood", buildMoodPrompt(statusDo.getMoodEnum(), statusDo.getMoodReason()));
         result.put("familiarity", buildFamiliarityPrompt(statusDo.getFamiliarity()));
@@ -161,7 +165,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
                         .ge(TbBotLifeDetailDo::getEndTime, now)
                         .last("limit 1")
         );
-        return currentLife != null ? currentLife.getDetail() : "无特定安排";
+        return currentLife != null && currentLife.getDetail() != null ? currentLife.getDetail() : "无特定安排";
     }
 
     private TbUserBotStatusDo getOrCreateStatus(Long userId) {
@@ -175,7 +179,9 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     private String getUserInfo(Long userId) {
         List<String> infoList = tbUserInfoDoService.getUserInfoByUserId(userId).stream()
-                .map(TbUserInfoDo::getUserInfo).toList();
+                .map(TbUserInfoDo::getUserInfo)
+                .filter(Objects::nonNull)
+                .toList();
         return infoList.isEmpty() ? "无" : infoList.getFirst();
     }
 

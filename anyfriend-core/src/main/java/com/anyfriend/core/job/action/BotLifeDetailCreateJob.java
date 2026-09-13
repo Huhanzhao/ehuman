@@ -74,6 +74,9 @@ public class BotLifeDetailCreateJob implements Job {
         LlmNode lifeDetailGenerateNode = new LlmNode(LlmChatEnum.LIFE_DETAIL_GENERATE, LlmTypeEnum.AUXILIARY, chatClientFactory);
         // 获取bot角色设定
         String botRole = tbBotPromptDoService.getRolePrompt();
+        if(botRole == null){
+            throw new RuntimeException("人设为空");
+        }
         try {
             String content = lifeDetailGenerateNode.invoke(userId,Map.of("todayStr",todayStr,
                     "weekDay",weekDay,
