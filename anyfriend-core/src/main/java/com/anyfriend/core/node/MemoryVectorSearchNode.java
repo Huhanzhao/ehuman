@@ -39,7 +39,7 @@ public class MemoryVectorSearchNode implements NodeAction {
         float[] floats = embeddingService.embeddingText(userId, userInput);
         if (floats == null){
             log.info("没有向量模型跳过");
-            return Map.of();
+            return Map.of("userInput", userInput, "vectorMemory", "");
         }
 
         // 检索记忆
