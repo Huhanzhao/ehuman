@@ -45,19 +45,19 @@ build/
 minio_data
 minio_data/**
 
-/anyfriend-core/sqlite/aiBot-local.db
+/ehuman-core/sqlite/aiBot-local.db
 /sqlite/aiBot-local.db
-/anyfriend-plugin/plugin/classes/*
-/anyfriend-plugin/plugin/TTS/VoxCpm2.java
-/anyfriend-plugin/plugin/TTS/audio/*
-/anyfriend-core/src/main/resources/application-local.yml
-/anyfriend-plugin/plugin/classes/com/bot/plugin/*.class
+/ehuman-plugin/plugin/classes/*
+/ehuman-plugin/plugin/TTS/VoxCpm2.java
+/ehuman-plugin/plugin/TTS/audio/*
+/ehuman-core/src/main/resources/application-local.yml
+/ehuman-plugin/plugin/classes/com/bot/plugin/*.class
 /sqlite/aiBot-local.db-shm
 /sqlite/aiBot-local.db-wal
 /sqlite/aiBot.db-shm
 /sqlite/aiBot.db-wal
 /sqlite/aiBot_local.db
-/anyfriend-core/src/main/resources/application-test.yml
+/ehuman-core/src/main/resources/application-test.yml
 /sqlite/aiBot-test.db
 /sqlite/aiBot-test.db-shm
 /sqlite/aiBot-test.db-wal

@@ -1,0 +1,57 @@
+@startuml sendMessage_flow
+skinparam usecaseFontSize 14
+skinparam usecaseStereotypeFontSize 12
+skinparam hexagonFontSize 14
+skinparam hexagonStereotypeFontSize 12
+title "sendMessage flow"
+footer
+
+powered by spring-ai-alibaba
+end footer
+circle start<<input>> as __START__
+circle stop as __END__
+usecase "userWantToNode"<<Node>>
+usecase "messageGenerateNode"<<Node>>
+usecase "initiativeMessageGenerateNode"<<Node>>
+usecase "formatOutPutLlmNode"<<Node>>
+usecase "botStatusSearchNode"<<Node>>
+usecase "memoryVectorSearchNode"<<Node>>
+usecase "graphSearchNode"<<Node>>
+usecase "initiativeOrNotNode"<<Node>>
+usecase "combinedCheckNode"<<Node>>
+usecase "checkAggregateNode"<<Node>>
+usecase "sendMessageNode"<<Node>>
+hexagon "check state" as condition1<<Condition>>
+hexagon "check state" as condition2<<Condition>>
+hexagon "check state" as condition3<<Condition>>
+"__START__" -down-> "userWantToNode"
+"userWantToNode" -down-> "botStatusSearchNode"
+"userWantToNode" -down-> "memoryVectorSearchNode"
+"userWantToNode" -down-> "graphSearchNode"
+"botStatusSearchNode" -down-> "initiativeOrNotNode"
+"memoryVectorSearchNode" -down-> "initiativeOrNotNode"
+"graphSearchNode" -down-> "initiativeOrNotNode"
+"initiativeOrNotNode" .down.> "condition1"
+"condition1" .down.> "messageGenerateNode": "false"
+'"initiativeOrNotNode" .down.> "messageGenerateNode": "false"
+"condition1" .down.> "initiativeMessageGenerateNode": "true"
+'"initiativeOrNotNode" .down.> "initiativeMessageGenerateNode": "true"
+"initiativeMessageGenerateNode" -down-> "combinedCheckNode"
+"messageGenerateNode" .down.> "condition2"
+"condition2" .down.> "combinedCheckNode": "next"
+'"messageGenerateNode" .down.> "combinedCheckNode": "next"
+"condition2" .down.> "__END__": "end"
+'"messageGenerateNode" .down.> "__END__": "end"
+"combinedCheckNode" -down-> "checkAggregateNode"
+"checkAggregateNode" .down.> "condition3"
+"condition3" .down.> "initiativeMessageGenerateNode": "initiativeFail"
+'"checkAggregateNode" .down.> "initiativeMessageGenerateNode": "initiativeFail"
+"condition3" .down.> "sendMessageNode": "pass"
+'"checkAggregateNode" .down.> "sendMessageNode": "pass"
+"condition3" .down.> "formatOutPutLlmNode": "format"
+'"checkAggregateNode" .down.> "formatOutPutLlmNode": "format"
+"condition3" .down.> "messageGenerateNode": "fail"
+'"checkAggregateNode" .down.> "messageGenerateNode": "fail"
+"formatOutPutLlmNode" -down-> "sendMessageNode"
+"sendMessageNode" -down-> "__END__"
+@enduml

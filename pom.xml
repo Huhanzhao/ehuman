@@ -3,18 +3,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.anyfriend</groupId>
-    <artifactId>anyfriend-parent</artifactId>
+    <groupId>com.ehuman</groupId>
+    <artifactId>ehuman-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>com.anyfriend.parent</name>
-    <description>anyfriend</description>
+    <name>com.ehuman.parent</name>
+    <description>ehuman</description>
 
 
     <packaging>pom</packaging>
     <modules>
-        <module>anyfriend-core</module>
-        <module>anyfriend-plugin</module>
-        <module>anyfriend-dao</module>
+        <module>ehuman-core</module>
+        <module>ehuman-plugin</module>
+        <module>ehuman-dao</module>
     </modules>
 
     <properties>

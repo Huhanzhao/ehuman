@@ -1,0 +1,31 @@
+package com.ehuman.dao.enums;
+
+import com.baomidou.mybatisplus.annotation.EnumValue;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public enum LlmTypeEnum {
+
+    DISABLE("disable",0),
+    MASTER("master",1),
+    AUXILIARY("auxiliary",2),
+    IMAGE_ANALYSIS("ImageAnalysisNode",3),
+    TTS("TTS",4),
+    EMBEDDING("embedding",5);
+
+    private final String nodeName;
+
+    @EnumValue
+    private final Integer nodeNum;
+
+    public static String getByNameNodeNum(Integer nodeNum){
+        for (LlmTypeEnum value : values()) {
+            if (nodeNum.equals(value.getNodeNum())){
+                return value.getNodeName();
+            }
+        }
+        return null;
+    }
+}
