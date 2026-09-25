@@ -61,3 +61,6 @@ minio_data/**
 /sqlite/aiBot-test.db
 /sqlite/aiBot-test.db-shm
 /sqlite/aiBot-test.db-wal
+
+/.data-path
+/start.bat
