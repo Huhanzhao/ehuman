@@ -83,6 +83,8 @@ public class SystemPlugin extends BotPlugin {
 
     private CompiledGraph quickStartGraph;
 
+    private CompiledGraph quickStartTtsGraph;
+
     @PostConstruct
     public void init() {
         this.apiConfigGraph = systemGraph.getApiConfigGraph();
@@ -91,11 +93,13 @@ public class SystemPlugin extends BotPlugin {
         this.switchReferAudioGraph = systemGraph.getSwitchReferAudioGraph();
         this.createRoleGraph = systemGraph.getCreateRoleGraph();
         this.quickStartGraph = systemGraph.getQuickStartGraph();
+        this.quickStartTtsGraph = systemGraph.getQuickStartTTSGraph();
     }
 
     private final String manu =
             "# - 查看菜单\n" +
             "#快速开始 - 配置deepseek模型快速开始\n" +
+            "#快速开启语音合成 - 配置VoxCPM2模型Api(从https://platform.modelbest.cn 获取)快速开启语音合成\n" +
             "#api设置\n" +
             "#参考音频设置\n" +
             "#人设设置\n" +
@@ -177,6 +181,11 @@ public class SystemPlugin extends BotPlugin {
         }
         if (userInput.equals("#切换api")){
             return startNewGraph(userId, changeModeGraph);
+        }
+
+        // #快速开启语音合成
+        if (userInput.equals("#快速开启语音合成")){
+            return startNewGraph(userId, quickStartTtsGraph);
         }
 
         // ===== 参考音频 =====

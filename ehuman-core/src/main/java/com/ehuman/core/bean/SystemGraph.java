@@ -15,6 +15,7 @@ import com.ehuman.dao.entity.TbUserReferAudioDo;
 import com.ehuman.dao.enums.ChatModelCategoryEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.service.TbBotPromptDoService;
+import com.ehuman.dao.service.TbUserFeatureButtonDoService;
 import com.ehuman.dao.service.TbUserModelConfigDoService;
 import com.ehuman.dao.service.TbUserReferAudioDoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.ehuman.dao.enums.ChatModelCategoryEnum.*;
+import static com.ehuman.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
 
 @Component
 @AllArgsConstructor
@@ -53,6 +55,9 @@ public class SystemGraph {
 
     @Autowired
     private SwitchReferAudioNode switchReferAudioNode;
+
+    @Autowired
+    private TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
 
     public CompiledGraph getApiConfigGraph() {
         // 收集模型类别节点
@@ -243,6 +248,10 @@ public class SystemGraph {
                 stateGraph.addNode(node.getNodeName(), node);
                 if (i == 0){
                     stateGraph.addEdge(StateGraph.START, node.getNodeName());
+                    if(nodes.size() == 1){
+                        stateGraph.addEdge(node.getNodeName(), StateGraph.END);
+                        break;
+                    }
                     stateGraph.addEdge(node.getNodeName(), nodes.get(i + 1).getNodeName());
                 }else if (i == nodes.size() - 1){
                     stateGraph.addEdge(node.getNodeName(), StateGraph.END);
@@ -341,6 +350,48 @@ public class SystemGraph {
                 .build();
 
         return getSystemGraph(List.of(modelNameNode,apiKeyNode),List.of("apikey","model"));
+
+    }
+
+    public CompiledGraph getQuickStartTTSGraph() {
+        // 文件名
+        SystemInterruptionNode modelNameNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入VoxCPM2 apikey (从 https://platform.modelbest.cn/ 获取)")
+                .nodeName("apiKeyNode")
+                .interruptKey("apiKey")
+                .afterLlmCallback((state,llmOutPut) -> {
+                    // 保存配置
+                    Map<String,Object> data = state.data();
+                    Long userId = Long.valueOf(data.get("userId").toString());
+                    // 插入默认参考音频
+                    // 检查参考音频  没有就插入默认启用
+                    List<TbUserReferAudioDo> byUserId = tbUserReferAudioDoService.getByUserId(userId);
+                    if (byUserId == null || byUserId.isEmpty()){
+                        TbUserReferAudioDo tbUserReferAudioDo = new TbUserReferAudioDo();
+                        tbUserReferAudioDo.setUserId(userId);
+                        tbUserReferAudioDo.setType("local");
+                        tbUserReferAudioDo.setEnable(true);
+                        tbUserReferAudioDo.setReferAudioName("default.wav");
+                        tbUserReferAudioDoService.save(tbUserReferAudioDo);
+                    }
+                    // 插入默认语音api
+                    TbUserModelConfigDo tbUserModelConfigDo = new TbUserModelConfigDo()
+                            .setModel("VoxCpmTTS")
+                            .setUserId(userId)
+                            .setCategory(TTS.getCategory())
+                            .setBaseUrl("https://api.modelbest.cn/chat/completions")
+                            .setApiKey(data.get("apiKey").toString())
+                            .setLlmTypeEnum(LlmTypeEnum.TTS);
+                    tbUserModelConfigDoService.save(tbUserModelConfigDo);
+                    tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
+                    sendMessageUtil.sendSystemMsg(userId, "已开启语音合成");
+                    state.clear();
+                })
+                .build();
+
+
+        return getSystemGraph(List.of(modelNameNode),List.of("apikey"));
 
     }
 }
