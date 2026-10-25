@@ -52,12 +52,24 @@ public class ChatClientFactory {
         // 没有配置某节点模型 随便取一个模型
         if (modelConfigDo == null){
             List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);
-            if (modelConfigDos.isEmpty()){
-                log.warn("请先配置apikey");
-                sendMessageUtil.sendSystemMsg(userId,"请先配置apikey");
+            if(llmTypeEnum.equals(LlmTypeEnum.MASTER) || llmTypeEnum.equals(LlmTypeEnum.AUXILIARY)){
+                modelConfigDo = modelConfigDos.stream()
+                        .filter(e -> e.getLlmTypeEnum().equals(LlmTypeEnum.MASTER) || e.getLlmTypeEnum().equals(LlmTypeEnum.AUXILIARY))
+                        .findFirst()
+                        .orElse(null);
+            }
+            if (modelConfigDo == null){
+                String modelType = "";
+                switch (llmTypeEnum){
+                    case LlmTypeEnum.MASTER, LlmTypeEnum.AUXILIARY -> modelType = "chat";
+                    case LlmTypeEnum.IMAGE_ANALYSIS -> modelType = "image";
+                    case LlmTypeEnum.TTS -> modelType = "tts";
+                    case LlmTypeEnum.EMBEDDING -> modelType = "embedding";
+                }
+                sendMessageUtil.sendSystemMsg(userId,"请先配置apikey,缺少" + modelType + "模型");
+                log.warn("请先配置apikey,缺少" + modelType + "模型");
                 throw new RuntimeException("请先配置apikey");
             }
-            modelConfigDo = modelConfigDos.getFirst();
         }
 
         TbChatConfigDo chatConfigDo = tbChatConfigDoService.getByUserId(userId);

@@ -98,20 +98,49 @@ public class SystemGraph {
                 .interruptKey("apiKey")
                 .nodeName("apiKeyNode")
                 .inputPrompt("请输入apiKey")
+                .build();
+
+        // 是否立即启用
+        SystemInterruptionNode enableNode = SystemInterruptionNode.builder().sendMessageUtil(sendMessageUtil)
+                .interruptKey("enable")
+                .nodeName("enableNode")
+                .inputPrompt("是否立即启用,请输入序号：\n1.是\n2.否")
+                .inputMapping(Map.of("1", true,
+                        "2", false))
                 .afterLlmCallback((state, llmOutput) -> {
                     // 保存api配置
                     Map<String,Object> data = state.data();
                     TbUserModelConfigDo modelConfigDo = mapper.convertValue(state.data(), TbUserModelConfigDo.class);
-                    // 插入数据
-                    tbUserModelConfigDoService.save(modelConfigDo);
-
+                    // 是否启用
+                    Boolean enable = (Boolean) data.get("enable");
+                    if(enable){
+                        switch (ChatModelCategoryEnum.getByCategory(modelConfigDo.getCategory())){
+                            case GPT, CLAUDE -> {  // 文字模型
+                                tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(modelConfigDo.getUserId(), List.of(LlmTypeEnum.MASTER, LlmTypeEnum.AUXILIARY));
+                                modelConfigDo.setLlmTypeEnum(LlmTypeEnum.MASTER);
+                            }
+                            case IMAGE -> {
+                                tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(modelConfigDo.getUserId(),List.of(LlmTypeEnum.IMAGE_ANALYSIS));
+                                modelConfigDo.setLlmTypeEnum(LlmTypeEnum.IMAGE_ANALYSIS);
+                            }
+                            case TTS -> {
+                                tbUserModelConfigDoService.clearNodeNumByUserIdAndNodeNum(modelConfigDo.getUserId(),List.of(LlmTypeEnum.TTS));
+                                modelConfigDo.setLlmTypeEnum(LlmTypeEnum.TTS);
+                            }
+                        }
+                        // 开启当前api
+                        tbUserModelConfigDoService.save(modelConfigDo);
+                    }else{
+                        // 插入数据
+                        tbUserModelConfigDoService.save(modelConfigDo);
+                    }
                     sendMessageUtil.sendSystemMsg(Long.valueOf(data.get("userId").toString()), "设置成功");
                     state.clear();
                 })
                 .build();
 
-        return getSystemGraph(List.of(cateGoryNode, modelNameNode, baseUrlNode, proxyNode, apiKeyNode),
-                List.of("category", "model", "baseUrl", "apiKey", "needProxy"));
+        return getSystemGraph(List.of(cateGoryNode, modelNameNode, baseUrlNode, proxyNode, apiKeyNode,enableNode),
+                List.of("category", "model", "baseUrl", "apiKey", "needProxy","enable"));
     }
 
     public CompiledGraph getChangeModelCompiledGraph(){
@@ -132,6 +161,37 @@ public class SystemGraph {
         SystemInterruptionNode roleNameNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
                 .inputPrompt("请输入人设名称")
+                .nodeName("roleNameNode")
+                .interruptKey("name").build();
+
+        // 收集人设内容
+        SystemInterruptionNode roleContentNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入人设prompt内容")
+                .nodeName("roleContentNode")
+                .interruptKey("content")
+                .afterLlmCallback((state, llmOutput) -> {
+                    Map<String, Object> data = state.data();
+                    TbBotPromptDo promptDo = new TbBotPromptDo();
+                    promptDo.setName(data.get("name").toString());
+                    promptDo.setContent(data.get("content").toString());
+                    promptDo.setEnable(false);
+                    tbBotPromptDoService.save(promptDo);
+
+                    sendMessageUtil.sendSystemMsg(Long.valueOf(data.get("userId").toString()), "人设创建成功");
+                    state.clear();
+                })
+                .build();
+
+        return getSystemGraph(List.of(roleNameNode, roleContentNode), List.of("name", "content"));
+    }
+
+    // 开启语音合成插入收集默认语音合成插件apikey
+    public CompiledGraph getStartTtsGraph() {
+        // 收集人设名称
+        SystemInterruptionNode roleNameNode = SystemInterruptionNode.builder()
+                .sendMessageUtil(sendMessageUtil)
+                .inputPrompt("请输入")
                 .nodeName("roleNameNode")
                 .interruptKey("name").build();
 

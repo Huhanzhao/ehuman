@@ -36,7 +36,7 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     @Override
     public List<TbUserModelConfigDo> getByUserId(Long userId) {
         return lambdaQuery()
-                .isNotNull(TbUserModelConfigDo::getLlmTypeEnum)
+                .ne(TbUserModelConfigDo::getLlmTypeEnum, DISABLE)
                 .eq(TbUserModelConfigDo::getUserId, userId)
                 .list();
     }
@@ -51,11 +51,11 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
     }
 
     @Override
-    public void clearNodeNumByUserIdAndNodeNum(Long userId,  LlmTypeEnum llmTypeEnum) {
+    public void clearNodeNumByUserIdAndNodeNum(Long userId,  List<LlmTypeEnum> llmTypeEnums) {
         lambdaUpdate()
-                .set(TbUserModelConfigDo::getLlmTypeEnum, null)
+                .set(TbUserModelConfigDo::getLlmTypeEnum, DISABLE)
                 .eq(TbUserModelConfigDo::getUserId, userId)
-                .eq(TbUserModelConfigDo::getLlmTypeEnum, llmTypeEnum)
+                .in(TbUserModelConfigDo::getLlmTypeEnum, llmTypeEnums)
                 .update();
     }
 

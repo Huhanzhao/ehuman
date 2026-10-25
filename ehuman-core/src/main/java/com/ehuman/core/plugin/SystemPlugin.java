@@ -93,34 +93,44 @@ public class SystemPlugin extends BotPlugin {
         this.quickStartGraph = systemGraph.getQuickStartGraph();
     }
 
-    private final String manu = "===== 基础命令 =====\n" +
+    private final String manu =
             "# - 查看菜单\n" +
             "#快速开始 - 配置deepseek模型快速开始\n" +
-            "#exit - 退出当前引导\n\n" +
-            "===== API配置 =====\n" +
-            "#查询未启用api - 查看未启用的API配置\n" +
-            "#查询已启用api - 查看已启用的API配置\n" +
-            "#开始配置api - 配置新API\n" +
-            "#切换api - 切换节点使用的API\n\n" +
-            "===== 参考音频 =====\n" +
-            "#配置参考音频 - 导入参考音频\n" +
-            "#查询未启用参考音频 - 查看未启用的参考音频\n" +
-            "#查询已启用参考音频 - 查看已启用的参考音频\n" +
-            "#切换参考音频 - 切换参考音频\n\n" +
-            "===== 人设管理 =====\n" +
-            "#人设 - 查看当前人设\n" +
-            "#人设 [名称] - 切换人设\n" +
-            "#添加人设 - 创建新人设\n\n" +
-            "===== 功能管理 =====\n" +
+            "#api设置\n" +
+            "#参考音频设置\n" +
+            "#人设设置\n" +
+            "#功能设置\n" +
+            "#其他设置\n" +
+            "#exit - 退出引导";
+
+    private final String otherContext =
+            "#好感度 - 查看好感度\n" +
+            "#导入表情包 - 管理表情包";
+
+    private final String featureContext =
             "#开启语音合成\n" +
             "#关闭语音合成\n" +
             "#开启表情包拾取\n" +
             "#关闭表情包拾取\n" +
             "#开启图片解析\n" +
-            "#关闭图片解析\n\n" +
-            "===== 其他 =====\n" +
-            "#好感度 - 查看好感度\n" +
-            "#导入表情包 - 管理表情包" ;
+            "#关闭图片解析";
+
+    private final String personaContext =
+            "#人设 - 查看当前人设\n" +
+            "#人设 [名称] - 切换人设\n" +
+            "#添加人设 - 创建新人设";
+
+    private final String apiConfigContext =
+            "#查询未启用api - 查看未启用的API配置\n" +
+            "#查询已启用api - 查看已启用的API配置\n" +
+            "#开始配置api - 配置新API\n" +
+            "#切换api - 切换节点使用的API";
+
+    private final String refAudioContext =
+            "#配置参考音频 - 导入参考音频\n" +
+            "#查询未启用参考音频 - 查看未启用的参考音频\n" +
+            "#查询已启用参考音频 - 查看已启用的参考音频\n" +
+            "#切换参考音频 - 切换参考音频";
 
 
     @PrivateMessageHandler
@@ -149,6 +159,10 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== API配置 =====
+        if (userInput.equals("#api设置")){
+            sendMessageUtil.sendSystemMsg(userId,apiConfigContext);
+            return MESSAGE_BLOCK;
+        }
         if (userInput.equals("#快速开始")){
             return startNewGraph(userId, quickStartGraph);
         }
@@ -166,6 +180,10 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== 参考音频 =====
+        if (userInput.equals("#参考音频设置")){
+            sendMessageUtil.sendSystemMsg(userId,refAudioContext);
+            return MESSAGE_BLOCK;
+        }
         if (userInput.equals("#配置参考音频")){
             return startNewGraph(userId, referAudioConfig);
         }
@@ -180,6 +198,10 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== 人设管理 =====
+        if (userInput.equals("#人设设置")){
+            sendMessageUtil.sendSystemMsg(userId,personaContext);
+            return MESSAGE_BLOCK;
+        }
         if (userInput.startsWith("#人设")){
             return getOrSwitchRole(userId, userInput);
         }
@@ -188,6 +210,10 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== 其他 =====
+        if (userInput.equals("#其他设置")){
+            sendMessageUtil.sendSystemMsg(userId,otherContext);
+            return MESSAGE_BLOCK;
+        }
         if (userInput.startsWith("#好感度")) {
             return getOrUpdateBotStatus(userId, userInput);
         }
@@ -197,7 +223,27 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== 功能开关 =====
+        if (userInput.equals("#功能设置")){
+            sendMessageUtil.sendSystemMsg(userId,featureContext);
+            return MESSAGE_BLOCK;
+        }
         if (userInput.equals("#开启语音合成")){
+            // 检查当前 语音api
+            TbUserModelConfigDo byUserIdAndNodeNum = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.TTS);
+            if (byUserIdAndNodeNum == null){
+                sendMessageUtil.sendSystemMsg(userId,"当前没有启用的语音合成api，请先设置语音合成api");
+                return MESSAGE_BLOCK;
+            }
+            // 检查参考音频  没有就插入默认启用
+            List<TbUserReferAudioDo> byUserId = tbUserReferAudioDoService.getByUserId(userId);
+            if (byUserId == null || byUserId.isEmpty()){
+                TbUserReferAudioDo tbUserReferAudioDo = new TbUserReferAudioDo();
+                tbUserReferAudioDo.setUserId(userId);
+                tbUserReferAudioDo.setType("local");
+                tbUserReferAudioDo.setEnable(true);
+                tbUserReferAudioDo.setReferAudioName("default.wav");
+                tbUserReferAudioDoService.save(tbUserReferAudioDo);
+            }
             tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
             sendMessageUtil.sendSystemMsg(userId, "已开启语音合成");
             return MESSAGE_BLOCK;
@@ -219,6 +265,8 @@ public class SystemPlugin extends BotPlugin {
         }
         if (userInput.equals("#开启图片解析")){
             tbUserFeatureButtonDoService.turnOnOrOffImageAnalyze(userId,true);
+            // 自动开启表情包拾取
+            tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true,EMOJI_FETCH);
             sendMessageUtil.sendSystemMsg(userId, "已开启图片解析");
             return MESSAGE_BLOCK;
         }

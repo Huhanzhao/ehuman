@@ -15,4 +15,13 @@ public enum ChatModelCategoryEnum {
     GROK("grok");
 
     private final String category;
+
+    public static ChatModelCategoryEnum getByCategory(String category){
+        for (ChatModelCategoryEnum value : ChatModelCategoryEnum.values()) {
+            if (value.getCategory().equals(category)) {
+                return value;
+            }
+        }
+        return null;
+    }
 }

@@ -21,7 +21,7 @@ public interface TbUserModelConfigDoService extends IService<TbUserModelConfigDo
 
     List<TbUserModelConfigDo> getByUserIdNodeNumNotZero(Long userId);
 
-    void clearNodeNumByUserIdAndNodeNum(Long userId,  LlmTypeEnum llmTypeEnum);
+    void clearNodeNumByUserIdAndNodeNum(Long userId,  List<LlmTypeEnum> llmTypeEnum);
 
     Page<TbUserModelConfigDo> getByUserIdPage(Long userId, int pageNum, int pageSize);
 
