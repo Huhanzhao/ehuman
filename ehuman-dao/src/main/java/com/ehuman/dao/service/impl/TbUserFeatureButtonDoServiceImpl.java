@@ -31,7 +31,10 @@ public class TbUserFeatureButtonDoServiceImpl extends ServiceImpl<TbUserFeatureB
             tbUserFeatureButtonDo.setEnable(enable);
             save(tbUserFeatureButtonDo);
         }else{
-            lambdaUpdate().set(TbUserFeatureButtonDo::getEnable,enable).eq(TbUserFeatureButtonDo::getUserId, userId).update();
+            lambdaUpdate().set(TbUserFeatureButtonDo::getEnable,enable)
+                    .eq(TbUserFeatureButtonDo::getFeatureTypeEnum, featureTypeEnum)
+                    .eq(TbUserFeatureButtonDo::getUserId, userId)
+                    .update();
         }
     }
 
