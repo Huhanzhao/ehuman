@@ -41,7 +41,7 @@ shiro:
    - com.ehuman.core.plugin.QQBotPlugin
 
 bot:
-  classes-use-audio-path: ../../../ehuman-plugin/plugin/TTS/audio/
+  classes-use-audio-path: /app/ehuman-plugin/plugin/TTS/audio/
   audio-path: ./ehuman-plugin/plugin/TTS/audio/
   emoji-base-path: ./emoji/
   voice-plugin-source-path: ./ehuman-plugin/plugin/TTS
