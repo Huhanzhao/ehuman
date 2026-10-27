@@ -1,0 +1,53 @@
+spring:
+  flyway:
+    enabled: true
+    clean-disabled: true
+    locations: classpath:db
+  datasource:
+    # SQLite 数据库连接配置
+    url: jdbc:sqlite:./sqlite/aiBot.db?journal_mode=WAL&busy_timeout=30000&enable_load_extension=true
+    driver-class-name: org.sqlite.JDBC
+    # SQLite 不需要用户名和密码
+    username:
+    password:
+  application:
+    name: E-Human
+  ai:
+    anthropic:
+      api-key: sdfs
+    openai:
+      api-key: dsg
+server:
+  port: 8081
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.bot.service.config: info
+
+shiro:
+  ws:
+    server:
+      enable: true
+      url: "/ws"   # websocket服务端地址 napCat需要在webui页面配置ws客户端 ws://localhost:8081/ws
+    access-token: ehuman
+  plugin-list:
+   - com.ehuman.core.plugin.TestPlugin
+   - com.ehuman.core.plugin.SystemPlugin
+   - com.ehuman.core.plugin.QQBotPlugin
+
+bot:
+  classes-use-audio-path: ./ehuman-plugin/plugin/TTS/audio/
+  audio-path: ./ehuman-plugin/plugin/TTS/audio/
+  emoji-base-path: ./emoji/
+  voice-plugin-source-path: ./ehuman-plugin/plugin/TTS
+  voice-plugin-classes-path: ./ehuman-plugin/target/plugin/classes
+  config-path: ./config/config.json
+
+proxy:
+  host: 127.0.0.1
+  port: 7890
+sqlite:
+  vector: vector.dll

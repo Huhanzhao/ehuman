@@ -182,16 +182,40 @@ public class SendMessageUtil {
             }
         }
 
+        // 必须传绝对路径：插件里用 hutool 的 FileUtil.file(...) 读参考音频，
+        // 相对路径会被 hutool 拼到 classpath 根目录上，打成 Fat Jar 后会得到 nested:\... 这种非法路径
+        String audioBasePath = systemPath.getClassesUseAudioPath();
+        if (audioBasePath == null || audioBasePath.isBlank()) {
+            log.error("未配置 bot.classes-use-audio-path");
+            sendMegToSelf("未配置参考音频目录");
+            return;
+        }
+        Path referAudioPath = Paths.get(audioBasePath)
+                .resolve(enableAudioList.getFirst().getReferAudioName())
+                .toAbsolutePath()
+                .normalize();
+        if (!Files.exists(referAudioPath)) {
+            log.error("参考音频不存在: {}", referAudioPath);
+            sendMegToSelf("参考音频不存在: " + referAudioPath);
+            return;
+        }
+
         Map<String,String> resultMap = null;
         try {
+            log.info("调用语音合成插件model:{},splitMessage:{},referAudioUrl:{},referAudioPath:{}",
+                    ttsModel.getModel(), splitMessage, enableAudioList.getFirst().getReferAudioUrl(), referAudioPath);
             resultMap = voicePluginManager.textToSpeech(ttsModel.getModel(),
                     splitMessage,
                     enableAudioList.getFirst().getReferAudioUrl(),
                     ttsModel.getApiKey(),
-                    systemPath.getClassesUseAudioPath() + enableAudioList.getFirst().getReferAudioName(),proxyHost);
+                    referAudioPath.toString(),proxyHost);
         } catch (Exception e) {
             log.error("语音合成失败{}",e.getMessage());
             sendMegToSelf("语音合成失败" + e.getMessage());
+        }
+        if (resultMap == null) {
+            log.error("resultMap是null");
+            return;
         }
 
         String base64 = resultMap.get("base64");
@@ -207,6 +231,7 @@ public class SendMessageUtil {
         }else{
             log.error("插件输出错误");
             sendMegToSelf("插件输出错误");
+            return;
         }
 
         // 发送消息

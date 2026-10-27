@@ -45,6 +45,8 @@ public class VoxCpmTTS implements TtsPlugin {
                 .body(JSONUtil.toJsonStr(body))
                 .execute();
 
+        log.info(response.body());
+
         // 关键：不要用 response.body()，而是用 response.getInputStream()
         List<String> audioPieces = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(
