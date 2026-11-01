@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,6 +32,9 @@ public class UserWantToNode implements NodeAction {
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
     private final CommonAuxiliaryService commonAuxiliaryService;
+
+    @Value("${bot.prompt-path}")
+    private String promptPathPrefix;
 
     @Override
     public Map<String, Object> apply (OverAllState state) throws IOException {
@@ -51,7 +55,7 @@ public class UserWantToNode implements NodeAction {
             return Map.of("userWantTo", "next","memoryString", memoryString);
         }
         ChatClient chatClient = chatClientFactory.createChatClient(userId, LlmTypeEnum.AUXILIARY);
-        PromptTemplate promptTemplate = PromptReadUtil.readPrompt(USER_WANT_TO);
+        PromptTemplate promptTemplate = PromptReadUtil.readPrompt(USER_WANT_TO, promptPathPrefix);
 
         String prompt = promptTemplate.render(Map.of("memoryString", memoryString));
         String content = chatClient.prompt(prompt)

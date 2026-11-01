@@ -9,6 +9,7 @@ import com.ehuman.core.node.AuthNode;
 import com.ehuman.core.node.ImageAnalysisNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,10 @@ public class MainGraph {
     private final AuthNode authNode;
     private final ImageAnalysisNode imageAnalysisNode;
     private final CompiledGraph sendMessageCompiledGraph;
+
+    @Value("${spring.profiles.active}")
+    private String env;
+
     @Bean("qqBotMainGraph")
     public CompiledGraph qqBotMainGraph() {
         // 配置 KeyStrategyFactory
@@ -64,12 +69,14 @@ public class MainGraph {
                             .build())
                     .build();
 
-            // 生成 puml 文件
-            GraphRepresentation myGraphFlow = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
-                    "myGraph flow");
-            Path pumlDir = Paths.get("ehuman-core/src/main/resources/puml");
-            Files.createDirectories(pumlDir);
-            Files.writeString(pumlDir.resolve("MainGraph.puml"), myGraphFlow.content());
+            if(!"exe".equals(env)){
+                // 生成 puml 文件
+                GraphRepresentation myGraphFlow = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
+                        "myGraph flow");
+                Path pumlDir = Paths.get("ehuman-core/src/main/resources/puml");
+                Files.createDirectories(pumlDir);
+                Files.writeString(pumlDir.resolve("MainGraph.puml"), myGraphFlow.content());
+            }
 
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);

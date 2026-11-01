@@ -3,7 +3,8 @@ package com.ehuman.core.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.ehuman.core.bean.ChatClientFactory;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.ehuman.core.bean.SystemConfigBean;
 import com.ehuman.dao.entity.TbAiChatMemoryDo;
 import com.ehuman.dao.entity.TbBotLifeDetailDo;
 import com.ehuman.dao.entity.TbUserBotStatusDo;
@@ -14,7 +15,6 @@ import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.enums.MoodEnum;
 import com.ehuman.dao.service.*;
 import com.ehuman.plugin.SystemPath;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -43,7 +43,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private static final Pattern MOOD_FALLBACK_PATTERN = Pattern.compile("[0-4]");
     private static final Pattern REASON_PATTERN = Pattern.compile("原因[:：]\\s*(.+)");
 
-    private final ChatClientFactory chatClientFactory;
+    private final SystemConfigBean systemConfigBean;
     private final TbUserBotStatusDoService tbUserBotStatusDoService;
     private final TbBotLifeDetailDoService tbBotLifeDetailDoService;
     private final TbUserInfoDoService tbUserInfoDoService;
@@ -86,7 +86,7 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
 
     private MoodAnalysisResult analyzeMood(Long userId,MoodEnum currentMood, String lifeDetail, String memoryString) {
         try {
-            String content = new LlmNode(LlmChatEnum.MOOD_ANALYSIS, LlmTypeEnum.AUXILIARY, chatClientFactory)
+            String content = new LlmNode(LlmChatEnum.MOOD_ANALYSIS, LlmTypeEnum.AUXILIARY, systemConfigBean)
                     .invoke(userId, Map.of("memoryString",memoryString,"lifeDetail",lifeDetail));
             log.info("心情分析原始结果: {}", content);
 

@@ -13,5 +13,4 @@ public class SystemPath {
     private String emojiBasePath;
     private String voicePluginSourcePath;
     private String voicePluginClassesPath;
-    private String configPath;
 }

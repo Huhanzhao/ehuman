@@ -1,6 +1,6 @@
 package com.ehuman.core.job.action;
 
-import com.ehuman.core.bean.ChatClientFactory;
+import com.ehuman.core.bean.SystemConfigBean;
 import com.ehuman.core.node.LlmNode;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.TbBotLifeDetailDo;
@@ -33,7 +33,7 @@ public class BotLifeDetailCreateJob implements Job {
     private TbBotLifeDetailDoService tbBotLifeDetailDoService;
 
     @Autowired
-    private ChatClientFactory chatClientFactory;
+    private SystemConfigBean systemConfigBean;
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
@@ -71,7 +71,7 @@ public class BotLifeDetailCreateJob implements Job {
         String weekDay = getWeekDay(today.getDayOfWeek().getValue() - 1);
 
         // 调用AI生成今天的生活细节
-        LlmNode lifeDetailGenerateNode = new LlmNode(LlmChatEnum.LIFE_DETAIL_GENERATE, LlmTypeEnum.AUXILIARY, chatClientFactory);
+        LlmNode lifeDetailGenerateNode = new LlmNode(LlmChatEnum.LIFE_DETAIL_GENERATE, LlmTypeEnum.AUXILIARY, systemConfigBean);
         // 获取bot角色设定
         String botRole = tbBotPromptDoService.getRolePrompt();
         if(botRole == null){

@@ -2,7 +2,7 @@ package com.ehuman.core.service;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.fastjson2.JSON;
-import com.ehuman.core.bean.ChatClientFactory;
+import com.ehuman.core.bean.SystemConfigBean;
 import com.ehuman.core.job.JobManager;
 import com.ehuman.core.node.LlmNode;
 import com.ehuman.core.utils.LocalCacheUtil;
@@ -23,7 +23,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -33,7 +36,7 @@ public class CommonAuxiliaryService {
     private JobManager jobManager;
 
     @Autowired
-    private ChatClientFactory chatClientFactory;
+    private SystemConfigBean systemConfigBean;
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
@@ -55,7 +58,7 @@ public class CommonAuxiliaryService {
 
     //  更新下次主动发送消息的信息
     public String updateNextSendMessageInfo(Long userId, OverAllState state) {
-        LlmNode llmNode = new LlmNode(LlmChatEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, LlmTypeEnum.AUXILIARY, chatClientFactory);
+        LlmNode llmNode = new LlmNode(LlmChatEnum.UPDATE_NEXT_SEND_MESSAGE_INFO, LlmTypeEnum.AUXILIARY, systemConfigBean);
 
         String memoryString = state.value("memoryString", String.class).get();
         String generateMessage = state.value("generateMessage", String.class).get().trim();
@@ -138,7 +141,7 @@ public class CommonAuxiliaryService {
 
                 // 调用大模型总结
                 log.info("开始向量化消息");
-                LlmNode llmNode = new LlmNode(LlmChatEnum.SUMMARY_MESSAGES, LlmTypeEnum.AUXILIARY, chatClientFactory);
+                LlmNode llmNode = new LlmNode(LlmChatEnum.SUMMARY_MESSAGES, LlmTypeEnum.AUXILIARY, systemConfigBean);
                 String content;
                 try {
                     content = llmNode.invoke(userId, promptParams);

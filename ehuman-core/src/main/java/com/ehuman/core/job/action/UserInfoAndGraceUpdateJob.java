@@ -1,6 +1,7 @@
 package com.ehuman.core.job.action;
 
-import com.ehuman.core.bean.ChatClientFactory;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.ehuman.core.bean.SystemConfigBean;
 import com.ehuman.core.node.LlmNode;
 import com.ehuman.core.service.CommonAuxiliaryService;
 import com.ehuman.core.utils.SendMessageUtil;
@@ -10,8 +11,10 @@ import com.ehuman.dao.entity.TbUserBotStatusDo;
 import com.ehuman.dao.entity.TbUserInfoDo;
 import com.ehuman.dao.enums.LlmChatEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
-import com.ehuman.dao.service.*;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.ehuman.dao.service.TbAiChatMemoryService;
+import com.ehuman.dao.service.TbUpdateGraceHistoryDoService;
+import com.ehuman.dao.service.TbUserBotStatusDoService;
+import com.ehuman.dao.service.TbUserInfoDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -44,7 +47,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
     private TbAiChatMemoryService tbAiChatMemoryService;
 
     @Autowired
-    private ChatClientFactory chatClientFactory;
+    private SystemConfigBean systemConfigBean;
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
@@ -147,7 +150,7 @@ public class UserInfoAndGraceUpdateJob implements Job {
         String userInfoSection = (existingUserInfo != null && !existingUserInfo.isBlank())
                 ? "\n用户已有的画像信息：\n" + existingUserInfo
                 : "\n该用户暂无画像信息。";
-        LlmNode llmNode = new LlmNode(LlmChatEnum.USER_WANT_TO, LlmTypeEnum.AUXILIARY, chatClientFactory);
+        LlmNode llmNode = new LlmNode(LlmChatEnum.USER_WANT_TO, LlmTypeEnum.AUXILIARY, systemConfigBean);
         String content = llmNode.invoke(userId, Map.of("userInfoSection",userInfoSection,"chatLog",chatLog.toString()));
         log.info("AI评估结果: {}", content);
         return parseEvaluation(content);

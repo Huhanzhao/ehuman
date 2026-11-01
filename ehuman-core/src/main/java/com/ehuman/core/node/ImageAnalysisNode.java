@@ -13,7 +13,6 @@ import com.ehuman.dao.enums.LlmChatEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.enums.MessageTypeEnum;
 import com.ehuman.dao.service.TbAiChatMemoryService;
-import com.ehuman.dao.service.TbBotPromptDoService;
 import com.ehuman.dao.service.TbUserFeatureButtonDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,6 +21,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
 
@@ -48,10 +48,13 @@ public class ImageAnalysisNode implements NodeAction {
     private TbAiChatMemoryService tbAiChatMemoryService;
 
     @Autowired
-    private TbBotPromptDoService tbBotPromptDoService;
-
-    @Autowired
     private TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
+
+    @Value("${bot.emoji-base-path}")
+    private String emojiBaseUrl;
+
+    @Value("${bot.prompt-path}")
+    private String promptPathPrefix;
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -80,7 +83,7 @@ public class ImageAnalysisNode implements NodeAction {
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
-                PromptTemplate systemPromptTemplate = PromptReadUtil.readPrompt(LlmChatEnum.IMAGE_ANALYSIS);
+                PromptTemplate systemPromptTemplate = PromptReadUtil.readPrompt(LlmChatEnum.IMAGE_ANALYSIS,promptPathPrefix);
                 String systemPrompt = systemPromptTemplate.render(Map.of("userInput", userInput));
                 String content = chatClient.prompt(systemPrompt).messages(message).call().content();
                 log.info("图片描述：" + content);
@@ -128,7 +131,7 @@ public class ImageAnalysisNode implements NodeAction {
 
         // 4. 构建保存路径
         String fileName = customName + "." + extension;
-        Path savePath = Paths.get("./emoji/" + emo + "/", fileName);
+        Path savePath = Paths.get(emojiBaseUrl + emo + "/", fileName);
 
         // 5. 确保目录存在
         Files.createDirectories(savePath.getParent());

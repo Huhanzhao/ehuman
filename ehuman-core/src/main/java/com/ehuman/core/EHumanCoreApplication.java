@@ -11,6 +11,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class EHumanCoreApplication {
 
     public static void main(String[] args) {
+        // 强制关闭无头模式，允许弹窗
+        System.setProperty("java.awt.headless", "false");
+
         SpringApplication.run(EHumanCoreApplication.class, args);
     }
 

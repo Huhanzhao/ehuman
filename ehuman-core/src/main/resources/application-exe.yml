@@ -5,7 +5,7 @@ spring:
     locations: classpath:db
   datasource:
     # SQLite 数据库连接配置
-    url: jdbc:sqlite:./sqlite/aiBot.db?journal_mode=WAL&busy_timeout=30000&enable_load_extension=true
+    url: jdbc:sqlite:./app/sqlite/aiBot.db?journal_mode=WAL&busy_timeout=30000&enable_load_extension=true
     driver-class-name: org.sqlite.JDBC
     # SQLite 不需要用户名和密码
     username:
@@ -39,15 +39,15 @@ shiro:
    - com.ehuman.core.plugin.QQBotPlugin
 
 bot:
-  classes-use-audio-path: ./ehuman-plugin/plugin/TTS/audio/
-  audio-path: ./ehuman-plugin/plugin/TTS/audio/
-  emoji-base-path: ./emoji/
-  voice-plugin-source-path: ./ehuman-plugin/plugin/TTS
-  voice-plugin-classes-path: ./ehuman-plugin/target/plugin/classes
-  config-path: ./config/config.json
+  classes-use-audio-path: ./app/ehuman-plugin/plugin/TTS/audio/
+  audio-path: ./app/ehuman-plugin/plugin/TTS/audio/
+  emoji-base-path: ./app/emoji/
+  voice-plugin-source-path: ./app/ehuman-plugin/plugin/TTS
+  voice-plugin-classes-path: ./app/ehuman-plugin/target/plugin/classes
+  prompt-path: ./app/md/
 
 proxy:
   host: 127.0.0.1
   port: 7890
 sqlite:
-  vector: vector.dll
+  vector: ./app/sqlite/vector.dll

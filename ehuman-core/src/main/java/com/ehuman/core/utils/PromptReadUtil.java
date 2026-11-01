@@ -14,10 +14,10 @@ import java.nio.file.Paths;
  */
 public class PromptReadUtil {
 
-    public static PromptTemplate readPrompt(LlmChatEnum llmChatEnum) {
+    public static PromptTemplate readPrompt(LlmChatEnum llmChatEnum, String promptPathPrefix) {
         try {
             return PromptTemplate.builder()
-                    .template(Files.readString(Paths.get(llmChatEnum.getPromptTemplatePath())))
+                    .template(Files.readString(Paths.get(promptPathPrefix + llmChatEnum.getPromptFileName())))
                     .build();
         } catch (IOException e) {
             e.printStackTrace();

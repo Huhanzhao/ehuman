@@ -18,6 +18,7 @@ import com.ehuman.dao.enums.MessageTypeEnum;
 import com.ehuman.dao.service.TbAiChatMemoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -45,10 +46,13 @@ public class SendMessageCompileGraph {
     private final CommonAuxiliaryService commonAuxiliaryService;
     private final MemoryVectorSearchNode memoryVectorSearchNode;
 
-    private final ChatClientFactory chatClientFactory;
+    private final SystemConfigBean systemConfigBean;
     private final NodeStatePersistenceListener nodeStatePersistenceListener;
 
     private final JobManager jobManager;
+
+    @Value("${spring.profiles.active}")
+    private String env;
 
 
     @Bean("sendMessageCompiledGraph")
@@ -69,19 +73,19 @@ public class SendMessageCompileGraph {
             // 创建消息生成节点
             LlmNode messageGenerate = new LlmNode(LlmChatEnum.MESSAGE_GENERATE,
                     LlmTypeEnum.MASTER,
-                    chatClientFactory);
+                    systemConfigBean);
 
             // 合并检查节点
-            LlmNode combinedCheckNode = new LlmNode(LlmChatEnum.COMBINED_CHECK, LlmTypeEnum.AUXILIARY, chatClientFactory);
+            LlmNode combinedCheckNode = new LlmNode(LlmChatEnum.COMBINED_CHECK, LlmTypeEnum.AUXILIARY, systemConfigBean);
 
             // 主动发消息生成节点
-            LlmNode initiativeMessageGenerateNode = new LlmNode(LlmChatEnum.INITIATIVE_MESSAGE_GENERATE, LlmTypeEnum.MASTER, chatClientFactory);
+            LlmNode initiativeMessageGenerateNode = new LlmNode(LlmChatEnum.INITIATIVE_MESSAGE_GENERATE, LlmTypeEnum.MASTER, systemConfigBean);
 
             stateGraph
                     .addNode("userWantToNode", node_async(userWantToNode))
                     .addNode("messageGenerateNode", node_async(messageGenerate))
                     .addNode("initiativeMessageGenerateNode", node_async(initiativeMessageGenerateNode))
-                    .addNode("formatOutPutLlmNode", node_async(new LlmNode(LlmChatEnum.FORMAT_OUTPUT, LlmTypeEnum.AUXILIARY,chatClientFactory)))
+                    .addNode("formatOutPutLlmNode", node_async(new LlmNode(LlmChatEnum.FORMAT_OUTPUT, LlmTypeEnum.AUXILIARY,systemConfigBean)))
                     .addNode("botStatusSearchNode", botStatusSearchNode)
                     .addNode("memoryVectorSearchNode", node_async(memoryVectorSearchNode))
                     .addNode("graphSearchNode", node_async(state -> Map.of()))  // todo 图搜索
@@ -146,12 +150,14 @@ public class SendMessageCompileGraph {
                             .build())
                     .build();
 
-            // 生成 puml 文件
-            GraphRepresentation sendMessageFlow = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
-                    "sendMessage flow");
-            Path pumlDir = Paths.get("ehuman-core/src/main/resources/puml");
-            Files.createDirectories(pumlDir);
-            Files.writeString(pumlDir.resolve("sendMessage.puml"), sendMessageFlow.content());
+            if(!"exe".equals(env)){
+                // 生成 puml 文件
+                GraphRepresentation sendMessageFlow = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
+                        "sendMessage flow");
+                Path pumlDir = Paths.get("ehuman-core/src/main/resources/puml");
+                Files.createDirectories(pumlDir);
+                Files.writeString(pumlDir.resolve("sendMessage.puml"), sendMessageFlow.content());
+            }
 
             // 不再需要 interruptBefore 配置，中断由 InterruptableAction 控制
             return stateGraph.compile(compileConfig);

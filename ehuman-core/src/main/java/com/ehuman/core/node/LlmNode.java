@@ -3,6 +3,7 @@ package com.ehuman.core.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.ehuman.core.bean.ChatClientFactory;
+import com.ehuman.core.bean.SystemConfigBean;
 import com.ehuman.core.service.AfterLlmCallback;
 import com.ehuman.core.service.BeforeLlmCallback;
 import com.ehuman.core.utils.PromptReadUtil;
@@ -104,20 +105,20 @@ public class LlmNode implements NodeAction {
                    LlmTypeEnum llmTypeEnum,
                    BeforeLlmCallback beforeLlmCallback,
                    AfterLlmCallback afterLlmCallback,
-                   ChatClientFactory chatClientFactory
+                   SystemConfigBean systemConfigBean
     ) {
-        this.promptTemplate = PromptReadUtil.readPrompt(nodeTypeEnum);
+        this.promptTemplate = PromptReadUtil.readPrompt(nodeTypeEnum, systemConfigBean.getPromptPathPrefix());
         this.nodeName = nodeTypeEnum.getNodeName();
         this.outPutKey = nodeTypeEnum.getOutputKey();
         this.beforeLlmCallback = beforeLlmCallback;
         this.afterLlmCallback = afterLlmCallback;
         this.llmTypeEnum = llmTypeEnum;
-        this.chatClientFactory = chatClientFactory;
+        this.chatClientFactory = systemConfigBean.getChatClientFactory();
     }
 
     public LlmNode(LlmChatEnum nodeTypeEnum,
                    LlmTypeEnum llmTypeEnum,
-                   ChatClientFactory chatClientFactory){
-        this(nodeTypeEnum, llmTypeEnum,null,null,chatClientFactory);
+                   SystemConfigBean systemConfigBean){
+        this(nodeTypeEnum, llmTypeEnum,null,null,systemConfigBean);
     }
 }
