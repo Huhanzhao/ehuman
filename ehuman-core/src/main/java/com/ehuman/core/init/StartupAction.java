@@ -14,6 +14,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -541,7 +542,7 @@ public class StartupAction implements CommandLineRunner {
 
                 // 【核心动作】：直接重写 napcat.quick.bat
                 Path quickBatPath = Paths.get(napcatShellDir, "napcat.quick.bat");
-                String batContent = "@echo off\nNapCatWinBootMain.exe " + quickLoginQQ;
+                String batContent = "@echo off\nset NAPCAT_WEBUI_SECRET_KEY=123456\nNapCatWinBootMain.exe " + quickLoginQQ;
                 Files.writeString(quickBatPath, batContent, StandardCharsets.UTF_8);
 
                 // 执行隐藏启动的 VBS
@@ -550,6 +551,10 @@ public class StartupAction implements CommandLineRunner {
 
             } else {
                 log.info("未检测到历史账号，将以扫码方式启动 (隐藏窗口)...");
+                // 【新增动作】：重写 napcat.bat，注入环境变量
+                Path normalBatPath = Paths.get(napcatShellDir, "napcat.bat");
+                String batContent = "@echo off\nchcp 65001\nset NAPCAT_WEBUI_SECRET_KEY=123456\n.\\NapCatWinBootMain.exe\npause";
+                Files.writeString(normalBatPath, batContent, Charset.defaultCharset());
 
                 // 执行普通启动的 VBS
                 File vbsFile = new File(napcatOneKeyDir, "run_napcat.vbs");
