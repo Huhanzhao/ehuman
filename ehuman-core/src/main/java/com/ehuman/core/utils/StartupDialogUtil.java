@@ -3,15 +3,21 @@ package com.ehuman.core.utils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 @Slf4j
 public class StartupDialogUtil {
 
     private JDialog dialog;
-    private JLabel label;
+    private JTextPane textPane;
     private JButton button;
     private boolean isFailed = false;
+    private String currentMessage = "";
 
     public void showLoading() {
         SwingUtilities.invokeLater(() -> {
@@ -21,25 +27,34 @@ public class StartupDialogUtil {
             dialog.setLocationRelativeTo(null);
             dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
             dialog.setResizable(false);
+            dialog.setAlwaysOnTop(true);
 
-            // 使用 GridBagLayout 控制全局
             JPanel mainPanel = new JPanel(new GridBagLayout());
+            mainPanel.setBackground(new Color(245, 245, 245));
 
-            // 1. 初始化 JLabel
-            label = new JLabel("ehuman 正在启动，请稍候...");
-            label.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-            label.setHorizontalAlignment(SwingConstants.CENTER); // 文字自身居中
+            textPane = new JTextPane();
+            textPane.setEditable(false);
+            textPane.setOpaque(false);
+            textPane.setCursor(new Cursor(Cursor.TEXT_CURSOR));
+            // 给文字留一点左右边距，防止长文字贴边
+            textPane.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
 
-            // 添加文字（占满所有空间，绝对居中）
+            // 监听窗口大小变化，保证实时垂直居中
+            textPane.addComponentListener(new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    centerText();
+                }
+            });
+
             GridBagConstraints gbcText = new GridBagConstraints();
             gbcText.gridx = 0;
             gbcText.gridy = 0;
             gbcText.weightx = 1.0;
             gbcText.weighty = 1.0;
-            gbcText.fill = GridBagConstraints.BOTH; // 核心：让 label 占满整个区域
-            mainPanel.add(label, gbcText);
+            gbcText.fill = GridBagConstraints.BOTH;
+            mainPanel.add(textPane, gbcText);
 
-            // 2. 初始化按钮
             button = new JButton("确 定");
             button.setVisible(false);
             button.addActionListener(e -> {
@@ -50,34 +65,29 @@ public class StartupDialogUtil {
                 }
             });
 
-            // 添加按钮（贴在最下方）
             GridBagConstraints gbcBtn = new GridBagConstraints();
             gbcBtn.gridx = 0;
             gbcBtn.gridy = 1;
             gbcBtn.weightx = 1.0;
             gbcBtn.weighty = 0;
-            gbcBtn.insets = new Insets(0, 0, 20, 0);
+            gbcBtn.insets = new Insets(0, 0, 15, 0);
             mainPanel.add(button, gbcBtn);
 
             dialog.add(mainPanel);
             dialog.setVisible(true);
+
+            updateText("ehuman 正在启动，请稍候...", Color.BLACK);
         });
     }
 
     public void updateStatus(boolean success, String message, boolean showButton) {
         SwingUtilities.invokeLater(() -> {
-            if (dialog == null || label == null || button == null) return;
+            if (dialog == null || textPane == null || button == null) return;
 
-            // 【关键修改】HTML 不要写固定宽度，让它自适应。用 div 包裹并居中
-            String safeMessage = message.replace("<", "&lt;").replace(">", "&gt;");
-            // 新增：把换行符替换成 HTML 的换行标签
-            safeMessage = safeMessage.replace("\n", "<br>");
-
-            label.setText("<html><div style='text-align: center; width: 100%;'>" + safeMessage + "</div></html>");
-            label.setForeground(success ? new Color(0, 153, 51) : Color.RED);
+            Color color = success ? new Color(0, 153, 51) : Color.RED;
+            updateText(message, color);
 
             this.isFailed = !success;
-
             button.setVisible(showButton);
             button.setFocusable(true);
             dialog.getRootPane().setDefaultButton(button);
@@ -87,19 +97,79 @@ public class StartupDialogUtil {
 
     public void updateProgress(String message) {
         SwingUtilities.invokeLater(() -> {
-            if (dialog == null || label == null) return;
+            if (dialog == null || textPane == null) return;
 
-            // 【关键修改】HTML 不要写固定宽度，让它自适应。用 div 包裹并居中
-            String safeMessage = message.replace("<", "&lt;").replace(">", "&gt;");
-            // 新增：把换行符替换成 HTML 的换行标签
-            safeMessage = safeMessage.replace("\n", "<br>");
-
-            label.setText("<html><div style='text-align: center; width: 100%;'>" + safeMessage + "</div></html>");
-            label.setForeground(Color.BLACK);
+            updateText(message, Color.BLACK);
 
             if (button != null) {
                 button.setVisible(false);
             }
         });
+    }
+
+    private void updateText(String message, Color color) {
+        if (textPane == null) return;
+        this.currentMessage = message;
+        textPane.setText(message);
+        textPane.setForeground(color);
+
+        StyledDocument doc = textPane.getStyledDocument();
+        SimpleAttributeSet center = new SimpleAttributeSet();
+        StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
+        doc.setParagraphAttributes(0, doc.getLength(), center, false);
+
+        centerText();
+    }
+
+    /**
+     * 精准计算垂直居中
+     */
+    private void centerText() {
+        if (textPane == null || currentMessage.isEmpty()) return;
+
+        FontMetrics fm = textPane.getFontMetrics(textPane.getFont());
+        int lineHeight = fm.getHeight();
+
+        // 获取当前 textPane 可用高度
+        int availableHeight = textPane.getHeight() - textPane.getInsets().top - textPane.getInsets().bottom;
+
+        // 先还原成原始文本，计算所需行数
+        textPane.setText(currentMessage);
+
+        int textHeight;
+        try {
+            // 获取文字实际渲染的高度
+            Rectangle r = textPane.modelToView2D(textPane.getDocument().getLength()).getBounds();
+            textHeight = r.y + r.height; // 内容总高度
+        } catch (Exception e) {
+            textHeight = lineHeight;
+        }
+
+        // 计算上下需要补充的空白高度
+        int emptyHeight = availableHeight - textHeight;
+
+        if (emptyHeight > 0) {
+            // 一半留上面，一半留下面。只留上面的空行
+            int topPaddingPixels = emptyHeight / 2;
+            // 转换成空行的数量
+            int topPaddingLines = topPaddingPixels / lineHeight;
+
+            // 防止由于误差变成负数
+            if (topPaddingLines > 0) {
+                StringBuilder paddedText = new StringBuilder();
+                for (int i = 0; i < topPaddingLines; i++) {
+                    paddedText.append("\n");
+                }
+                paddedText.append(currentMessage);
+
+                // 重新设置带空行的文本
+                textPane.setText(paddedText.toString());
+
+                StyledDocument doc = textPane.getStyledDocument();
+                SimpleAttributeSet center = new SimpleAttributeSet();
+                StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
+                doc.setParagraphAttributes(0, doc.getLength(), center, false);
+            }
+        }
     }
 }

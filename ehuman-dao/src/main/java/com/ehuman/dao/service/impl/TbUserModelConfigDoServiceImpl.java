@@ -100,6 +100,19 @@ public class TbUserModelConfigDoServiceImpl extends ServiceImpl<TbUserModelConfi
         // 更新do
         lambdaUpdate().eq(TbUserModelConfigDo::getId, tbUserModelConfigDo.getId()).update(tbUserModelConfigDo);
     }
+
+    @Override
+    public void deleteQuickStartConfig(Long userId) {
+        lambdaUpdate()
+                .eq(TbUserModelConfigDo::getUserId,userId)
+                .in(TbUserModelConfigDo::getLlmTypeEnum,List.of(MASTER,AUXILIARY,IMAGE_ANALYSIS)).remove();
+    }
+
+    @Override
+    public void deleteByModelName(Long userId,String modelName) {
+        lambdaUpdate().eq(TbUserModelConfigDo::getUserId,userId)
+                .eq(TbUserModelConfigDo::getModel,modelName).remove();
+    }
 }
 
 

@@ -5,10 +5,8 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.ehuman.core.bean.SystemGraph;
 import com.ehuman.core.utils.SendMessageUtil;
-import com.ehuman.dao.entity.TbBotPromptDo;
-import com.ehuman.dao.entity.TbUserBotStatusDo;
-import com.ehuman.dao.entity.TbUserModelConfigDo;
-import com.ehuman.dao.entity.TbUserReferAudioDo;
+import com.ehuman.dao.entity.*;
+import com.ehuman.dao.enums.FeatureTypeEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.service.*;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -31,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static com.ehuman.dao.enums.FeatureTypeEnum.*;
 
@@ -98,20 +97,17 @@ public class SystemPlugin extends BotPlugin {
 
     private final String manu =
             "# - 查看菜单\n" +
-            "#快速开始 - 配置deepseek模型快速开始\n" +
-            "#快速开启语音合成 - 配置VoxCPM2模型Api(从https://platform.modelbest.cn 获取)快速开启语音合成\n" +
+            "#快速开始 - 使用deepseek模型快速开始\n" +
+            "#快速开启语音合成 - 配置VoxCPM2模型Api(从https://platform.modelbest.cn/console/keys 获取)快速开启语音合成\n" +
             "#api设置\n" +
             "#参考音频设置\n" +
             "#人设设置\n" +
             "#功能设置\n" +
-            "#其他设置\n" +
+            "#语音测试\n" +
             "#exit - 退出引导";
 
-    private final String otherContext =
-            "#好感度 - 查看好感度\n" +
-            "#导入表情包 - 管理表情包";
-
     private final String featureContext =
+            "#功能开启情况查询\n"+
             "#开启语音合成\n" +
             "#关闭语音合成\n" +
             "#开启表情包拾取\n" +
@@ -188,6 +184,26 @@ public class SystemPlugin extends BotPlugin {
             return startNewGraph(userId, quickStartTtsGraph);
         }
 
+        if(userInput.equals("#语音测试")){
+            sendMessageUtil.sendSystemMsg(userId,"#语音测试 后面跟上你要测试的语音的文字。例如： #语音测试 你好");
+            return MESSAGE_BLOCK;
+        }
+
+        if(userInput.startsWith("#语音测试") && !userInput.replace("#语音测试","").trim().isEmpty()){
+            List<TbUserFeatureButtonDo> featureList = tbUserFeatureButtonDoService.list();
+            if(featureList != null && !featureList.isEmpty()){
+                List<TbUserFeatureButtonDo> voiceList = featureList.stream().filter(tb -> tb.getFeatureTypeEnum().equals(VOICE_PLUGIN) && tb.getEnable()).toList();
+                if (!voiceList.isEmpty()){
+                    String message = "<voice tone=\"xxxxx\">"
+                            + userInput.replace("#语音测试","").trim() + "</voice>";
+                    sendMessageUtil.sendVoiceMsg(userId,message);
+                    return MESSAGE_BLOCK;
+                }
+            }
+            sendMessageUtil.sendVoiceMsg(userId,"语音合成功能没有开启");
+            return MESSAGE_BLOCK;
+        }
+
         // ===== 参考音频 =====
         if (userInput.equals("#参考音频设置")){
             sendMessageUtil.sendSystemMsg(userId,refAudioContext);
@@ -218,22 +234,25 @@ public class SystemPlugin extends BotPlugin {
             return startNewGraph(userId, createRoleGraph);
         }
 
-        // ===== 其他 =====
-        if (userInput.equals("#其他设置")){
-            sendMessageUtil.sendSystemMsg(userId,otherContext);
-            return MESSAGE_BLOCK;
-        }
-        if (userInput.startsWith("#好感度")) {
-            return getOrUpdateBotStatus(userId, userInput);
-        }
-        if (userInput.equals("#导入表情包")){
-            sendMessageUtil.sendSystemMsg(userId,"图片解析节点配置完毕之后随着聊天收集，也可以在emoji文件夹下面自行管理");
-            return MESSAGE_BLOCK;
-        }
-
         // ===== 功能开关 =====
         if (userInput.equals("#功能设置")){
             sendMessageUtil.sendSystemMsg(userId,featureContext);
+            return MESSAGE_BLOCK;
+        }
+        if(userInput.equals("#功能开启情况查询")){
+            List<TbUserFeatureButtonDo> featureButtonDos = tbUserFeatureButtonDoService.list();
+            StringBuilder returnMessage = new StringBuilder();
+            featureButtonDos.forEach(tbUserFeatureButtonDo -> {
+                returnMessage.append(tbUserFeatureButtonDo.getFeatureTypeEnum().getFeatureName()).append("：")
+                        .append(tbUserFeatureButtonDo.getEnable()? "已开启" : "已关闭").append("\n");
+            });
+            List<FeatureTypeEnum> existFeature = featureButtonDos.stream().map(TbUserFeatureButtonDo::getFeatureTypeEnum).toList();
+            for (FeatureTypeEnum value : values()) {
+                if(!existFeature.contains(value)){
+                    returnMessage.append(value.getFeatureName()).append("：").append("已关闭").append("\n");
+                }
+            }
+            sendMessageUtil.sendSystemMsg(userId,returnMessage.toString().trim());
             return MESSAGE_BLOCK;
         }
         if (userInput.equals("#开启语音合成")){

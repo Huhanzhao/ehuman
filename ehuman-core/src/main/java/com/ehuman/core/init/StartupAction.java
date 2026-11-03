@@ -77,7 +77,7 @@ public class StartupAction implements CommandLineRunner {
             // 读取napcat启动日志，寻找token
             String webUrl = monitorNapCatLog(Paths.get(baseUrl, "napcat_run.log").toString(), 120, startupDialog);
 
-            // 异步初始化NapCat默认配置
+            // 异步初始化NapCat默认配置 十分钟内一直修改
             new Thread(() -> {
                 monitorAndInjectConfig(baseUrl, 60 * 10);
             }).start();
@@ -236,7 +236,6 @@ public class StartupAction implements CommandLineRunner {
                         name.startsWith("onebot11_") && name.endsWith(".json"));
 
                 if (jsonFiles != null && jsonFiles.length > 0) {
-                    boolean allProcessed = true;
 
                     for (File file : jsonFiles) {
                         try {
@@ -269,7 +268,7 @@ public class StartupAction implements CommandLineRunner {
                                 JSONObject defaultClient = new JSONObject();
                                 defaultClient.set("enable", false); // 默认关闭，需用户手动开启
                                 defaultClient.set("name", "default");
-                                defaultClient.set("url", "ws://localhost:8081/ws");
+                                defaultClient.set("url", "ws://localhost:48081/ws");
                                 defaultClient.set("reportSelfMessage", false);
                                 defaultClient.set("messagePostFormat", "array");
                                 defaultClient.set("token", "ehuman");
@@ -284,26 +283,40 @@ public class StartupAction implements CommandLineRunner {
                                 Files.write(file.toPath(), root.toStringPretty().getBytes(StandardCharsets.UTF_8));
                                 log.info("已为 {} 注入默认 WebSocket 配置 (enable=false)", file.getName());
                             } else {
-                                log.info("{} 已存在 default 配置，跳过", file.getName());
+                                log.info("{} 已存在 default 配置，判断端口号", file.getName());
+                                //  如果default配置是8081端口，就修改为4081 然后设置enable为false
+                                boolean needsUpdate = false;
+                                for (int i = 0; i < clients.size(); i++) {
+                                    JSONObject client = clients.getJSONObject(i);
+                                    if ("default".equals(client.getStr("name"))) {
+                                        String url = client.getStr("url");
+                                        // 如果 url 存在且包含旧端口 8081，则替换为新端口 48081
+                                        if (url != null && url.contains(":8081")) {
+                                            client.set("url", url.replace(":8081", ":48081"));
+                                            client.set("enable", false);
+                                            needsUpdate = true;
+                                        }
+                                        break;
+                                    }
+                                }
+
+                                // 如果有修改，则写回文件
+                                if (needsUpdate) {
+                                    Files.write(file.toPath(), root.toStringPretty().getBytes(StandardCharsets.UTF_8));
+                                    log.info("已更新 {} 中的 default 配置端口并设为禁用 (enable=false)", file.getName());
+                                }
                             }
 
                         } catch (Exception e) {
-                            log.error("处理配置文件 {} 失败", file.getName(), e);
-                            allProcessed = false; // 如果出错，下一轮重试
+                            log.error("处理配置文件 {} 失败,再次查找文件", file.getName(), e);
                         }
-                    }
-
-                    // 如果所有文件都处理完了，并且确实找到了文件，直接结束监控
-                    if (allProcessed) {
-                        log.info("NapCat 配置文件注入完成！");
-                        return;
                     }
                 }
             }
 
             // 没找到或处理失败，等 3 秒再试
             try {
-                TimeUnit.SECONDS.sleep(2);
+                TimeUnit.SECONDS.sleep(3);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("配置监控被中断");

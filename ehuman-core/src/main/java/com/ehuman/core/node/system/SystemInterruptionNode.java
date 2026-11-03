@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +41,7 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
     private BeforeLlmCallback beforeLlmCallback;
 
     @Override
+    @Transactional
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         String userInput = state.value("userInput",String.class).orElse("").trim();
         // 正常节点逻辑：更新状态
@@ -55,6 +57,7 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
     }
 
     @Override
+    @Transactional
     public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
         log.info("进入了{}节点中断方法",nodeName);
         // 检查是否需要中断
@@ -62,6 +65,7 @@ public class SystemInterruptionNode implements AsyncNodeActionWithConfig, Interr
         Long userId = Long.valueOf(state.value("userId", String.class).orElse(""));
         InterruptionMetadata interruption = null;
         if (beforeLlmCallback != null){
+            // todo 改成传参需不需要中断的标识
             BeforeLlmCallback.BeforeCallBackEntity callBackEntity = beforeLlmCallback.execute(state);
             if (callBackEntity.interruptionMessage() != null){
                 inputPrompt = callBackEntity.interruptionMessage();

@@ -1,13 +1,19 @@
 package com.ehuman.core.bean;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.ehuman.core.dto.BalanceResponse;
+import com.ehuman.core.dto.ModelListResponse;
 import com.ehuman.core.node.system.CollectReferAudioTypeNode;
 import com.ehuman.core.node.system.SwitchNodeApiConfigNode;
 import com.ehuman.core.node.system.SwitchReferAudioNode;
 import com.ehuman.core.node.system.SystemInterruptionNode;
+import com.ehuman.core.service.BeforeLlmCallback;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.TbBotPromptDo;
 import com.ehuman.dao.entity.TbUserModelConfigDo;
@@ -24,6 +30,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.awt.image.BandCombineOp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -317,39 +324,77 @@ public class SystemGraph {
     }
 
     public CompiledGraph getQuickStartGraph() {
-        // 文件名
-        SystemInterruptionNode modelNameNode = SystemInterruptionNode.builder()
-                .sendMessageUtil(sendMessageUtil)
-                .inputPrompt("请输入deepseek模型名称")
-                .nodeName("modelNameNode")
-                .interruptKey("model").build();
-
         // 参考音频类型
         SystemInterruptionNode apiKeyNode = SystemInterruptionNode.builder()
                 .sendMessageUtil(sendMessageUtil)
-                .inputPrompt("请输入deepseek apikey")
+                .inputPrompt("请输入deepseek apikey 需要在https://platform.deepseek.com/api_keys 页面创建")
                 .nodeName("apiKeyNode")
                 .interruptKey("apiKey")
                 .afterLlmCallback((state,llmOutPut) -> {
                     // 保存配置
                     Map<String,Object> data = state.data();
                     Long userId = Long.valueOf(data.get("userId").toString());
+                    String totalBalance =null;
+
+                    if(data.get("apiKey") != null && !data.get("apiKey").toString().isEmpty()){
+                        String apiKey = state.data().get("apiKey").toString();
+                        String modelName;
+                        HttpResponse modelListResponse = HttpRequest.get("https://api.deepseek.com/models").header("Authorization","Bearer " + apiKey).execute();
+                        if(modelListResponse.getStatus() == 200){
+                            ModelListResponse modelListResponseDto = JSONUtil.toBean(modelListResponse.body(),ModelListResponse.class);
+                            for (ModelListResponse.ModelData model : modelListResponseDto.getData()) {
+                                List<String> inputModalities = model.getInputModalities();
+                                if (inputModalities != null && inputModalities.contains("image")){
+                                    modelName = model.getId();
+                                    state.updateState(Map.of("model",modelName));
+                                    break;
+                                }
+                            }
+                        }else{
+                            String body = modelListResponse.body();
+                            if(body != null && body.contains("Authentication Fails")){
+                                sendMessageUtil.sendSystemMsg(userId,"api校验失败，请检查apikey");
+                                return;
+                            }
+                        }
+
+                        HttpResponse balanceResponse = HttpRequest.get(
+                                        "https://api.deepseek.com/user/balance")
+                                .header("Authorization","Bearer " + apiKey).execute();
+
+                        BalanceResponse balanceDto = JSONUtil.toBean(balanceResponse.body(),BalanceResponse.class);
+                        Boolean isAvailable = balanceDto.getIsAvailable();
+                        if(!isAvailable){
+                            sendMessageUtil.sendSystemMsg(userId,"api不可用");
+                            return;
+                        }
+                        totalBalance = balanceDto.getBalanceInfos().getFirst().getTotalBalance();
+                    }
+
+                    // 删除老的 插入新的
+                    tbUserModelConfigDoService.deleteQuickStartConfig(userId);
 
                     TbUserModelConfigDo tbUserModelConfigDo = mapper.convertValue(state.data(), TbUserModelConfigDo.class);
                     tbUserModelConfigDo.setCategory(GPT.getCategory()).setBaseUrl("https://api.deepseek.com")
                             .setNeedProxy(false).setLlmTypeEnum(LlmTypeEnum.MASTER);
+
                     TbUserModelConfigDo tbUserModelConfigDo2 = new TbUserModelConfigDo();
                     BeanUtils.copyProperties(tbUserModelConfigDo,tbUserModelConfigDo2);
                     tbUserModelConfigDo2.setLlmTypeEnum(LlmTypeEnum.AUXILIARY);
-                    // 插入数据
-                    tbUserModelConfigDoService.saveBatch(List.of(tbUserModelConfigDo,tbUserModelConfigDo2));
 
-                    sendMessageUtil.sendSystemMsg(userId, "设置成功 可以开始聊天了");
+                    TbUserModelConfigDo tbUserModelConfigDo3 = new TbUserModelConfigDo();
+                    BeanUtils.copyProperties(tbUserModelConfigDo,tbUserModelConfigDo3);
+                    tbUserModelConfigDo3.setLlmTypeEnum(LlmTypeEnum.IMAGE_ANALYSIS);
+                    tbUserModelConfigDo3.setCategory(IMAGE.getCategory());
+                    // 插入数据
+                    tbUserModelConfigDoService.saveBatch(List.of(tbUserModelConfigDo,tbUserModelConfigDo2,tbUserModelConfigDo3));
+
+                    sendMessageUtil.sendSystemMsg(userId, "设置成功 可以开始聊天了 余额" + totalBalance);
                     state.clear();
                 })
                 .build();
 
-        return getSystemGraph(List.of(modelNameNode,apiKeyNode),List.of("apikey","model"));
+        return getSystemGraph(List.of(apiKeyNode),List.of("apikey","model"));
 
     }
 
@@ -375,7 +420,8 @@ public class SystemGraph {
                         tbUserReferAudioDo.setReferAudioName("default.wav");
                         tbUserReferAudioDoService.save(tbUserReferAudioDo);
                     }
-                    // 插入默认语音api
+                    // 插入默认语音api 先删除再插入
+                    tbUserModelConfigDoService.deleteByModelName(userId,"VoxCpmTTS");
                     TbUserModelConfigDo tbUserModelConfigDo = new TbUserModelConfigDo()
                             .setModel("VoxCpmTTS")
                             .setUserId(userId)
@@ -385,7 +431,12 @@ public class SystemGraph {
                             .setLlmTypeEnum(LlmTypeEnum.TTS);
                     tbUserModelConfigDoService.save(tbUserModelConfigDo);
                     tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
-                    sendMessageUtil.sendSystemMsg(userId, "已开启语音合成");
+                    try{
+                        sendMessageUtil.sendChatMsg(userId,"正在校验语音合成功能，请稍等...");
+                        sendMessageUtil.sendVoiceMsg(userId, "<voice tone=\"xxxx\">语音合成成功</voice>");
+                    }catch(Exception e){
+                        sendMessageUtil.sendSystemMsg(userId,"语音合成失败，请检查apikey是否正确");
+                    }
                     state.clear();
                 })
                 .build();

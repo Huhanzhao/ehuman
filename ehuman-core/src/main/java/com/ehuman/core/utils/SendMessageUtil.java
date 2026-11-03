@@ -230,8 +230,7 @@ public class SendMessageUtil {
                 .file("base64://" + base64)).build();
         }else{
             log.error("插件输出错误");
-            sendMegToSelf("插件输出错误");
-            return;
+            throw new RuntimeException("插件输出错误");
         }
 
         // 发送消息

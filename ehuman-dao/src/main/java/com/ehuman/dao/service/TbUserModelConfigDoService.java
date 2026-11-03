@@ -28,4 +28,8 @@ public interface TbUserModelConfigDoService extends IService<TbUserModelConfigDo
     List<TbUserModelConfigDo> getDisableApiConfigByCategory(Long userId, ChatModelCategoryEnum categoryEnum);
 
     void changeApiModelById(Long userId,TbUserModelConfigDo tbUserModelConfigDo,ChatModelCategoryEnum chatModelCategoryEnum);
+
+    void deleteQuickStartConfig(Long userId);
+
+    void deleteByModelName(Long userId,String voxCpmTTS);
 }
