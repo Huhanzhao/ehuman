@@ -3,14 +3,18 @@ package com.ehuman.core.utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ProcessUtils {
 
     /**
      * 1. 判断指定名称的进程是否正在运行 (适用于 Windows)
-     * @param processName 进程名 (例如 "NapCatInstaller.exe")
+     * @param processName 进程名 (例如 "xxx.exe")
      * @return true 如果存在
      */
     public static boolean isProcessRunning(String processName) {
@@ -35,7 +39,7 @@ public class ProcessUtils {
 
     /**
      * 2. 结束指定名称的进程（如果进程不存在，不会报错）
-     * @param processName 进程名 (例如 "NapCatInstaller.exe")
+     * @param processName 进程名 (例如 "xxx.exe")
      * @return true 代表执行了杀进程命令，false 代表执行异常
      */
     public static boolean killProcess(String processName) {
@@ -70,72 +74,34 @@ public class ProcessUtils {
     }
 
     /**
-     * 通过命令行关键字，精准强杀隐藏的进程（专门用来杀 VBS 拉起的隐藏 cmd）
-     * @param keyword 命令行关键字（比如 "napcat.bat"）
+     * 杀掉指定 SnowLuma 目录下启动的进程（node.exe 及其 launcher cmd），
+     * 通过可执行文件路径 / 命令行中的目录名区分，不会误杀其他 node 程序
      */
-    public static void killProcessByCommandLine(String keyword) {
+    public static void killSnowLumaProcesses(String snowLumaDir) {
+        String keyword = new File(snowLumaDir).getName();
+        String script = "$kw='" + keyword + "'; " +
+                "Get-CimInstance Win32_Process -Filter \"Name='node.exe' OR Name='cmd.exe'\" | " +
+                "Where-Object { ($_.Name -eq 'node.exe' -and $_.ExecutablePath -like \"*$kw*\") -or " +
+                "($_.Name -eq 'cmd.exe' -and $_.CommandLine -like \"*$kw*\") } | " +
+                "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
+
         try {
-            // 使用 WMIC 命令查找命令行包含指定关键字的进程
-            // 注意：WMIC 的语法中，% 需要转义为 %% (如果是在 bat 中)，在 Java 中直接传 %
-            String command = "wmic process where \"commandline like '%" + keyword + "%'\" call terminate";
+            // 必须用 -EncodedCommand：Java 传参时会把脚本里的双引号吞掉，导致 -like "*xxx*" 语法错误
+            String encoded = Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE));
+            Process process = new ProcessBuilder("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-EncodedCommand", encoded)
+                    .redirectErrorStream(true)
+                    .start();
 
-            Process process = Runtime.getRuntime().exec(command);
-
-            // 必须读取输出流，防止进程卡死
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "GBK"))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // 如果你想看具体杀了谁，可以在这里打印 line
+                while (reader.readLine() != null) {
+                    // 消费输出，防止阻塞
                 }
             }
-            process.waitFor();
-            log.info("已尝试清理包含关键字 [{}] 的后台进程", keyword);
-
+            process.waitFor(15, TimeUnit.SECONDS);
+            log.info("已尝试清理已启动的 SnowLuma 进程: {}", keyword);
         } catch (Exception e) {
-            log.info("精准清理进程失败: {}", e.getMessage());
+            log.warn("清理 SnowLuma 进程失败: {}", e.getMessage());
         }
     }
 
-    /**
-     * 精准杀掉由 NapCat 启动的 QQ.exe 进程（不会误杀用户自己的 QQ）
-     */
-    public static void killNapCatQQ() {
-        try {
-            String psCommand = "powershell -NoProfile -WindowStyle Hidden -Command \"" +
-                    "Get-CimInstance Win32_Process -Filter \\\"Name = 'QQ.exe'\\\" | " +
-                    "Where-Object { (Get-Process -Id $_.ParentProcessId -ErrorAction SilentlyContinue).Name -eq 'NapCatWinBootMain' } | " +
-                    "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }\"";
-
-            Process process = Runtime.getRuntime().exec(psCommand);
-
-            // 消费掉输出流，防止阻塞
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(process.getInputStream(), "GBK"))) {
-                while (reader.readLine() != null) {}
-            }
-            process.waitFor();
-            log.info("已精准清理 NapCat 启动的 QQ 进程");
-
-        } catch (Exception e) {
-            log.info("精准清理 NapCat QQ 进程失败: {}", e.getMessage());
-        }
-    }
-
-    public static void main(String[] args) {
-        ProcessUtils.killNapCatQQ();
-
-        if(ProcessUtils.isProcessRunning("NapCatWinBootMain.exe")){
-            ProcessUtils.killProcess("NapCatWinBootMain.exe");
-        }
-        if(ProcessUtils.isProcessRunning("NapCatInstaller.exe")){
-            ProcessUtils.killProcess("NapCatInstaller.exe");
-        }
-        if(ProcessUtils.isProcessRunning("ehuman-1.0.0.exe")){
-            ProcessUtils.killProcess("ehuman-1.0.0.exe");
-        }
-
-        ProcessUtils.killProcessByCommandLine("napcat.bat");
-        ProcessUtils.killProcessByCommandLine("napcat.quick.bat");
-
-    }
 }

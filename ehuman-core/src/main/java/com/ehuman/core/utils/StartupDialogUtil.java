@@ -18,6 +18,8 @@ public class StartupDialogUtil {
     private JButton button;
     private boolean isFailed = false;
     private String currentMessage = "";
+    /** 需要标红显示的文本（比如 SnowLuma 初始密码），没有则为 null */
+    private String highlightText;
 
     public void showLoading() {
         SwingUtilities.invokeLater(() -> {
@@ -84,8 +86,28 @@ public class StartupDialogUtil {
         SwingUtilities.invokeLater(() -> {
             if (dialog == null || textPane == null || button == null) return;
 
+            this.highlightText = null;
             Color color = success ? new Color(0, 153, 51) : Color.RED;
             updateText(message, color);
+
+            this.isFailed = !success;
+            button.setVisible(showButton);
+            button.setFocusable(true);
+            dialog.getRootPane().setDefaultButton(button);
+            button.requestFocus();
+        });
+    }
+
+    /**
+     * 更新状态，并把密码部分标红显示
+     */
+    public void updateStatusWithPassword(boolean success, String message, String password, boolean showButton) {
+        SwingUtilities.invokeLater(() -> {
+            if (dialog == null || textPane == null || button == null) return;
+
+            this.highlightText = "初始密码是 " + password;
+            Color color = success ? new Color(0, 153, 51) : Color.RED;
+            updateText(message + "\n" + highlightText, color);
 
             this.isFailed = !success;
             button.setVisible(showButton);
@@ -99,6 +121,7 @@ public class StartupDialogUtil {
         SwingUtilities.invokeLater(() -> {
             if (dialog == null || textPane == null) return;
 
+            this.highlightText = null;
             updateText(message, Color.BLACK);
 
             if (button != null) {
@@ -171,5 +194,24 @@ public class StartupDialogUtil {
                 doc.setParagraphAttributes(0, doc.getLength(), center, false);
             }
         }
+
+        applyHighlight();
+    }
+
+    /**
+     * 把 highlightText 部分标红
+     */
+    private void applyHighlight() {
+        if (highlightText == null || textPane == null) return;
+
+        String text = textPane.getText();
+        int start = text.lastIndexOf(highlightText);
+        if (start < 0) return;
+
+        SimpleAttributeSet red = new SimpleAttributeSet();
+        StyleConstants.setForeground(red, Color.RED);
+
+        StyledDocument doc = textPane.getStyledDocument();
+        doc.setCharacterAttributes(start, highlightText.length(), red, false);
     }
 }
