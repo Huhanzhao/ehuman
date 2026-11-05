@@ -67,21 +67,24 @@ public class StartupAction implements CommandLineRunner {
                 startupDialog.updateStatus(true, "qq[" + System.getProperty("BOT_ID")
                         + "]qq连接成功,SnowLuma控制台：" + webUrl + ",点击下方确定按钮开始对话吧",true);
             }else{
-                // 首次登录时 config 目录下还没有 onebot_<uin>.json
-                boolean firstLogin = listOnebotConfigs(baseUrl).length == 0;
-                String waitMessage = buildWaitMessage(webUrl, firstLogin);
-                if (initialPassword != null && !initialPassword.isEmpty()) {
-                    // 首次启动：初始密码标红提示
+                // 日志里有初始密码 = 首次登录。首次登录时初始密码会一直显示到用户进入控制台。
+                boolean firstLogin = initialPassword != null && !initialPassword.isEmpty();
+                File logFile = Paths.get(baseUrl, "snowluma_run.log").toFile();
+                boolean hasConfig = listOnebotConfigs(baseUrl).length > 0;
+                boolean consoleEntered = isConsoleEntered(logFile);
+                String waitMessage = buildWaitMessage(webUrl, firstLogin, hasConfig, consoleEntered);
+                if (firstLogin && !consoleEntered) {
+                    // 首次启动且还没进控制台：初始密码标红常驻
                     startupDialog.updateStatusWithPassword(true, waitMessage, initialPassword, false);
                 } else {
                     startupDialog.updateStatus(true, waitMessage, false);
                 }
 
-                // 异步注入默认 wsClient，并在「进入控制台 / QQ已加载 / default出现 / 连接成功」节点更新提示。
+                // 异步注入默认 wsClient，并按「是否已有 onebot 配置 / 是否已进入控制台 / 是否连接成功」持续更新提示。
                 // 用户可能启动几分钟后才登录，onebot_<uin>.json 才会生成，所以持续监控 10 分钟
                 final StartupDialogUtil dialogRef = startupDialog;
                 new Thread(() -> monitorAndInjectSnowLumaConfig(
-                        baseUrl, 60 * 10, dialogRef, webUrl, firstLogin)).start();
+                        baseUrl, 60 * 10, dialogRef, webUrl, firstLogin, initialPassword)).start();
             }
 
             addSystemTray(baseUrl);
@@ -90,20 +93,37 @@ public class StartupAction implements CommandLineRunner {
     }
 
     /**
-     * 等待 QQ 连接时展示的引导文案。首次登录和后续登录使用不同提示。
-     * 注意：「等待qq连接」和「初始密码是 xxx」保持原样，由调用方负责追加密码。
+     * 等待 QQ 连接时展示的引导文案。
+     * onebot_<uin>.json 在电脑本地登录 QQ 后就会生成，因此按「是否已有配置 / 是否已进入控制台」分四种情况提示。
+     * 注意：「等待qq连接」和「初始密码是 xxx」保持原样；密码由调用方在进入控制台前追加显示。
      */
-    private String buildWaitMessage(String webUrl, boolean firstLogin) {
+    private String buildWaitMessage(String webUrl, boolean firstLogin,
+                                    boolean hasConfig, boolean consoleEntered) {
         StringBuilder message = new StringBuilder();
         message.append("等待qq连接\n");
         message.append("SnowLuma控制台：")
                 .append(webUrl == null || webUrl.isEmpty() ? "（启动中，请稍候）" : webUrl)
                 .append("\n");
         if (firstLogin) {
-            message.append("首次使用请按顺序操作：先在本机登录机器人QQ，再用初始密码登录控制台并加载机器人QQ；\n");
-            message.append("等待 default 配置出现后，打开 default 配置即可连接。");
+            if (!hasConfig) {
+                if (!consoleEntered) {
+                    message.append("请先在电脑上登录机器人QQ，再打开控制台在【进程注入】加载该QQ。");
+                } else {
+                    message.append("已进入控制台\n请先在电脑上登录机器人QQ，登录后回到控制台在【进程注入】加载该QQ。");
+                }
+            } else {
+                if (!consoleEntered) {
+                    message.append("已检测到机器人QQ，请打开控制台在【进程注入】加载该QQ。");
+                } else {
+                    message.append("已进入控制台，机器人QQ已加载\n请打开在控制台【节点配置】中打开WS客户端 default 配置并启用，即可连接。");
+                }
+            }
         } else {
-            message.append("请打开控制台确认机器人QQ已加载，并打开 default 配置完成连接。");
+            if (!hasConfig) {
+                message.append("请先在电脑上登录机器人QQ，再打开控制台在【进程注入】加载该QQ。");
+            } else {
+                message.append("请打开控制台确认机器人QQ已加载，并打开控制台【节点配置】中打开WS客户端 default 配置完成连接。");
+            }
         }
         return message.toString();
     }
@@ -176,8 +196,7 @@ public class StartupAction implements CommandLineRunner {
                 SwingUtilities.invokeLater(() -> {
                     String msg = "<html><body style='width: 250px;'>"
                             + "<h3>ehuman 机器人</h3>"
-                            + "<p>欢迎加入飞书交流群：</p>"
-                            + "<a href='https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=6fcv2e01-bfae-4ed4-af10-f49d3e04cf56'>点击加入飞书群</a>"
+                            + "<p>欢迎加入QQ交流群：832149010</p>"
                             + "<p>开源地址：</p>"
                             + "<a href='https://gitee.com/huhanzhao/ehuman'>Gitee 仓库</a>"
                             + "</body></html>";
@@ -321,28 +340,27 @@ public class StartupAction implements CommandLineRunner {
 
     /**
      * 监控 SnowLuma 的 onebot_<uin>.json 配置，为每个账号注入一条默认 wsClient（默认不启用），
-     * 并按「进入控制台 -> QQ已加载 -> default出现 -> 连接成功」节点更新启动弹窗提示。
-     * 用户登录后才会生成该文件，所以需要持续监控一段时间（由调用方传入 10 分钟）。
+     * 并按「是否已有 onebot 配置 / 是否已进入控制台 / 是否连接成功」持续更新启动弹窗提示。
+     * 首次登录时，初始密码会一直显示到用户进入控制台。
      *
      * @param baseUrl app 目录
      * @param timeoutSeconds 最长监控时间（秒）
      * @param startupDialog 启动弹窗，可为 null（仅注入配置）
      * @param webUrl SnowLuma 控制台地址
-     * @param firstLogin 本次启动前是否还没有任何 onebot 配置
+     * @param firstLogin 日志中是否有初始密码（首次登录）
+     * @param initialPassword 初始密码，后续启动时为 null
      */
     public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds,
                                                StartupDialogUtil startupDialog, String webUrl,
-                                               boolean firstLogin) {
+                                               boolean firstLogin, String initialPassword) {
         File configDir = Paths.get(baseUrl, SNOWLUMA_DIR_NAME, "config").toFile();
         File logFile = Paths.get(baseUrl, "snowluma_run.log").toFile();
 
-        int initialFileCount = listOnebotConfigs(baseUrl).length;
-        boolean consoleNotified = false;
-        boolean qqLoadedNotified = initialFileCount > 0;
-        boolean defaultNotified = hasDefaultWsClient(listOnebotConfigs(baseUrl));
+        String lastMessage = null;
+        boolean lastShowPassword = false;
 
         log.info("开始监控 SnowLuma 配置目录: {}, 首次登录: {}, 已有配置文件: {}",
-                configDir.getAbsolutePath(), firstLogin, initialFileCount);
+                configDir.getAbsolutePath(), firstLogin, listOnebotConfigs(baseUrl).length);
 
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < timeoutSeconds * 1000L) {
@@ -356,36 +374,31 @@ public class StartupAction implements CommandLineRunner {
                 return;
             }
 
-            // 2. 首次登录：进入控制台后会记录协议同意/改密日志，可据此先换一次提示。
-            //    拿不到该日志时保持上一条提示，不影响后续节点。
-            if (firstLogin && !consoleNotified && isConsoleEntered(logFile)) {
-                consoleNotified = true;
-                updateDialog(startupDialog, true,
-                        "已进入控制台\n请加载机器人QQ，等待 default 配置出现。\nSnowLuma控制台：" + webUrl,
-                        false);
-                log.info("检测到用户已进入 SnowLuma 控制台");
-            }
-
-            // 3. QQ 加载成功：出现新的 onebot_<uin>.json
+            // 2. 有 onebot 配置就注入默认 wsClient（默认不启用）
             File[] jsonFiles = listOnebotConfigs(baseUrl);
-            if (!qqLoadedNotified && jsonFiles.length > initialFileCount) {
-                qqLoadedNotified = true;
-                updateDialog(startupDialog, true,
-                        "机器人QQ已加载\n正在等待 default 配置出现，出现后打开 default 配置并启用即可连接。",
-                        false);
-                log.info("检测到 onebot 配置出现，机器人 QQ 已加载");
-            }
-
-            // 4. 注入默认 wsClient，并提示 default 配置已出现
             for (File file : jsonFiles) {
                 injectDefaultWsClient(file);
             }
-            if (qqLoadedNotified && !defaultNotified && hasDefaultWsClient(jsonFiles)) {
-                defaultNotified = true;
-                updateDialog(startupDialog, true,
-                        "default 配置已出现\n请在 SnowLuma 控制台打开 default 配置并启用，稍候即可连接成功。",
-                        false);
-                log.info("检测到 default 配置已出现，等待用户在控制台启用");
+
+            // 3. 根据当前状态生成提示；状态不变时不重复刷新弹窗
+            boolean hasConfig = jsonFiles.length > 0;
+            boolean consoleEntered = firstLogin && isConsoleEntered(logFile);
+            String message = buildWaitMessage(webUrl, firstLogin, hasConfig, consoleEntered);
+            boolean showPassword = firstLogin && !consoleEntered
+                    && initialPassword != null && !initialPassword.isEmpty();
+
+            if (!message.equals(lastMessage) || showPassword != lastShowPassword) {
+                if (startupDialog != null) {
+                    if (showPassword) {
+                        startupDialog.updateStatusWithPassword(true, message, initialPassword, false);
+                    } else {
+                        startupDialog.updateStatus(true, message, false);
+                    }
+                }
+                log.info("启动提示更新: 配置={}, 已进入控制台={}, 显示密码={}, 内容={}",
+                        hasConfig, consoleEntered, showPassword, message.replace("\n", " "));
+                lastMessage = message;
+                lastShowPassword = showPassword;
             }
 
             try {
@@ -404,7 +417,7 @@ public class StartupAction implements CommandLineRunner {
      * 兼容旧调用：只注入配置，不更新弹窗。
      */
     public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds) {
-        monitorAndInjectSnowLumaConfig(baseUrl, timeoutSeconds, null, null, false);
+        monitorAndInjectSnowLumaConfig(baseUrl, timeoutSeconds, null, null, false, null);
     }
 
     private void updateDialog(StartupDialogUtil startupDialog, boolean success, String message, boolean showButton) {
