@@ -55,12 +55,6 @@ public class StartupAction implements CommandLineRunner {
             boolean startSuccess = startSnowLuma(baseUrl);
             startupDialog.updateStatus(startSuccess, startSuccess ? "SnowLuma 启动完成..." : "SnowLuma 启动失败...", !startSuccess);
 
-            // 异步注入 SnowLuma 默认 wsClient 配置。
-            // 用户可能启动几分钟后才登录，onebot_<uin>.json 才会生成，所以持续监控 10 分钟
-            new Thread(() -> {
-                monitorAndInjectSnowLumaConfig(baseUrl, 60 * 10);
-            }).start();
-
             startupDialog.updateStatus(true, "正在获取 SnowLuma 控制台地址...",false);
 
             // 读取 SnowLuma 启动日志，寻找 WebUI 地址和首次启动的初始密码
@@ -73,31 +67,55 @@ public class StartupAction implements CommandLineRunner {
                 startupDialog.updateStatus(true, "qq[" + System.getProperty("BOT_ID")
                         + "]qq连接成功,SnowLuma控制台：" + webUrl + ",点击下方确定按钮开始对话吧",true);
             }else{
-                String waitMessage = "等待qq连接,(首次使用请在SnowLuma控制台启用default连接)SnowLuma控制台：\n" + webUrl;
+                // 首次登录时 config 目录下还没有 onebot_<uin>.json
+                boolean firstLogin = listOnebotConfigs(baseUrl).length == 0;
+                String waitMessage = buildWaitMessage(webUrl, firstLogin);
                 if (initialPassword != null && !initialPassword.isEmpty()) {
                     // 首次启动：初始密码标红提示
                     startupDialog.updateStatusWithPassword(true, waitMessage, initialPassword, false);
                 } else {
                     startupDialog.updateStatus(true, waitMessage, false);
                 }
-                // 循环检查 QQ 连接状态，连接成功后才显示确定按钮
-                for(int i = 0; i < 100; i++) {
-                    try {
-                        Thread.sleep(2000);
-                        if(System.getProperty("BOT_ID") != null && !System.getProperty("BOT_ID").isEmpty()){
-                            startupDialog.updateStatus(true, "qq[" + System.getProperty("BOT_ID")
-                                    + "]qq连接成功,SnowLuma控制台：" + webUrl + ",点击下方确定按钮开始对话吧",true);
-                            break;
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+
+                // 异步注入默认 wsClient，并在「进入控制台 / QQ已加载 / default出现 / 连接成功」节点更新提示。
+                // 用户可能启动几分钟后才登录，onebot_<uin>.json 才会生成，所以持续监控 10 分钟
+                final StartupDialogUtil dialogRef = startupDialog;
+                new Thread(() -> monitorAndInjectSnowLumaConfig(
+                        baseUrl, 60 * 10, dialogRef, webUrl, firstLogin)).start();
             }
 
             addSystemTray(baseUrl);
 
         }
+    }
+
+    /**
+     * 等待 QQ 连接时展示的引导文案。首次登录和后续登录使用不同提示。
+     * 注意：「等待qq连接」和「初始密码是 xxx」保持原样，由调用方负责追加密码。
+     */
+    private String buildWaitMessage(String webUrl, boolean firstLogin) {
+        StringBuilder message = new StringBuilder();
+        message.append("等待qq连接\n");
+        message.append("SnowLuma控制台：")
+                .append(webUrl == null || webUrl.isEmpty() ? "（启动中，请稍候）" : webUrl)
+                .append("\n");
+        if (firstLogin) {
+            message.append("首次使用请按顺序操作：先在本机登录机器人QQ，再用初始密码登录控制台并加载机器人QQ；\n");
+            message.append("等待 default 配置出现后，打开 default 配置即可连接。");
+        } else {
+            message.append("请打开控制台确认机器人QQ已加载，并打开 default 配置完成连接。");
+        }
+        return message.toString();
+    }
+
+    /**
+     * 列出 SnowLuma 为已加载 QQ 账号生成的 onebot_<uin>.json 配置。
+     */
+    private File[] listOnebotConfigs(String baseUrl) {
+        File configDir = Paths.get(baseUrl, SNOWLUMA_DIR_NAME, "config").toFile();
+        File[] files = configDir.listFiles((dir, name) ->
+                name.startsWith("onebot_") && name.endsWith(".json"));
+        return files == null ? new File[0] : files;
     }
 
     /**
@@ -302,24 +320,72 @@ public class StartupAction implements CommandLineRunner {
     }
 
     /**
-     * 监控 SnowLuma 的 onebot_<uin>.json 配置，为每个账号注入一条默认 wsClient（默认不启用）。
+     * 监控 SnowLuma 的 onebot_<uin>.json 配置，为每个账号注入一条默认 wsClient（默认不启用），
+     * 并按「进入控制台 -> QQ已加载 -> default出现 -> 连接成功」节点更新启动弹窗提示。
      * 用户登录后才会生成该文件，所以需要持续监控一段时间（由调用方传入 10 分钟）。
+     *
      * @param baseUrl app 目录
      * @param timeoutSeconds 最长监控时间（秒）
+     * @param startupDialog 启动弹窗，可为 null（仅注入配置）
+     * @param webUrl SnowLuma 控制台地址
+     * @param firstLogin 本次启动前是否还没有任何 onebot 配置
      */
-    public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds) {
+    public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds,
+                                               StartupDialogUtil startupDialog, String webUrl,
+                                               boolean firstLogin) {
         File configDir = Paths.get(baseUrl, SNOWLUMA_DIR_NAME, "config").toFile();
-        log.info("开始监控 SnowLuma 配置目录: {}", configDir.getAbsolutePath());
+        File logFile = Paths.get(baseUrl, "snowluma_run.log").toFile();
+
+        int initialFileCount = listOnebotConfigs(baseUrl).length;
+        boolean consoleNotified = false;
+        boolean qqLoadedNotified = initialFileCount > 0;
+        boolean defaultNotified = hasDefaultWsClient(listOnebotConfigs(baseUrl));
+
+        log.info("开始监控 SnowLuma 配置目录: {}, 首次登录: {}, 已有配置文件: {}",
+                configDir.getAbsolutePath(), firstLogin, initialFileCount);
 
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < timeoutSeconds * 1000L) {
-            File[] jsonFiles = configDir.listFiles((dir, name) ->
-                    name.startsWith("onebot_") && name.endsWith(".json"));
+            // 1. 连接成功：OnlinePlugin 在机器人上线后设置 BOT_ID
+            String botId = System.getProperty("BOT_ID");
+            if (botId != null && !botId.isEmpty()) {
+                updateDialog(startupDialog, true,
+                        "qq[" + botId + "]qq连接成功,SnowLuma控制台：" + webUrl
+                                + ",点击下方确定按钮开始对话吧", true);
+                log.info("检测到 QQ 已连接: {}", botId);
+                return;
+            }
 
-            if (jsonFiles != null) {
-                for (File file : jsonFiles) {
-                    injectDefaultWsClient(file);
-                }
+            // 2. 首次登录：进入控制台后会记录协议同意/改密日志，可据此先换一次提示。
+            //    拿不到该日志时保持上一条提示，不影响后续节点。
+            if (firstLogin && !consoleNotified && isConsoleEntered(logFile)) {
+                consoleNotified = true;
+                updateDialog(startupDialog, true,
+                        "已进入控制台\n请加载机器人QQ，等待 default 配置出现。\nSnowLuma控制台：" + webUrl,
+                        false);
+                log.info("检测到用户已进入 SnowLuma 控制台");
+            }
+
+            // 3. QQ 加载成功：出现新的 onebot_<uin>.json
+            File[] jsonFiles = listOnebotConfigs(baseUrl);
+            if (!qqLoadedNotified && jsonFiles.length > initialFileCount) {
+                qqLoadedNotified = true;
+                updateDialog(startupDialog, true,
+                        "机器人QQ已加载\n正在等待 default 配置出现，出现后打开 default 配置并启用即可连接。",
+                        false);
+                log.info("检测到 onebot 配置出现，机器人 QQ 已加载");
+            }
+
+            // 4. 注入默认 wsClient，并提示 default 配置已出现
+            for (File file : jsonFiles) {
+                injectDefaultWsClient(file);
+            }
+            if (qqLoadedNotified && !defaultNotified && hasDefaultWsClient(jsonFiles)) {
+                defaultNotified = true;
+                updateDialog(startupDialog, true,
+                        "default 配置已出现\n请在 SnowLuma 控制台打开 default 配置并启用，稍候即可连接成功。",
+                        false);
+                log.info("检测到 default 配置已出现，等待用户在控制台启用");
             }
 
             try {
@@ -332,6 +398,71 @@ public class StartupAction implements CommandLineRunner {
         }
 
         log.info("SnowLuma 配置目录监控结束");
+    }
+
+    /**
+     * 兼容旧调用：只注入配置，不更新弹窗。
+     */
+    public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds) {
+        monitorAndInjectSnowLumaConfig(baseUrl, timeoutSeconds, null, null, false);
+    }
+
+    private void updateDialog(StartupDialogUtil startupDialog, boolean success, String message, boolean showButton) {
+        if (startupDialog != null) {
+            startupDialog.updateStatus(success, message, showButton);
+        }
+    }
+
+    /**
+     * 当前只有首次进入控制台时能拿到稳定信号：SnowLuma 会记录协议同意或密码修改日志。
+     * 后续启动没有该日志，此时不强行判断，继续使用上一条提示。
+     */
+    private boolean isConsoleEntered(File logFile) {
+        try {
+            if (!logFile.exists()) {
+                return false;
+            }
+            String content = new String(Files.readAllBytes(logFile.toPath()), StandardCharsets.UTF_8);
+            return content.contains("agreements consent recorded")
+                    || content.contains("password updated; all sessions invalidated");
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * 判断 onebot 配置里是否已经有名为 default 的 wsClient。
+     */
+    private boolean hasDefaultWsClient(File[] jsonFiles) {
+        if (jsonFiles == null) {
+            return false;
+        }
+        for (File file : jsonFiles) {
+            try {
+                String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                if (content.trim().isEmpty()) {
+                    continue;
+                }
+                JSONObject root = JSONUtil.parseObj(content);
+                JSONObject networks = root.getJSONObject("networks");
+                if (networks == null) {
+                    continue;
+                }
+                JSONArray clients = networks.getJSONArray("wsClients");
+                if (clients == null) {
+                    continue;
+                }
+                for (int i = 0; i < clients.size(); i++) {
+                    JSONObject client = clients.getJSONObject(i);
+                    if ("default".equals(client.getStr("name"))) {
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) {
+                // 文件可能正在被 SnowLuma 写入，下一轮再判断
+            }
+        }
+        return false;
     }
 
     private void injectDefaultWsClient(File file) {

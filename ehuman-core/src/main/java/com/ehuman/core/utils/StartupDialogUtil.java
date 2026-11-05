@@ -25,7 +25,7 @@ public class StartupDialogUtil {
         SwingUtilities.invokeLater(() -> {
             dialog = new JDialog();
             dialog.setTitle("ehuman");
-            dialog.setSize(450, 180);
+            dialog.setSize(600, 320);
             dialog.setLocationRelativeTo(null);
             dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
             dialog.setResizable(false);
