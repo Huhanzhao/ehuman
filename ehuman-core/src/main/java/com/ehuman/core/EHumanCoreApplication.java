@@ -21,6 +21,11 @@ public class EHumanCoreApplication {
     private static FileChannel globalChannel;
     private static RandomAccessFile globalRaf;
 
+    /**
+     * 全局启动弹窗，程序刚启动就显示，StartupAction 复用同一个实例更新状态
+     */
+    public static StartupDialogUtil startupDialogUtil;
+
     public static void main(String[] args) {
         // 强制关闭无头模式，允许弹窗
         System.setProperty("java.awt.headless", "false");
@@ -38,13 +43,16 @@ public class EHumanCoreApplication {
 
             if (globalLock == null) {
                 // 拿不到锁，说明已经在运行了
-                StartupDialogUtil startupDialogUtil = new StartupDialogUtil();
-                startupDialogUtil.showLoading();
-                startupDialogUtil.updateStatus(false,"程序已经在运行了，请勿重复启动",true);
+                getStartupDialog().updateStatus(false,"程序已经在运行了，请勿重复启动",true);
                 return;
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        // exe 模式下，程序一起来就弹“正在启动”
+        if (isExeProfile(args)) {
+            getStartupDialog();
         }
 
         try {
@@ -52,11 +60,9 @@ public class EHumanCoreApplication {
         } catch (Exception e) {
             // 判断是不是端口被占用的异常
 
-            if (e.getCause().toString() != null && e.getCause().toString().contains("Port 8081 is already in use")) {
+            if (e.getCause() != null && e.getCause().toString().contains("Port 48081 is already in use")) {
                 // 说明之前的程序没关干净，或者用户真的双开了
-                StartupDialogUtil startupDialogUtil = new StartupDialogUtil();
-                startupDialogUtil.showLoading();
-                startupDialogUtil.updateStatus(false,"端口被占用8081，启动失败",true);
+                getStartupDialog().updateStatus(false,"端口被占用48081，启动失败",true);
             } else {
                 // 如果是其他错误，打印堆栈
                 e.printStackTrace();
@@ -66,6 +72,33 @@ public class EHumanCoreApplication {
                 System.exit(1);
             }
         }
+    }
+
+    /**
+     * 获取启动弹窗，没有就创建并显示
+     */
+    private static synchronized StartupDialogUtil getStartupDialog() {
+        if (startupDialogUtil == null) {
+            startupDialogUtil = new StartupDialogUtil();
+            startupDialogUtil.showLoading();
+        }
+        return startupDialogUtil;
+    }
+
+    /**
+     * 是否为 exe 运行模式（与 application.yml 的默认 profile 保持一致）
+     */
+    private static boolean isExeProfile(String[] args) {
+        String profile = System.getProperty("spring.profiles.active");
+        if (profile == null) {
+            for (String arg : args) {
+                if (arg.startsWith("--spring.profiles.active=")) {
+                    profile = arg.substring("--spring.profiles.active=".length());
+                    break;
+                }
+            }
+        }
+        return profile == null || profile.contains("exe");
     }
 
 }

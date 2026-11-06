@@ -3,6 +3,7 @@ package com.ehuman.core.init;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.ehuman.core.EHumanCoreApplication;
 import com.ehuman.core.utils.ProcessUtils;
 import com.ehuman.core.utils.StartupDialogUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -13,23 +14,20 @@ import org.springframework.stereotype.Component;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @Component
 @Slf4j
 public class StartupAction implements CommandLineRunner {
+
+    private static final String SNOWLUMA_DIR_NAME = "SnowLuma-v2.4.0-win-x64";
 
     @Value("${spring.profiles.active}")
     private String env;
@@ -37,9 +35,13 @@ public class StartupAction implements CommandLineRunner {
     @Override
     public void run(String... args){
         if(env.equals("exe")){
-            // 1. 弹出“正在启动”的窗口
-            StartupDialogUtil startupDialog = new StartupDialogUtil();
-            startupDialog.showLoading();
+            // 1. 复用程序启动时弹出的“正在启动”窗口
+            StartupDialogUtil startupDialog = EHumanCoreApplication.startupDialogUtil;
+            if (startupDialog == null) {
+                startupDialog = new StartupDialogUtil();
+                startupDialog.showLoading();
+                EHumanCoreApplication.startupDialogUtil = startupDialog;
+            }
             log.info("exe 开始检测环境");
             startupDialog.updateStatus(true, "正在检测环境...",false);
             String baseUrl = System.getProperty("user.dir") + "/app";
@@ -48,64 +50,92 @@ public class StartupAction implements CommandLineRunner {
             boolean initSuccess = initEnvironment(baseUrl);
             startupDialog.updateStatus(initSuccess, initSuccess ? "初始化运行环境成功..." : "初始化运行环境失败...",!initSuccess);
 
-            // 1. 找napcat.xxx.shell 文件夹 安装napcat
-            Path napcatBaseDir = Paths.get(baseUrl, "NapCat.Shell.Windows.OneKey");
-            if (Files.exists(napcatBaseDir)) {
-                File baseFolder = napcatBaseDir.toFile();
-                File[] subFolders = baseFolder.listFiles((dir, name) -> name.startsWith("NapCat.") && name.endsWith(".Shell"));
-                if (subFolders != null && subFolders.length > 0) {
-                    // 找到了具体的 Shell 目录，比如 D:\soft\ehuman\app\NapCat.Shell.Windows.OneKey\NapCat.52230.Shell
-                    String napcatShellDir = subFolders[0].getAbsolutePath();
-                    log.info("找到 NapCat 核心目录: {} 跳过安装步骤", napcatShellDir);
-                } else {
-                    log.info("没有找到 NapCat.*.Shell 文件夹");
-                    // 执行安装逻辑
-                    startupDialog.updateStatus(true, "正在安装 NapCat, 请等待安装完成",false);
-                    installNapCat(baseUrl,startupDialog);
-                    startupDialog.updateStatus(true, "NapCat 安装完成...",false);
-                }
-                // 启动napcat
-                startupDialog.updateStatus(true, "正在启动 NapCat...",false);
-                boolean startNapCat = startNapCat(baseUrl);
-                startupDialog.updateStatus(startNapCat, startNapCat ? "NapCat 启动完成..." : "NapCat 启动失败...", !startNapCat);
-            }else{
-                log.error("目录不存在: {}", napcatBaseDir);
-                startupDialog.updateStatus(false, "目录不存在: " + napcatBaseDir,true);
-            }
+            // 启动 SnowLuma
+            startupDialog.updateStatus(true, "正在启动 SnowLuma...",false);
+            boolean startSuccess = startSnowLuma(baseUrl);
+            startupDialog.updateStatus(startSuccess, startSuccess ? "SnowLuma 启动完成..." : "SnowLuma 启动失败...", !startSuccess);
 
-            startupDialog.updateStatus(true, "正在获取NapCat Token...",false);
+            startupDialog.updateStatus(true, "正在获取 SnowLuma 控制台地址...",false);
 
-            // 读取napcat启动日志，寻找token
-            String webUrl = monitorNapCatLog(Paths.get(baseUrl, "napcat_run.log").toString(), 120, startupDialog);
-
-            // 异步初始化NapCat默认配置 十分钟内一直修改
-            new Thread(() -> {
-                monitorAndInjectConfig(baseUrl, 60 * 10);
-            }).start();
+            // 读取 SnowLuma 启动日志，寻找 WebUI 地址和首次启动的初始密码
+            String[] snowLumaInfo = monitorSnowLumaLog(Paths.get(baseUrl, "snowluma_run.log").toString(), 120, startupDialog);
+            String webUrl = snowLumaInfo[0];
+            String initialPassword = snowLumaInfo[1];
 
             if(System.getProperty("BOT_ID") != null && !System.getProperty("BOT_ID").isEmpty()){
                 startupDialog.updateStatus(true, "快速登录成功",false);
                 startupDialog.updateStatus(true, "qq[" + System.getProperty("BOT_ID")
-                        + "]qq连接成功,NapCat控制台：" + webUrl + ",点击下方确定按钮开始对话吧",true);
+                        + "]qq连接成功,SnowLuma控制台：" + webUrl + ",点击下方确定按钮开始对话吧",true);
             }else{
-                startupDialog.updateStatus(true, "等待qq连接,(首次登录需要手动开启网络配置中的default配置)NapCat地址：\n" + webUrl, false);
-                for(int i = 0; i < 100; i++) {
-                    try {
-                        Thread.sleep(2000);
-                        if(System.getProperty("BOT_ID") != null && !System.getProperty("BOT_ID").isEmpty()){
-                            startupDialog.updateStatus(true, "qq[" + System.getProperty("BOT_ID")
-                                    + "]qq连接成功,NapCat控制台：" + webUrl + ",点击下方确定按钮开始对话吧",true);
-                            break;
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                // 日志里有初始密码 = 首次登录。首次登录时初始密码会一直显示到用户进入控制台。
+                boolean firstLogin = initialPassword != null && !initialPassword.isEmpty();
+                File logFile = Paths.get(baseUrl, "snowluma_run.log").toFile();
+                boolean hasConfig = listOnebotConfigs(baseUrl).length > 0;
+                boolean consoleEntered = isConsoleEntered(logFile);
+                String waitMessage = buildWaitMessage(webUrl, firstLogin, hasConfig, consoleEntered);
+                if (firstLogin && !consoleEntered) {
+                    // 首次启动且还没进控制台：初始密码标红常驻
+                    startupDialog.updateStatusWithPassword(true, waitMessage, initialPassword, false);
+                } else {
+                    startupDialog.updateStatus(true, waitMessage, false);
                 }
+
+                // 异步注入默认 wsClient，并按「是否已有 onebot 配置 / 是否已进入控制台 / 是否连接成功」持续更新提示。
+                // 用户可能启动几分钟后才登录，onebot_<uin>.json 才会生成，所以持续监控 10 分钟
+                final StartupDialogUtil dialogRef = startupDialog;
+                new Thread(() -> monitorAndInjectSnowLumaConfig(
+                        baseUrl, 60 * 10, dialogRef, webUrl, firstLogin, initialPassword)).start();
             }
 
             addSystemTray(baseUrl);
 
         }
+    }
+
+    /**
+     * 等待 QQ 连接时展示的引导文案。
+     * onebot_<uin>.json 在电脑本地登录 QQ 后就会生成，因此按「是否已有配置 / 是否已进入控制台」分四种情况提示。
+     * 注意：「等待qq连接」和「初始密码是 xxx」保持原样；密码由调用方在进入控制台前追加显示。
+     */
+    private String buildWaitMessage(String webUrl, boolean firstLogin,
+                                    boolean hasConfig, boolean consoleEntered) {
+        StringBuilder message = new StringBuilder();
+        message.append("等待qq连接\n");
+        message.append("SnowLuma控制台：")
+                .append(webUrl == null || webUrl.isEmpty() ? "（启动中，请稍候）" : webUrl)
+                .append("\n");
+        if (firstLogin) {
+            if (!hasConfig) {
+                if (!consoleEntered) {
+                    message.append("请先在电脑上登录机器人QQ，再打开控制台在【进程注入】加载该QQ。");
+                } else {
+                    message.append("已进入控制台\n请先在电脑上登录机器人QQ，登录后回到控制台在【进程注入】加载该QQ。");
+                }
+            } else {
+                if (!consoleEntered) {
+                    message.append("已检测到机器人QQ，请打开控制台在【进程注入】加载该QQ。");
+                } else {
+                    message.append("已进入控制台，机器人QQ已加载\n请打开在控制台【节点配置】中打开WS客户端 default 配置并启用，即可连接。");
+                }
+            }
+        } else {
+            if (!hasConfig) {
+                message.append("请先在电脑上登录机器人QQ，再打开控制台在【进程注入】加载该QQ。");
+            } else {
+                message.append("请打开控制台确认机器人QQ已加载，并打开控制台【节点配置】中打开WS客户端 default 配置完成连接。");
+            }
+        }
+        return message.toString();
+    }
+
+    /**
+     * 列出 SnowLuma 为已加载 QQ 账号生成的 onebot_<uin>.json 配置。
+     */
+    private File[] listOnebotConfigs(String baseUrl) {
+        File configDir = Paths.get(baseUrl, SNOWLUMA_DIR_NAME, "config").toFile();
+        File[] files = configDir.listFiles((dir, name) ->
+                name.startsWith("onebot_") && name.endsWith(".json"));
+        return files == null ? new File[0] : files;
     }
 
     /**
@@ -154,12 +184,8 @@ public class StartupAction implements CommandLineRunner {
             MenuItem exitItem = new MenuItem("exit ehuman");
             exitItem.addActionListener(e -> {
                 log.info("用户通过系统托盘退出了程序");
-                // 退出前顺手把拉起来的 NapCat 和 QQ 杀了
-                ProcessUtils.killNapCatQQ();
-                ProcessUtils.killProcess("NapCatWinBootMain.exe");
-                ProcessUtils.killProcess("NapCatInstaller.exe");
-                ProcessUtils.killProcessByCommandLine("napcat.bat");
-                ProcessUtils.killProcessByCommandLine("napcat.quick.bat");
+                // 退出前把拉起来的 SnowLuma 杀掉
+                ProcessUtils.killSnowLumaProcesses(Paths.get(baseUrl, SNOWLUMA_DIR_NAME).toString());
                 System.exit(0);
             });
             popup.add(exitItem);
@@ -170,8 +196,7 @@ public class StartupAction implements CommandLineRunner {
                 SwingUtilities.invokeLater(() -> {
                     String msg = "<html><body style='width: 250px;'>"
                             + "<h3>ehuman 机器人</h3>"
-                            + "<p>欢迎加入飞书交流群：</p>"
-                            + "<a href='https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=6fcv2e01-bfae-4ed4-af10-f49d3e04cf56'>点击加入飞书群</a>"
+                            + "<p>欢迎加入QQ交流群：832149010</p>"
                             + "<p>开源地址：</p>"
                             + "<a href='https://gitee.com/huhanzhao/ehuman'>Gitee 仓库</a>"
                             + "</body></html>";
@@ -215,160 +240,93 @@ public class StartupAction implements CommandLineRunner {
         }
     }
 
-
     /**
-     * 监控并注入 NapCat 的默认 WebSocket 配置
-     * @param baseUrl baseUrl
-     * @param timeoutSeconds 最长等待时间（秒）
+     * 启动 SnowLuma 的 launcher.bat，并把控制台输出重定向到日志文件，方便后续解析 WebUI 地址
+     * @param baseDir 当前 app 的绝对路径
      */
-    public void monitorAndInjectConfig(String baseUrl, int timeoutSeconds) {
-        long startTime = System.currentTimeMillis();
-        String configDirPath = Paths.get(baseUrl, "NapCat.Shell.Windows.OneKey", "NapCat.52230.Shell",
-                "versions", "9.9.33-52230", "resources", "app", "napcat", "config").toString();
-        Path dirPath = Paths.get(configDirPath);
+    private boolean startSnowLuma(String baseDir) {
+        File snowLumaDir = new File(baseDir, SNOWLUMA_DIR_NAME);
+        File launcher = new File(snowLumaDir, "launcher.bat");
+        if (!launcher.exists()) {
+            log.error("未找到 SnowLuma launcher: {}", launcher.getAbsolutePath());
+            return false;
+        }
 
-        log.info("开始监控 NapCat 配置目录: {}", configDirPath);
+        // 先杀掉上一次残留的 SnowLuma 进程，否则端口和日志文件都会被占用
+        ProcessUtils.killSnowLumaProcesses(snowLumaDir.getAbsolutePath());
 
-        while (System.currentTimeMillis() - startTime < timeoutSeconds * 1000L) {
-            File folder = dirPath.toFile();
-            if (folder.exists() && folder.isDirectory()) {
-                // 查找所有符合 onebot11_*.json 的文件
-                File[] jsonFiles = folder.listFiles((dir, name) ->
-                        name.startsWith("onebot11_") && name.endsWith(".json"));
-
-                if (jsonFiles != null && jsonFiles.length > 0) {
-
-                    for (File file : jsonFiles) {
-                        try {
-                            // 读取文件内容
-                            String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-                            if (content.trim().isEmpty()) continue;
-
-                            JSONObject root = JSONUtil.parseObj(content);
-                            JSONObject network = root.getJSONObject("network");
-                            if (network == null) continue;
-
-                            JSONArray clients = network.getJSONArray("websocketClients");
-                            if (clients == null) {
-                                clients = new JSONArray();
-                                network.set("websocketClients", clients);
-                            }
-
-                            // 检查是否已经存在 name 为 "default" 的配置
-                            boolean hasDefault = false;
-                            for (int i = 0; i < clients.size(); i++) {
-                                JSONObject client = clients.getJSONObject(i);
-                                if ("default".equals(client.getStr("name"))) {
-                                    hasDefault = true;
-                                    break;
-                                }
-                            }
-
-                            // 如果没有，则注入默认配置
-                            if (!hasDefault) {
-                                JSONObject defaultClient = new JSONObject();
-                                defaultClient.set("enable", false); // 默认关闭，需用户手动开启
-                                defaultClient.set("name", "default");
-                                defaultClient.set("url", "ws://localhost:48081/ws");
-                                defaultClient.set("reportSelfMessage", false);
-                                defaultClient.set("messagePostFormat", "array");
-                                defaultClient.set("token", "ehuman");
-                                defaultClient.set("debug", false);
-                                defaultClient.set("heartInterval", 30000);
-                                defaultClient.set("reconnectInterval", 3000);
-                                defaultClient.set("verifyCertificate", true);
-
-                                clients.add(defaultClient);
-
-                                // 写回文件，保持美观的缩进
-                                Files.write(file.toPath(), root.toStringPretty().getBytes(StandardCharsets.UTF_8));
-                                log.info("已为 {} 注入默认 WebSocket 配置 (enable=false)", file.getName());
-                            } else {
-                                log.info("{} 已存在 default 配置，判断端口号", file.getName());
-                                //  如果default配置是8081端口，就修改为4081 然后设置enable为false
-                                boolean needsUpdate = false;
-                                for (int i = 0; i < clients.size(); i++) {
-                                    JSONObject client = clients.getJSONObject(i);
-                                    if ("default".equals(client.getStr("name"))) {
-                                        String url = client.getStr("url");
-                                        // 如果 url 存在且包含旧端口 8081，则替换为新端口 48081
-                                        if (url != null && url.contains(":8081")) {
-                                            client.set("url", url.replace(":8081", ":48081"));
-                                            client.set("enable", false);
-                                            needsUpdate = true;
-                                        }
-                                        break;
-                                    }
-                                }
-
-                                // 如果有修改，则写回文件
-                                if (needsUpdate) {
-                                    Files.write(file.toPath(), root.toStringPretty().getBytes(StandardCharsets.UTF_8));
-                                    log.info("已更新 {} 中的 default 配置端口并设为禁用 (enable=false)", file.getName());
-                                }
-                            }
-
-                        } catch (Exception e) {
-                            log.error("处理配置文件 {} 失败,再次查找文件", file.getName(), e);
-                        }
-                    }
-                }
-            }
-
-            // 没找到或处理失败，等 3 秒再试
+        Path logFile = Paths.get(baseDir, "snowluma_run.log");
+        for (int i = 0; i < 10; i++) {
             try {
-                TimeUnit.SECONDS.sleep(3);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("配置监控被中断");
-                return;
+                Files.deleteIfExists(logFile);
+                break;
+            } catch (Exception e) {
+                log.warn("删除旧的 snowluma_run.log 失败，第 {} 次重试", i + 1);
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
 
-        log.warn("监控 NapCat 配置目录超时 ({}秒)，未能完成注入", timeoutSeconds);
-    }
-    public String monitorNapCatLog(String logFilePath, int timeoutSeconds, StartupDialogUtil startupDialog) {
-        long startTime = System.currentTimeMillis();
-        // 核心修改：\\d+ 匹配任意端口号
-        Pattern urlPattern = Pattern.compile("(http://127\\.0\\.0\\.1:\\d+/webui\\?token=[a-zA-Z0-9]+)");
+        try {
+            // 用完整路径启动，方便按命令行识别并清理这个 launcher 进程
+            ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", launcher.getAbsolutePath());
+            // 工作目录必须是 launcher.bat 所在目录
+            pb.directory(snowLumaDir);
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.to(logFile.toFile()));
 
-        boolean isQrCode = false, isQuickLogin = false, isError = false;
-        String webUiUrl = null;
+            // 优先使用 SnowLuma 自带的 node.exe
+            Map<String, String> environment = pb.environment();
+            environment.put("PATH", snowLumaDir.getAbsolutePath() + File.pathSeparator
+                    + environment.getOrDefault("PATH", ""));
+
+            pb.start();
+            log.info("SnowLuma launcher 已启动，日志文件: {}", logFile.toAbsolutePath());
+            return true;
+        } catch (Exception e) {
+            log.error("启动 SnowLuma 失败", e);
+            return false;
+        }
+    }
+
+    /**
+     * 读取 SnowLuma 启动日志，寻找 WebUI 地址并打开浏览器。
+     * 兼容首次启动（带初始账号密码）和后续启动两种日志格式：
+     * [WebUI] initial credentials: user=admin password=xxx
+     * [WebUI] listening http://127.0.0.1:5099
+     *
+     * @return [0] WebUI 地址，[1] 初始密码（非首次启动时为 null）
+     */
+    public String[] monitorSnowLumaLog(String logFilePath, int timeoutSeconds, StartupDialogUtil startupDialog) {
+        long startTime = System.currentTimeMillis();
+        Pattern urlPattern = Pattern.compile("listening\\s+(https?://127\\.0\\.0\\.1:\\d+)");
+        Pattern passwordPattern = Pattern.compile("initial credentials:\\s*user=\\S+\\s+password=(\\S+)");
+        String initialPassword = null;
 
         while (System.currentTimeMillis() - startTime < timeoutSeconds * 1000L) {
             try {
                 Path path = Paths.get(logFilePath);
                 if (Files.exists(path)) {
-                    // 直接全量读取，因为启动日志非常小，不用担心性能
-                    List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-                    for (String line : lines) {
-                        if (line.contains("将使用二维码登录方式")) isQrCode = true;
-                        if (line.contains("正在快速登录")) isQuickLogin = true;
-                        if (line.toLowerCase().contains("error")) isError = true;
-
-                        if (webUiUrl == null && line.contains("WebUi User Panel Url: http")) {
-                            Matcher matcher = urlPattern.matcher(line);
-                            if (matcher.find()) {
-                                webUiUrl = matcher.group(1);
+                    // 日志可能正写到一半，用 new String 兜底替换掉不完整的多字节字符
+                    String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                    for (String line : content.split("\\r?\\n")) {
+                        if (initialPassword == null) {
+                            Matcher passwordMatcher = passwordPattern.matcher(line);
+                            if (passwordMatcher.find()) {
+                                initialPassword = passwordMatcher.group(1);
                             }
                         }
-                    }
 
-                    if (webUiUrl != null) {
-                        if (isQrCode) {
+                        Matcher matcher = urlPattern.matcher(line);
+                        if (matcher.find()) {
+                            String webUiUrl = matcher.group(1);
                             startupDialog.updateStatus(true, "尝试打开浏览器，如果没有自动打开，请手动复制浏览器打开登录\n" + webUiUrl, false);
                             openBrowserUrl(webUiUrl);
-                            return webUiUrl;
-                        }
-                        if (isQuickLogin && isError){
-                            startupDialog.updateStatus(true, "尝试打开浏览器，如果没有自动打开，请手动复制浏览器打开登录\n" + webUiUrl, false);
-                            openBrowserUrl(webUiUrl);
-                            return webUiUrl;
-                        }
-                        // 快速登录之前肯定登录过，必定有一个default配置 登录之后就可以连接上服务
-                        String botId = System.getProperty("BOT_ID");
-                        if (isQuickLogin && botId != null && !botId.isEmpty()){
-                            return webUiUrl;
+                            return new String[]{webUiUrl, initialPassword};
                         }
                     }
                 }
@@ -377,7 +335,205 @@ public class StartupAction implements CommandLineRunner {
                 // 忽略文件正在被写入时的短暂报错
             }
         }
-        return null;
+        return new String[]{null, initialPassword};
+    }
+
+    /**
+     * 监控 SnowLuma 的 onebot_<uin>.json 配置，为每个账号注入一条默认 wsClient（默认不启用），
+     * 并按「是否已有 onebot 配置 / 是否已进入控制台 / 是否连接成功」持续更新启动弹窗提示。
+     * 首次登录时，初始密码会一直显示到用户进入控制台。
+     *
+     * @param baseUrl app 目录
+     * @param timeoutSeconds 最长监控时间（秒）
+     * @param startupDialog 启动弹窗，可为 null（仅注入配置）
+     * @param webUrl SnowLuma 控制台地址
+     * @param firstLogin 日志中是否有初始密码（首次登录）
+     * @param initialPassword 初始密码，后续启动时为 null
+     */
+    public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds,
+                                               StartupDialogUtil startupDialog, String webUrl,
+                                               boolean firstLogin, String initialPassword) {
+        File configDir = Paths.get(baseUrl, SNOWLUMA_DIR_NAME, "config").toFile();
+        File logFile = Paths.get(baseUrl, "snowluma_run.log").toFile();
+
+        String lastMessage = null;
+        boolean lastShowPassword = false;
+
+        log.info("开始监控 SnowLuma 配置目录: {}, 首次登录: {}, 已有配置文件: {}",
+                configDir.getAbsolutePath(), firstLogin, listOnebotConfigs(baseUrl).length);
+
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < timeoutSeconds * 1000L) {
+            // 1. 连接成功：OnlinePlugin 在机器人上线后设置 BOT_ID
+            String botId = System.getProperty("BOT_ID");
+            if (botId != null && !botId.isEmpty()) {
+                updateDialog(startupDialog, true,
+                        "qq[" + botId + "]qq连接成功,SnowLuma控制台：" + webUrl
+                                + ",点击下方确定按钮开始对话吧", true);
+                log.info("检测到 QQ 已连接: {}", botId);
+                return;
+            }
+
+            // 2. 有 onebot 配置就注入默认 wsClient（默认不启用）
+            File[] jsonFiles = listOnebotConfigs(baseUrl);
+            for (File file : jsonFiles) {
+                injectDefaultWsClient(file);
+            }
+
+            // 3. 根据当前状态生成提示；状态不变时不重复刷新弹窗
+            boolean hasConfig = jsonFiles.length > 0;
+            boolean consoleEntered = firstLogin && isConsoleEntered(logFile);
+            String message = buildWaitMessage(webUrl, firstLogin, hasConfig, consoleEntered);
+            boolean showPassword = firstLogin && !consoleEntered
+                    && initialPassword != null && !initialPassword.isEmpty();
+
+            if (!message.equals(lastMessage) || showPassword != lastShowPassword) {
+                if (startupDialog != null) {
+                    if (showPassword) {
+                        startupDialog.updateStatusWithPassword(true, message, initialPassword, false);
+                    } else {
+                        startupDialog.updateStatus(true, message, false);
+                    }
+                }
+                log.info("启动提示更新: 配置={}, 已进入控制台={}, 显示密码={}, 内容={}",
+                        hasConfig, consoleEntered, showPassword, message.replace("\n", " "));
+                lastMessage = message;
+                lastShowPassword = showPassword;
+            }
+
+            try {
+                TimeUnit.SECONDS.sleep(3);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("SnowLuma 配置监控被中断");
+                return;
+            }
+        }
+
+        log.info("SnowLuma 配置目录监控结束");
+    }
+
+    /**
+     * 兼容旧调用：只注入配置，不更新弹窗。
+     */
+    public void monitorAndInjectSnowLumaConfig(String baseUrl, int timeoutSeconds) {
+        monitorAndInjectSnowLumaConfig(baseUrl, timeoutSeconds, null, null, false, null);
+    }
+
+    private void updateDialog(StartupDialogUtil startupDialog, boolean success, String message, boolean showButton) {
+        if (startupDialog != null) {
+            startupDialog.updateStatus(success, message, showButton);
+        }
+    }
+
+    /**
+     * 当前只有首次进入控制台时能拿到稳定信号：SnowLuma 会记录协议同意或密码修改日志。
+     * 后续启动没有该日志，此时不强行判断，继续使用上一条提示。
+     */
+    private boolean isConsoleEntered(File logFile) {
+        try {
+            if (!logFile.exists()) {
+                return false;
+            }
+            String content = new String(Files.readAllBytes(logFile.toPath()), StandardCharsets.UTF_8);
+            return content.contains("agreements consent recorded")
+                    || content.contains("password updated; all sessions invalidated");
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * 判断 onebot 配置里是否已经有名为 default 的 wsClient。
+     */
+    private boolean hasDefaultWsClient(File[] jsonFiles) {
+        if (jsonFiles == null) {
+            return false;
+        }
+        for (File file : jsonFiles) {
+            try {
+                String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                if (content.trim().isEmpty()) {
+                    continue;
+                }
+                JSONObject root = JSONUtil.parseObj(content);
+                JSONObject networks = root.getJSONObject("networks");
+                if (networks == null) {
+                    continue;
+                }
+                JSONArray clients = networks.getJSONArray("wsClients");
+                if (clients == null) {
+                    continue;
+                }
+                for (int i = 0; i < clients.size(); i++) {
+                    JSONObject client = clients.getJSONObject(i);
+                    if ("default".equals(client.getStr("name"))) {
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) {
+                // 文件可能正在被 SnowLuma 写入，下一轮再判断
+            }
+        }
+        return false;
+    }
+
+    private void injectDefaultWsClient(File file) {
+        try {
+            String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+            if (content.trim().isEmpty()) return;
+
+            JSONObject root = JSONUtil.parseObj(content);
+            JSONObject networks = root.getJSONObject("networks");
+            if (networks == null) return;
+
+            JSONArray clients = networks.getJSONArray("wsClients");
+            if (clients == null) {
+                clients = new JSONArray();
+                networks.set("wsClients", clients);
+            }
+
+            boolean changed = false;
+            boolean hasDefault = false;
+            for (int i = 0; i < clients.size(); i++) {
+                JSONObject client = clients.getJSONObject(i);
+                if ("default".equals(client.getStr("name"))) {
+                    hasDefault = true;
+                    // 兼容旧端口配置：8081 -> 48081
+                    String url = client.getStr("url");
+                    if (url != null && url.contains(":8081")) {
+                        client.set("url", url.replace(":8081", ":48081"));
+                        client.set("enabled", false);
+                        changed = true;
+                        log.info("已更新 {} 中 default 连接端口为 48081 并设为禁用", file.getName());
+                    }
+                    break;
+                }
+            }
+
+            if (!hasDefault) {
+                JSONObject defaultClient = new JSONObject();
+                defaultClient.set("name", "default");
+                // SnowLuma 中 enabled=false 表示不启用
+                defaultClient.set("enabled", false);
+                defaultClient.set("accessToken", "ehuman");
+                defaultClient.set("messageFormat", "array");
+                defaultClient.set("reportSelfMessage", false);
+                defaultClient.set("url", "ws://127.0.0.1:48081/ws");
+                defaultClient.set("role", "Universal");
+                defaultClient.set("reconnectIntervalMs", 5000);
+                clients.add(defaultClient);
+                changed = true;
+                log.info("已为 {} 注入默认 wsClient 配置 (enabled=false)", file.getName());
+            }
+
+            if (changed) {
+                Files.write(file.toPath(), root.toStringPretty().getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (Exception e) {
+            // 文件可能正在被 SnowLuma 写入，等待下一轮重试
+            log.warn("处理 SnowLuma 配置文件 {} 失败，稍后重试", file.getName());
+        }
     }
 
     public void openBrowserUrl(String webUiUrl){
@@ -391,217 +547,10 @@ public class StartupAction implements CommandLineRunner {
 
     private boolean initEnvironment(String baseUrl) {
         log.info("初始化环境");
-        if(ProcessUtils.isProcessRunning("NapCatWinBootMain.exe")){
-            ProcessUtils.killProcess("NapCatWinBootMain.exe");
-        }
-        if(ProcessUtils.isProcessRunning("NapCatInstaller.exe")){
-            ProcessUtils.killProcess("NapCatInstaller.exe");
-        }
         if(ProcessUtils.isProcessRunning("EHumanInstaller.exe")){
             ProcessUtils.killProcess("EHumanInstaller.exe");
         }
-        ProcessUtils.killProcessByCommandLine("napcat.bat");
-        ProcessUtils.killProcessByCommandLine("napcat.quick.bat");
-
-        log.info("清理上次napcat_run.log");
-        // 拼接出文件的绝对路径 (baseUrl 是 app 目录)
-        Path logFile = Paths.get(baseUrl, "napcat_run.log");
-        try {
-            // 如果文件存在则删除
-            boolean deleted = Files.deleteIfExists(logFile);
-            if (deleted) {
-                log.info("已成功删除旧的 napcat_run.log 文件");
-            } else {
-                log.info("没有找到旧的 napcat_run.log 文件，无需删除");
-            }
-        } catch (Exception e) {
-            log.error("删除 napcat_run.log 失败，可能文件正被其他进程占用", e);
-            return false;
-        }
         log.info("初始化环境结束");
         return true;
-    }
-
-
-    /**
-     * 执行安装 NapCat 的逻辑
-     */
-    private void installNapCat(String baseDir, StartupDialogUtil startupDialog) {
-        // 假设 NapCatInstaller.exe 就在 NapCat.Shell.Windows.OneKey 目录下
-        Path installerPath = Paths.get(baseDir, "NapCat.Shell.Windows.OneKey", "NapCatInstaller.exe");
-
-        if (Files.exists(installerPath)) {
-            try {
-                log.info("正在启动安装器: {}", installerPath.toString());
-
-                // 使用 ProcessBuilder 启动安装器
-                ProcessBuilder pb = new ProcessBuilder(installerPath.toString());
-                // 关键：一定要设置工作目录为它所在的目录，否则它下载的东西会乱跑
-                pb.directory(installerPath.getParent().toFile());
-                // 合并错误流，确保所有输出都能被读取
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-
-                log.info("NapCat 安装器已启动，请根据弹出的窗口完成安装...");
-
-                // ==========================================
-                // 【新增】启动异步线程读取日志，并更新到弹窗
-                // ==========================================
-                new Thread(() -> {
-                    try (java.io.InputStream is = process.getInputStream();
-                         java.io.InputStreamReader isr = new java.io.InputStreamReader(is, "GBK")) {
-                        int c;
-                        StringBuilder currentLine = new StringBuilder();
-                        while ((c = isr.read()) != -1) {
-                            char ch = (char) c;
-                            // 遇到回车或换行，代表当前行结束（处理动态进度条的关键）
-                            if (ch == '\n' || ch == '\r') {
-                                String line = currentLine.toString().trim();
-                                if (!line.isEmpty()) {
-                                    log.info("[安装器] {}", line);
-                                    // 把最新进度刷新到弹窗
-                                    if(line.contains("下载进度")){
-                                        startupDialog.updateProgress("正在下载组件，" + line.replaceAll("=","")
-                                                .replaceAll("\\[","")
-                                                .replaceAll("]","")
-                                                .replaceAll(">",""));
-                                        if(line.contains("100%")){
-                                            startupDialog.updateProgress("下载完成，正在解压");
-                                        }
-                                    }
-
-                                    // 如果检测到结束标志，强制关掉进程（相当于帮用户按键）
-                                    if (line.contains("欢迎使用哦~~ 双击启动即可")) {
-                                        log.info("检测到安装结束标志，自动关闭安装器窗口...");
-                                        process.destroyForcibly();
-                                        break;
-                                    }
-                                }
-                                currentLine.setLength(0); // 清空当前行
-                            } else {
-                                currentLine.append(ch);
-                            }
-                        }
-                    } catch (Exception e) {
-                        // 进程被强制结束时可能会抛出流异常，这里忽略即可
-                    }
-                }).start();
-
-                // 原有逻辑：这里设置最长等待 10 分钟（600秒）
-                // 如果上面的线程检测到了标志并杀掉了进程，waitFor 会立刻返回
-                boolean finished = process.waitFor(10, java.util.concurrent.TimeUnit.MINUTES);
-
-                if (finished) {
-                    int exitCode = process.exitValue();
-                    log.info("NapCat 安装器已关闭，退出码: {}", exitCode);
-                    if (exitCode == 0) {
-                        log.info("NapCat 安装流程正常结束，准备下一步...");
-                    } else {
-                        log.warn("NapCat 安装器非正常退出（退出码非0），可能是用户取消或安装出错。");
-                    }
-                } else {
-                    log.warn("NapCat 安装器运行超过 10 分钟，为了防止程序卡死，主程序将不再等待。");
-                    // 超时，强制杀掉安装器
-                    process.destroy();
-                }
-            } catch (Exception e) {
-                log.error("启动或等待 NapCat 安装器失败", e);
-            }
-        } else {
-            log.error("严重错误：在 {} 下找不到 NapCatInstaller.exe！请检查打包文件是否完整。", installerPath);
-        }
-    }
-
-
-    /**
-     * 启动已有的 NapCat 核心
-     * @param baseDir 当前 app 的绝对路径 (D:\soft\ehuman\app)
-     */
-    private boolean startNapCat(String baseDir) {
-        // 这里的目录根据你的实际情况，如果有多个版本取第一个
-        File baseFolder = new File(baseDir, "NapCat.Shell.Windows.OneKey");
-        File[] subFolders = baseFolder.listFiles((dir, name) -> name.startsWith("NapCat.") && name.endsWith(".Shell"));
-
-        if (subFolders == null || subFolders.length == 0) {
-            log.error("未找到 NapCat.*.Shell 目录！");
-            return false;
-        }
-
-        String napcatShellDir = subFolders[0].getAbsolutePath();
-        log.info("找到 NapCat 核心目录: {}", napcatShellDir);
-
-        // 1. 尝试寻找已登录过的 QQ 号
-        String quickLoginQQ = findLatestQQ(napcatShellDir);
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder();
-            File napcatOneKeyDir = new File(baseDir, "NapCat.Shell.Windows.OneKey");
-
-            if (quickLoginQQ != null && !quickLoginQQ.isEmpty()) {
-                log.info("检测到历史登录账号 [{}]，准备快速登录 (隐藏窗口)...", quickLoginQQ);
-
-                // 【核心动作】：直接重写 napcat.quick.bat
-                Path quickBatPath = Paths.get(napcatShellDir, "napcat.quick.bat");
-                String batContent = "@echo off\nset NAPCAT_WEBUI_SECRET_KEY=123456\nNapCatWinBootMain.exe " + quickLoginQQ;
-                Files.writeString(quickBatPath, batContent, StandardCharsets.UTF_8);
-
-                // 执行隐藏启动的 VBS
-                File vbsFile = new File(napcatOneKeyDir, "run_quick_hidden.vbs");
-                pb.command("wscript.exe", vbsFile.getAbsolutePath());
-
-            } else {
-                log.info("未检测到历史账号，将以扫码方式启动 (隐藏窗口)...");
-                // 【新增动作】：重写 napcat.bat，注入环境变量
-                Path normalBatPath = Paths.get(napcatShellDir, "napcat.bat");
-                String batContent = "@echo off\nchcp 65001\nset NAPCAT_WEBUI_SECRET_KEY=123456\n.\\NapCatWinBootMain.exe\npause";
-                Files.writeString(normalBatPath, batContent, Charset.defaultCharset());
-
-                // 执行普通启动的 VBS
-                File vbsFile = new File(napcatOneKeyDir, "run_napcat.vbs");
-                pb.command("wscript.exe", vbsFile.getAbsolutePath());
-            }
-
-            // 启动进程
-            pb.start();
-            log.info("NapCat VBS 启动指令已发送，请稍候去 napcat_run.log 获取 WebUI 地址。");
-
-        } catch (Exception e) {
-            log.error("启动 NapCat 失败", e);
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * 在 config 目录下寻找最后修改的 onebot11_xxx.json 文件，提取 QQ 号
-     */
-    private String findLatestQQ(String napcatShellDir) {
-        // 拼接 config 目录的绝对路径
-        Path configPath = Paths.get(napcatShellDir, "versions", "9.9.33-52230", "resources", "app", "napcat", "config");
-
-        if (!Files.exists(configPath)) {
-            return null;
-        }
-
-        try (Stream<Path> stream = Files.list(configPath)) {
-            // 过滤出 onebot11_*.json，并按修改时间倒序排列
-            Optional<Path> latestFile = stream
-                    .filter(p -> p.getFileName().toString().startsWith("onebot11_") && p.getFileName().toString().endsWith(".json")).max(Comparator.comparingLong(p -> {
-                        try {
-                            return Files.getLastModifiedTime((Path) p).toMillis();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }));
-
-            if (latestFile.isPresent()) {
-                String fileName = latestFile.get().getFileName().toString();
-                // 从 onebot11_317.json 中提取 317
-                return fileName.replace("onebot11_", "").replace(".json", "");
-            }
-        } catch (Exception e) {
-            log.error("读取 NapCat 配置文件失败", e);
-        }
-        return null;
     }
 }
