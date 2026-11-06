@@ -20,4 +20,6 @@ public interface TbAiChatMemoryService extends IService<TbAiChatMemoryDo> {
     void setVectorFlagByIds(List<Long> idList);
 
     boolean existsUserYesterdayMessage(Long userId);
+
+    long countByMemoryId(Long memoryId);
 }

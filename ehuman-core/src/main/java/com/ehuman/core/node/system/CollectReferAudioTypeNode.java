@@ -3,10 +3,10 @@ package com.ehuman.core.node.system;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.ehuman.core.service.EffectiveConfigResolver;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.TbUserModelConfigDo;
 import com.ehuman.dao.enums.LlmTypeEnum;
-import com.ehuman.dao.service.TbUserModelConfigDoService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class CollectReferAudioTypeNode extends SystemInterruptionNode{
     private String nodeName = "collectReferAudioTypeNode";
 
     @Autowired
-    private TbUserModelConfigDoService tbUserModelConfigDoService;
+    private EffectiveConfigResolver effectiveConfigResolver;
 
 
 
@@ -56,7 +56,7 @@ public class CollectReferAudioTypeNode extends SystemInterruptionNode{
         InterruptionMetadata interruption = null;
         if (userInput.isEmpty()) {
             // 中断等待用户输入
-            TbUserModelConfigDo byUserIdAndNodeNum = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.TTS);
+            TbUserModelConfigDo byUserIdAndNodeNum = effectiveConfigResolver.getModelConfig(userId, LlmTypeEnum.TTS);
             String enableTTSPlugin = "没有启用的TTS插件";
             if (byUserIdAndNodeNum != null){
                 enableTTSPlugin = byUserIdAndNodeNum.getModel();

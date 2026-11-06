@@ -60,9 +60,14 @@ public class TbAiChatMemoryServiceImpl extends ServiceImpl<TbAiChatMemoryMapper,
         LocalDateTime yesterdayEnd = now.toLocalDate().atStartOfDay().minusNanos(1);
 
         return lambdaQuery()
-                        .eq(TbAiChatMemoryDo::getMemoryId,userId)
+                        .eq(userId != null ,TbAiChatMemoryDo::getMemoryId,userId)
                         .eq(TbAiChatMemoryDo::getRole, MessageTypeEnum.USER_MESSAGE)
                         .between(TbAiChatMemoryDo::getCreateTime,yesterdayStart,yesterdayEnd).exists();
+    }
+
+    @Override
+    public long countByMemoryId(Long memoryId) {
+        return lambdaQuery().eq(TbAiChatMemoryDo::getMemoryId, memoryId).count();
     }
 }
 

@@ -67,3 +67,4 @@ minio_data/**
 
 /.data-path
 /start.bat
+/console-ui/node_modules/**

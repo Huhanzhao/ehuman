@@ -3,8 +3,8 @@ package com.ehuman.core.plugin;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.ehuman.core.service.WelcomeService;
 import com.ehuman.core.utils.LocalCacheUtil;
-import com.ehuman.dao.service.TbAiChatMemoryService;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.core.Bot;
@@ -28,7 +28,8 @@ public class QQBotPlugin extends BotPlugin {
     private final CompiledGraph qqBotMainGraph;
 
     @Autowired
-    private TbAiChatMemoryService tbAiChatMemoryService;
+    private WelcomeService welcomeService;
+
     private final LocalCacheUtil localCacheUtil = LocalCacheUtil.getLocalCacheUtil();
 
     public QQBotPlugin(@Qualifier("qqBotMainGraph")CompiledGraph qqBotMainGraph){
@@ -91,6 +92,7 @@ public class QQBotPlugin extends BotPlugin {
                 error -> log.error("流错误", error),
                 () -> {
                     localCacheUtil.remove(userId + "_Graph");
+                    welcomeService.sendWelcomeIfPending(userId);
                     log.info("流完成");
                 }
         );

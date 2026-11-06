@@ -3,13 +3,12 @@ package com.ehuman.core.job.action;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.fastjson2.JSON;
 import com.ehuman.core.job.JobManager;
 import com.ehuman.core.utils.LocalCacheUtil;
 import com.ehuman.dao.entity.TbQuartzJobDo;
-import com.ehuman.dao.entity.TbUserBotStatusDo;
-import com.ehuman.dao.service.TbAiChatMemoryService;
 import com.ehuman.dao.service.TbQuartzJobDoService;
-import com.ehuman.dao.service.TbUserBotStatusDoService;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,18 +27,12 @@ import java.util.UUID;
 public class SendMessageJob implements Job {
 
     @Autowired
-    private TbUserBotStatusDoService tbUserBotStatusDoService;
-
-    @Autowired
-    private TbAiChatMemoryService tbAiChatMemoryService;
-
-    @Autowired
     private TbQuartzJobDoService tbQuartzJobDoService;
 
     @Autowired
     private JobManager jobManager;
 
-    private LocalCacheUtil localCacheUtil = LocalCacheUtil.getLocalCacheUtil();
+    private final LocalCacheUtil localCacheUtil = LocalCacheUtil.getLocalCacheUtil();
 
     private final CompiledGraph sendMessageCompiledGraph;
 
@@ -53,16 +45,35 @@ public class SendMessageJob implements Job {
         String jobName = jobExecutionContext.getJobDetail().getKey().getName();
         String jobGroup = jobExecutionContext.getJobDetail().getKey().getGroup();
 
-        List<TbUserBotStatusDo> allStatus = tbUserBotStatusDoService.list();
-        if (allStatus == null || allStatus.isEmpty()) {
-            return;
-        }
-        TbQuartzJobDo tbQuartzJobDo = tbQuartzJobDoService.getByStartName(jobName);
+        try {
+            TbQuartzJobDo job = tbQuartzJobDoService.getOne(Wrappers.<TbQuartzJobDo>lambdaQuery()
+                    .eq(TbQuartzJobDo::getJobName, jobName)
+                    .last("limit 1"));
+            if (job == null) {
+                log.warn("主动消息任务不存在: {}", jobName);
+                return;
+            }
 
-        for (TbUserBotStatusDo status : allStatus) {
-            // 判断是不是有正在运行的图 有的话取消发送消息
-            Long userId = status.getUserId();
+            Map<String, Object> detail;
+            try {
+                detail = JSON.parseObject(job.getJobDetail());
+            } catch (Exception e) {
+                log.error("主动消息任务内容不合法: {}", jobName, e);
+                return;
+            }
+
+            Object userIdValue = detail.get("userId");
+            Object topicValue = detail.get("topic");
+            if (userIdValue == null || topicValue == null) {
+                log.error("主动消息任务缺少 userId/topic: {}", jobName);
+                return;
+            }
+            Long userId = Long.valueOf(userIdValue.toString());
+            String topic = topicValue.toString();
+
+            // 判断是不是有正在运行的图 有的话取消本次发送
             if (localCacheUtil.containsKey(userId + "_Graph")){
+                log.info("用户{}正在聊天，跳过本次主动消息", userId);
                 return;
             }
 
@@ -72,7 +83,7 @@ public class SendMessageJob implements Job {
                     .threadId(chatId)
                     .build();
             Flux<NodeOutput> stream = sendMessageCompiledGraph.stream(
-                    Map.of("userId", userId, "initiative", true, "topic", tbQuartzJobDo.getJobDetail()),
+                    Map.of("userId", userId, "initiative", true, "topic", topic),
                     invokeConfig
             ).subscribeOn(Schedulers.boundedElastic());
 
@@ -90,14 +101,14 @@ public class SendMessageJob implements Job {
 
             log.info("标记会话");
             localCacheUtil.put(userId + "_Graph", disposable);
-        }
-
-        // 执行完毕删除任务
-        try {
-            jobManager.deleteJob(jobName, jobGroup);
-            log.info("已删除任务: {}", jobName);
-        } catch (Exception e) {
-            log.error("已删除任务失败: {}", jobName, e);
+        } finally {
+            // 执行完毕删除任务
+            try {
+                jobManager.deleteJob(jobName, jobGroup);
+                log.info("已删除任务: {}", jobName);
+            } catch (Exception e) {
+                log.error("已删除任务失败: {}", jobName, e);
+            }
         }
     }
 }

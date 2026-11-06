@@ -4,6 +4,8 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.ehuman.core.bean.SystemGraph;
+import com.ehuman.core.service.BotAccessService;
+import com.ehuman.core.service.EffectiveConfigResolver;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.*;
 import com.ehuman.dao.enums.FeatureTypeEnum;
@@ -15,6 +17,9 @@ import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotPlugin;
+import com.mikuac.shiro.dto.action.common.ActionData;
+import com.mikuac.shiro.dto.action.response.FriendInfoResp;
+import com.mikuac.shiro.dto.action.response.StrangerInfoResp;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +62,15 @@ public class SystemPlugin extends BotPlugin {
 
     @Autowired
     private TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
+
+    @Autowired
+    private TbBotWhitelistDoService tbBotWhitelistDoService;
+
+    @Autowired
+    private BotAccessService botAccessService;
+
+    @Autowired
+    private EffectiveConfigResolver effectiveConfigResolver;
 
     // 保存是否有运行中的图
     private final ConcurrentHashMap<Long, Disposable> runningDisposables = new ConcurrentHashMap<>();
@@ -140,9 +154,19 @@ public class SystemPlugin extends BotPlugin {
         String userInput = event.getMessage().trim();
         Long userId = event.getUserId();
 
+        // ===== 权限校验：非主人不能使用任何命令 =====
+        Long ownerId = botAccessService.getOwnerId();
+        if (ownerId != null && !ownerId.equals(userId) && userInput.startsWith("#")) {
+            sendMessageUtil.sendSystemMsg(userId, botAccessService.noPermissionMessage());
+            return MESSAGE_BLOCK;
+        }
+
         // ===== 基础命令 =====
         if (userInput.equals("#exit")){
-            runningDisposables.get(userId).dispose();
+            Disposable disposable = runningDisposables.get(userId);
+            if (disposable != null) {
+                disposable.dispose();
+            }
             clearFlag(userId);
             sendMessageUtil.sendSystemMsg(userId,"已退出当前配置");
             return MESSAGE_BLOCK;
@@ -190,17 +214,13 @@ public class SystemPlugin extends BotPlugin {
         }
 
         if(userInput.startsWith("#语音测试") && !userInput.replace("#语音测试","").trim().isEmpty()){
-            List<TbUserFeatureButtonDo> featureList = tbUserFeatureButtonDoService.list();
-            if(featureList != null && !featureList.isEmpty()){
-                List<TbUserFeatureButtonDo> voiceList = featureList.stream().filter(tb -> tb.getFeatureTypeEnum().equals(VOICE_PLUGIN) && tb.getEnable()).toList();
-                if (!voiceList.isEmpty()){
-                    String message = "<voice tone=\"xxxxx\">"
-                            + userInput.replace("#语音测试","").trim() + "</voice>";
-                    sendMessageUtil.sendVoiceMsg(userId,message);
-                    return MESSAGE_BLOCK;
-                }
+            if (tbUserFeatureButtonDoService.isEnableByUserId(userId, VOICE_PLUGIN)){
+                String message = "<voice tone=\"xxxxx\">"
+                        + userInput.replace("#语音测试","").trim() + "</voice>";
+                sendMessageUtil.sendVoiceMsg(userId,message);
+                return MESSAGE_BLOCK;
             }
-            sendMessageUtil.sendVoiceMsg(userId,"语音合成功能没有开启");
+            sendMessageUtil.sendSystemMsg(userId,"语音合成功能没有开启");
             return MESSAGE_BLOCK;
         }
 
@@ -234,13 +254,24 @@ public class SystemPlugin extends BotPlugin {
             return startNewGraph(userId, createRoleGraph);
         }
 
+        // ===== 白名单 =====
+        if (userInput.equals("#查看当前白名单")){
+            return listWhitelist(userId);
+        }
+        if (userInput.startsWith("#白名单")){
+            return addWhitelist(bot, userId, userInput);
+        }
+        if (userInput.startsWith("#移出白名单")){
+            return removeWhitelist(userId, userInput);
+        }
+
         // ===== 功能开关 =====
         if (userInput.equals("#功能设置")){
             sendMessageUtil.sendSystemMsg(userId,featureContext);
             return MESSAGE_BLOCK;
         }
         if(userInput.equals("#功能开启情况查询")){
-            List<TbUserFeatureButtonDo> featureButtonDos = tbUserFeatureButtonDoService.list();
+            List<TbUserFeatureButtonDo> featureButtonDos = tbUserFeatureButtonDoService.getByUserId(userId);
             StringBuilder returnMessage = new StringBuilder();
             featureButtonDos.forEach(tbUserFeatureButtonDo -> {
                 returnMessage.append(tbUserFeatureButtonDo.getFeatureTypeEnum().getFeatureName()).append("：")
@@ -257,14 +288,15 @@ public class SystemPlugin extends BotPlugin {
         }
         if (userInput.equals("#开启语音合成")){
             // 检查当前 语音api
-            TbUserModelConfigDo byUserIdAndNodeNum = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.TTS);
+            TbUserModelConfigDo byUserIdAndNodeNum = effectiveConfigResolver.getModelConfig(userId, LlmTypeEnum.TTS);
             if (byUserIdAndNodeNum == null){
                 sendMessageUtil.sendSystemMsg(userId,"当前没有启用的语音合成api，请先设置语音合成api");
                 return MESSAGE_BLOCK;
             }
-            // 检查参考音频  没有就插入默认启用
+            // 检查参考音频  没有就插入默认启用（白名单用户共享主人的参考音频，不单独创建）
             List<TbUserReferAudioDo> byUserId = tbUserReferAudioDoService.getByUserId(userId);
-            if (byUserId == null || byUserId.isEmpty()){
+            if (!botAccessService.isSharedKeyUser(userId)
+                    && (byUserId == null || byUserId.isEmpty())){
                 TbUserReferAudioDo tbUserReferAudioDo = new TbUserReferAudioDo();
                 tbUserReferAudioDo.setUserId(userId);
                 tbUserReferAudioDo.setType("local");
@@ -522,9 +554,111 @@ public class SystemPlugin extends BotPlugin {
         return MESSAGE_BLOCK;
     }
 
+    private int addWhitelist(Bot bot, Long senderId, String userInput) {
+        Long qq = parseWhitelistQq(userInput, "#白名单");
+        if (qq == null) {
+            sendMessageUtil.sendSystemMsg(senderId, "格式：#白名单 QQ号");
+            return MESSAGE_BLOCK;
+        }
+        if (qq.equals(botAccessService.getOwnerId())) {
+            sendMessageUtil.sendSystemMsg(senderId, "主人无需加入白名单");
+            return MESSAGE_BLOCK;
+        }
+        if (tbBotWhitelistDoService.existsByUserId(qq)) {
+            sendMessageUtil.sendSystemMsg(senderId, "该QQ已在白名单中");
+            return MESSAGE_BLOCK;
+        }
+
+        String nickname = queryNickname(bot, qq);
+        tbBotWhitelistDoService.saveIfAbsent(qq, nickname);
+        String nicknamePart = (nickname == null || nickname.isBlank()) ? "" : " " + nickname;
+        sendMessageUtil.sendSystemMsg(senderId,
+                "已经将qq号码 " + qq + nicknamePart + "加到了白名单，白名单用户将共享主人apikey");
+        return MESSAGE_BLOCK;
+    }
+
+    private int removeWhitelist(Long senderId, String userInput) {
+        Long qq = parseWhitelistQq(userInput, "#移出白名单");
+        if (qq == null) {
+            sendMessageUtil.sendSystemMsg(senderId, "格式：#移出白名单 QQ号");
+            return MESSAGE_BLOCK;
+        }
+        if (!tbBotWhitelistDoService.existsByUserId(qq)) {
+            sendMessageUtil.sendSystemMsg(senderId, "该QQ不在白名单中");
+            return MESSAGE_BLOCK;
+        }
+        tbBotWhitelistDoService.removeByUserId(qq);
+        sendMessageUtil.sendSystemMsg(senderId, "已将qq号码 " + qq + "移出白名单");
+        return MESSAGE_BLOCK;
+    }
+
+    private int listWhitelist(Long senderId) {
+        List<TbBotWhitelistDo> whitelist = tbBotWhitelistDoService.listAll();
+        if (whitelist.isEmpty()) {
+            sendMessageUtil.sendSystemMsg(senderId, "当前白名单为空");
+            return MESSAGE_BLOCK;
+        }
+        StringBuilder msg = new StringBuilder("当前白名单：");
+        for (TbBotWhitelistDo whitelistDo : whitelist) {
+            String nickname = (whitelistDo.getNickname() == null || whitelistDo.getNickname().isBlank())
+                    ? "未知" : whitelistDo.getNickname();
+            msg.append("\nQQ：").append(whitelistDo.getUserId()).append(" 昵称：").append(nickname);
+        }
+        sendMessageUtil.sendSystemMsg(senderId, msg.toString());
+        return MESSAGE_BLOCK;
+    }
+
+    private Long parseWhitelistQq(String userInput, String command) {
+        String param = userInput.substring(command.length()).trim();
+        if (!param.matches("\\d+")) {
+            return null;
+        }
+        try {
+            return Long.parseLong(param);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String queryNickname(Bot bot, Long qq) {
+        try {
+            ActionData<StrangerInfoResp> response = bot.getStrangerInfo(qq, true);
+            if (response != null && response.getData() != null) {
+                String nickname = response.getData().getNickname();
+                if (nickname != null && !nickname.isBlank()) {
+                    return nickname;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询陌生人信息失败 qq={}: {}", qq, e.getMessage());
+        }
+
+        try {
+            var friends = bot.getFriendList();
+            if (friends != null && friends.getData() != null) {
+                for (FriendInfoResp friend : friends.getData()) {
+                    if (qq.equals(friend.getUserId())) {
+                        String remark = friend.getRemark();
+                        if (remark != null && !remark.isBlank()) {
+                            return remark;
+                        }
+                        return friend.getNickname();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询好友列表失败 qq={}: {}", qq, e.getMessage());
+        }
+        return null;
+    }
+
     private int userInstruction(Long userId) {
+        String menu = manu;
+        if (botAccessService.isOwner(userId)) {
+            menu = menu + "\n#白名单 QQ号 - 添加白名单\n#移出白名单 QQ号 - 移出白名单\n#查看当前白名单 - 查看白名单";
+        }
         String msg = MsgUtils.builder()
-                .text(manu)
+                .text(menu)
                 .build();
         sendMessageUtil.sendSystemMsg(userId,msg);
         return MESSAGE_BLOCK;

@@ -2,7 +2,6 @@ package com.ehuman.core.service;
 
 import com.ehuman.dao.entity.TbUserModelConfigDo;
 import com.ehuman.dao.enums.LlmTypeEnum;
-import com.ehuman.dao.service.TbUserModelConfigDoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.MetadataMode;
@@ -25,10 +24,10 @@ import java.util.List;
 @Slf4j
 public class EmbeddingService {
 
-    private final TbUserModelConfigDoService tbUserModelConfigDoService;
+    private final EffectiveConfigResolver effectiveConfigResolver;
 
     public float[] embeddingText(Long userId, String text){
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.EMBEDDING);
+        TbUserModelConfigDo modelConfigDo = effectiveConfigResolver.getModelConfig(userId, LlmTypeEnum.EMBEDDING);
         if (modelConfigDo == null){
             log.info("没有向量模型跳过");
             return null;
