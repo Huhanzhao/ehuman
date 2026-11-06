@@ -65,3 +65,4 @@ minio_data/**
 
 /.data-path
 /start.bat
+/ehuman.lock
