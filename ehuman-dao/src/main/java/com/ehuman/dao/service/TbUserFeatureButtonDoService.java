@@ -4,6 +4,8 @@ import com.ehuman.dao.entity.TbUserFeatureButtonDo;
 import com.ehuman.dao.enums.FeatureTypeEnum;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
 * @author Lenovo
 * @description 针对表【tb_user_plugin】的数据库操作Service
@@ -16,4 +18,6 @@ public interface TbUserFeatureButtonDoService extends IService<TbUserFeatureButt
     boolean isEnableByUserId(Long userId, FeatureTypeEnum featureTypeEnum);
 
     void turnOnOrOffImageAnalyze(Long userId, boolean enable);
+
+    List<TbUserFeatureButtonDo> getByUserId(Long userId);
 }

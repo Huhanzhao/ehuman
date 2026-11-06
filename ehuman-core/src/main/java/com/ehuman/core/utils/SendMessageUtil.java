@@ -1,13 +1,12 @@
 package com.ehuman.core.utils;
 
+import com.ehuman.core.service.EffectiveConfigResolver;
 import com.ehuman.dao.entity.TbAiChatMemoryDo;
 import com.ehuman.dao.entity.TbUserModelConfigDo;
 import com.ehuman.dao.entity.TbUserReferAudioDo;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.enums.MessageTypeEnum;
 import com.ehuman.dao.service.TbAiChatMemoryService;
-import com.ehuman.dao.service.TbUserModelConfigDoService;
-import com.ehuman.dao.service.TbUserReferAudioDoService;
 import com.ehuman.plugin.SystemPath;
 import com.ehuman.plugin.VoicePluginManager;
 import com.mikuac.shiro.common.utils.MsgUtils;
@@ -40,9 +39,7 @@ public class SendMessageUtil {
 
     private final TbAiChatMemoryService tbAiChatMemoryService;
 
-    private final TbUserModelConfigDoService tbUserModelConfigDoService;
-
-    private final TbUserReferAudioDoService tbUserReferAudioDoService;
+    private final EffectiveConfigResolver effectiveConfigResolver;
 
     private final SystemPath systemPath;
 
@@ -164,8 +161,12 @@ public class SendMessageUtil {
     // 发送语音消息
     public void sendVoiceMsg(Long userId, String message){
         // 查询当前启用的插件名字和参考声音url
-        TbUserModelConfigDo ttsModel = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.TTS);
-        List<TbUserReferAudioDo> enableAudioList = tbUserReferAudioDoService.getReferAudioByUserId(userId,true);
+        TbUserModelConfigDo ttsModel = effectiveConfigResolver.getModelConfig(userId, LlmTypeEnum.TTS);
+        if (ttsModel == null) {
+            log.error("no tts model");
+            return;
+        }
+        List<TbUserReferAudioDo> enableAudioList = effectiveConfigResolver.getEnabledReferAudio(userId);
         if (enableAudioList.isEmpty()) {
             log.error("no enable audio");
             return;

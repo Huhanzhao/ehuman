@@ -16,7 +16,6 @@ import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.service.DBVectorOperationService;
 import com.ehuman.dao.service.TbAiChatMemoryService;
 import com.ehuman.dao.service.TbMessageSummaryVectorDoService;
-import com.ehuman.dao.service.TbUserModelConfigDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -51,7 +50,7 @@ public class CommonAuxiliaryService {
     private DBVectorOperationService dbVectorOperationService;
 
     @Autowired
-    private TbUserModelConfigDoService tbUserModelConfigDoService;
+    private EffectiveConfigResolver effectiveConfigResolver;
 
     @Autowired
     private EmbeddingService embeddingService;
@@ -73,13 +72,16 @@ public class CommonAuxiliaryService {
                     .replaceAll("```","")
                     .replaceAll("```json","")
                     .trim());
-            jobManager.deleteJobByStartString("nextSendMessage_");
+            jobManager.deleteJobByStartString("nextSendMessage_" + userId + "_");
             if ((Boolean) resultMap.get("nextSend")){
-                jobManager.addJob("nextSendMessage_" + System.currentTimeMillis(),
+                Map<String,Object> jobDetail = new HashMap<>();
+                jobDetail.put("userId", userId);
+                jobDetail.put("topic", resultMap.get("topic").toString());
+                jobManager.addJob("nextSendMessage_" + userId + "_" + System.currentTimeMillis(),
                         "system",
                         toCronExpression(resultMap.get("nextSendTime").toString()),
                         "com.ehuman.core.job.action.SendMessageJob",
-                        resultMap.get("topic").toString());
+                        JSON.toJSONString(jobDetail));
             }else{
                 log.info("下次不主动发送消息,原因：{}", resultMap.get("reason"));
                 sendMessageUtil.sendMegToSelf(resultMap.get("reason").toString());
@@ -94,7 +96,7 @@ public class CommonAuxiliaryService {
 
     public boolean summaryMessages(Long userId, Integer firstBatchMinMassagesCount){
         // 查询向量化的key
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, LlmTypeEnum.EMBEDDING);
+        TbUserModelConfigDo modelConfigDo = effectiveConfigResolver.getModelConfig(userId, LlmTypeEnum.EMBEDDING);
         if (modelConfigDo == null){
             log.info("没有向量模型跳过");
             return false;

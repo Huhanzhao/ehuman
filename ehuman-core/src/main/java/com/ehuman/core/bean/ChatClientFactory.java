@@ -1,11 +1,10 @@
 package com.ehuman.core.bean;
 
+import com.ehuman.core.service.EffectiveConfigResolver;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.TbChatConfigDo;
 import com.ehuman.dao.entity.TbUserModelConfigDo;
 import com.ehuman.dao.enums.LlmTypeEnum;
-import com.ehuman.dao.service.TbChatConfigDoService;
-import com.ehuman.dao.service.TbUserModelConfigDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -22,7 +21,6 @@ import org.springframework.web.client.RestClient;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.List;
 import java.util.Map;
 
 import static com.ehuman.dao.enums.ChatModelCategoryEnum.*;
@@ -39,24 +37,17 @@ public class ChatClientFactory {
     private int proxyPort;
 
     @Autowired
-    private TbUserModelConfigDoService tbUserModelConfigDoService;
-
-    @Autowired
-    private TbChatConfigDoService tbChatConfigDoService;
+    private EffectiveConfigResolver effectiveConfigResolver;
 
     @Autowired
     private SendMessageUtil sendMessageUtil;
 
     public ChatClient createChatClient(Long userId, LlmTypeEnum llmTypeEnum) {
-        TbUserModelConfigDo modelConfigDo = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, llmTypeEnum);
-        // 没有配置某节点模型 随便取一个模型
+        TbUserModelConfigDo modelConfigDo = effectiveConfigResolver.getModelConfig(userId, llmTypeEnum);
+        // 没有配置某节点模型 就提醒 master和auxiliary可以互补
         if (modelConfigDo == null){
-            List<TbUserModelConfigDo> modelConfigDos = tbUserModelConfigDoService.getByUserId(userId);
             if(llmTypeEnum.equals(LlmTypeEnum.MASTER) || llmTypeEnum.equals(LlmTypeEnum.AUXILIARY)){
-                modelConfigDo = modelConfigDos.stream()
-                        .filter(e -> e.getLlmTypeEnum().equals(LlmTypeEnum.MASTER) || e.getLlmTypeEnum().equals(LlmTypeEnum.AUXILIARY))
-                        .findFirst()
-                        .orElse(null);
+                modelConfigDo = effectiveConfigResolver.getFallbackChatModelConfig(userId);
             }
             if (modelConfigDo == null){
                 String modelType = "";
@@ -72,7 +63,7 @@ public class ChatClientFactory {
             }
         }
 
-        TbChatConfigDo chatConfigDo = tbChatConfigDoService.getByUserId(userId);
+        TbChatConfigDo chatConfigDo = effectiveConfigResolver.getChatConfig(userId);
 
         if (GPT.getCategory().equals(modelConfigDo.getCategory()) || IMAGE.getCategory().equals(modelConfigDo.getCategory())){
             return createOpenAiChatClient(modelConfigDo,chatConfigDo);

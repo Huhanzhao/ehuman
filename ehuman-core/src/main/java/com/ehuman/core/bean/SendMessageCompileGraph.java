@@ -167,17 +167,22 @@ public class SendMessageCompileGraph {
     }
 
     private void doAsyncAfterSendMessage(OverAllState state) {
+        Long userId = state.value("userId", Long.class).orElse(null);
+        if (userId == null) {
+            log.error("缺少 userId，跳过主动消息调度");
+            return;
+        }
         // 添加一个五分钟之后的定时任务（五分钟没有用户回复再去执行要不要主动发送消息的任务）
         CompletableFuture.runAsync(() -> {
             try {
-                jobManager.deleteJobByStartString("callNextSendMessageJob_");
+                jobManager.deleteJobByStartString("callNextSendMessageJob_" + userId + "_");
 
                 // 当前时间 + 5分钟
                 LocalDateTime now = LocalDateTime.now();
                 LocalDateTime future = now.plusMinutes(5);
                 // 格式化
                 String result = future.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                jobManager.addJob("callNextSendMessageJob_" + System.currentTimeMillis(),"system",
+                jobManager.addJob("callNextSendMessageJob_" + userId + "_" + System.currentTimeMillis(),"system",
                         commonAuxiliaryService.toCronExpression(result),
                         "com.ehuman.core.job.action.CallSendMessageJob",
                         JSON.toJSONString(state.data()));

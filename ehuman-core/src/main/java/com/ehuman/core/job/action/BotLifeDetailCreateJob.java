@@ -2,6 +2,7 @@ package com.ehuman.core.job.action;
 
 import com.ehuman.core.bean.SystemConfigBean;
 import com.ehuman.core.node.LlmNode;
+import com.ehuman.core.service.BotAccessService;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.TbBotLifeDetailDo;
 import com.ehuman.dao.enums.LlmChatEnum;
@@ -9,7 +10,6 @@ import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.service.TbAiChatMemoryService;
 import com.ehuman.dao.service.TbBotLifeDetailDoService;
 import com.ehuman.dao.service.TbBotPromptDoService;
-import com.ehuman.dao.service.TbUserBotStatusDoService;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -42,7 +42,7 @@ public class BotLifeDetailCreateJob implements Job {
     private TbBotPromptDoService tbBotPromptDoService;
 
     @Autowired
-    private TbUserBotStatusDoService tbUserBotStatusDoService;
+    private BotAccessService botAccessService;
 
     @Autowired
     private TbAiChatMemoryService tbAiChatMemoryService;
@@ -51,11 +51,15 @@ public class BotLifeDetailCreateJob implements Job {
     public void execute(JobExecutionContext jobExecutionContext) {
         Long botId = Long.valueOf(System.getProperty("BOT_ID"));
         LocalDate today = LocalDate.now();
-        // 使用userId来获取chatClient
-        Long userId = tbUserBotStatusDoService.list().getFirst().getUserId();
+        // 生活细节跟随主人，用主人的配置调用模型
+        Long userId = botAccessService.getOwnerId();
+        if (userId == null) {
+            log.info("未绑定主人，跳过生活细节生成");
+            return;
+        }
 
         // 判断昨天是否有用户消息 有就生成今天的 没有就不生成了
-        boolean existsUserYesterdayMessage = tbAiChatMemoryService.existsUserYesterdayMessage(userId);
+        boolean existsUserYesterdayMessage = tbAiChatMemoryService.existsUserYesterdayMessage(null);
         if(!existsUserYesterdayMessage){
             // 昨天没有消息 不用生成生活细节，直接拷贝最近一天的生活细节
             boolean copySuccess = tbBotLifeDetailDoService.copyLastDayDetail(botId);
