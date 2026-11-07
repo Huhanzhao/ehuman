@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.ehuman.dao.enums.ChatModelCategoryEnum.*;
+import static com.ehuman.dao.enums.FeatureTypeEnum.IMAGE_ANALYSIS;
 import static com.ehuman.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
 
 @Component
@@ -333,10 +334,11 @@ public class SystemGraph {
                     Map<String,Object> data = state.data();
                     Long userId = Long.valueOf(data.get("userId").toString());
                     String totalBalance =null;
+                    boolean isImageModel = false;
 
                     if(data.get("apiKey") != null && !data.get("apiKey").toString().isEmpty()){
                         String apiKey = state.data().get("apiKey").toString();
-                        String modelName;
+                        String modelName = null;
                         HttpResponse modelListResponse = HttpRequest.get("https://api.deepseek.com/models").header("Authorization","Bearer " + apiKey).execute();
                         if(modelListResponse.getStatus() == 200){
                             ModelListResponse modelListResponseDto = JSONUtil.toBean(modelListResponse.body(),ModelListResponse.class);
@@ -347,6 +349,12 @@ public class SystemGraph {
                                     state.updateState(Map.of("model",modelName));
                                     break;
                                 }
+                            }
+                            if(modelName != null){
+                                isImageModel = true;
+                            }else{
+                                modelName = modelListResponseDto.getData().getFirst().getId();
+                                state.updateState(Map.of("model",modelName));
                             }
                         }else{
                             String body = modelListResponse.body();
@@ -387,6 +395,10 @@ public class SystemGraph {
                     // 插入数据
                     tbUserModelConfigDoService.saveBatch(List.of(tbUserModelConfigDo,tbUserModelConfigDo2,tbUserModelConfigDo3));
 
+                    if(isImageModel){
+                        // 支持图片解析就开启图片解析
+                        tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, IMAGE_ANALYSIS);
+                    }
                     sendMessageUtil.sendSystemMsg(userId, "设置成功 可以开始聊天了 余额" + totalBalance);
                     state.clear();
                 })
