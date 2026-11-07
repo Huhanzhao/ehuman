@@ -3,8 +3,10 @@ package com.ehuman.core.service;
 import com.ehuman.dao.service.TbBotOwnerDoService;
 import com.ehuman.dao.service.TbBotWhitelistDoService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BotAccessService {
@@ -19,6 +21,7 @@ public class BotAccessService {
 
     public boolean isOwner(Long userId) {
         Long ownerId = getOwnerId();
+        log.info("ownerId :{}", ownerId);
         return ownerId != null && ownerId.equals(userId);
     }
 

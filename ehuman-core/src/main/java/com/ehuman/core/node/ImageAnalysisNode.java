@@ -5,6 +5,7 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.ehuman.core.bean.ChatClientFactory;
+import com.ehuman.core.service.EffectiveConfigResolver;
 import com.ehuman.core.utils.LocalCacheUtil;
 import com.ehuman.core.utils.PromptReadUtil;
 import com.ehuman.dao.entity.TbAiChatMemoryDo;
@@ -13,14 +14,13 @@ import com.ehuman.dao.enums.LlmChatEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.enums.MessageTypeEnum;
 import com.ehuman.dao.service.TbAiChatMemoryService;
-import com.ehuman.dao.service.TbUserFeatureButtonDoService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.content.Media;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
@@ -39,16 +39,12 @@ import static com.ehuman.dao.enums.FeatureTypeEnum.IMAGE_ANALYSIS;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class ImageAnalysisNode implements NodeAction {
 
-    @Autowired
-    private ChatClientFactory chatClientFactory;
-
-    @Autowired
-    private TbAiChatMemoryService tbAiChatMemoryService;
-
-    @Autowired
-    private TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
+    private final ChatClientFactory chatClientFactory;
+    private final TbAiChatMemoryService tbAiChatMemoryService;
+    private final EffectiveConfigResolver effectiveConfigResolver;
 
     @Value("${bot.emoji-base-path}")
     private String emojiBaseUrl;
@@ -63,7 +59,7 @@ public class ImageAnalysisNode implements NodeAction {
 
         if (userInput.startsWith("[CQ:image")){
             try{
-                boolean enableByUserId = tbUserFeatureButtonDoService.isEnableByUserId(userId, IMAGE_ANALYSIS);
+                boolean enableByUserId =effectiveConfigResolver.isEnableFeature(userId, IMAGE_ANALYSIS);
                 if (!enableByUserId){
                     throw new RuntimeException("没有启用图片解析");
                 }
@@ -98,7 +94,7 @@ public class ImageAnalysisNode implements NodeAction {
                 Matcher resultMatcher = resultPattern.matcher(content);
 
                 // 如果是表情包 保存到emoji目录
-                boolean enableEmojiFetch = tbUserFeatureButtonDoService.isEnableByUserId(userId, FeatureTypeEnum.EMOJI_FETCH);
+                boolean enableEmojiFetch = effectiveConfigResolver.isEnableFeature(userId, FeatureTypeEnum.EMOJI_FETCH);
                 if (resultMatcher.find() && enableEmojiFetch){
                     String emo = resultMatcher.group(1);
                     String fileName = resultMatcher.group(2);

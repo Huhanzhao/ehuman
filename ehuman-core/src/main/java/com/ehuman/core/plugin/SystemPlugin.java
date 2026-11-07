@@ -3,6 +3,7 @@ package com.ehuman.core.plugin;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ehuman.core.bean.SystemGraph;
 import com.ehuman.core.service.BotAccessService;
 import com.ehuman.core.service.EffectiveConfigResolver;
@@ -11,7 +12,6 @@ import com.ehuman.dao.entity.*;
 import com.ehuman.dao.enums.FeatureTypeEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.service.*;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mikuac.shiro.annotation.MessageHandlerFilter;
 import com.mikuac.shiro.annotation.PrivateMessageHandler;
 import com.mikuac.shiro.common.utils.MsgUtils;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import static com.ehuman.dao.enums.FeatureTypeEnum.*;
 
@@ -118,6 +117,7 @@ public class SystemPlugin extends BotPlugin {
             "#人设设置\n" +
             "#功能设置\n" +
             "#语音测试\n" +
+            "#白名单设置\n" +
             "#exit - 退出引导";
 
     private final String featureContext =
@@ -255,10 +255,13 @@ public class SystemPlugin extends BotPlugin {
         }
 
         // ===== 白名单 =====
+        if (userInput.equals("#白名单设置")){
+            return writeListInstruction(userId);
+        }
         if (userInput.equals("#查看当前白名单")){
             return listWhitelist(userId);
         }
-        if (userInput.startsWith("#白名单")){
+        if (userInput.startsWith("#添加白名单")){
             return addWhitelist(bot, userId, userInput);
         }
         if (userInput.startsWith("#移出白名单")){
@@ -555,9 +558,9 @@ public class SystemPlugin extends BotPlugin {
     }
 
     private int addWhitelist(Bot bot, Long senderId, String userInput) {
-        Long qq = parseWhitelistQq(userInput, "#白名单");
+        Long qq = parseWhitelistQq(userInput, "#添加白名单");
         if (qq == null) {
-            sendMessageUtil.sendSystemMsg(senderId, "格式：#白名单 QQ号");
+            sendMessageUtil.sendSystemMsg(senderId, "格式：#添加白名单 QQ号");
             return MESSAGE_BLOCK;
         }
         if (qq.equals(botAccessService.getOwnerId())) {
@@ -654,8 +657,24 @@ public class SystemPlugin extends BotPlugin {
 
     private int userInstruction(Long userId) {
         String menu = manu;
+        String msg = MsgUtils.builder()
+                .text(menu)
+                .build();
+        sendMessageUtil.sendSystemMsg(userId,msg);
+        return MESSAGE_BLOCK;
+    }
+
+    private int writeListInstruction(Long userId) {
+        String menu = "";
         if (botAccessService.isOwner(userId)) {
-            menu = menu + "\n#白名单 QQ号 - 添加白名单\n#移出白名单 QQ号 - 移出白名单\n#查看当前白名单 - 查看白名单";
+            menu = "#添加白名单\n#移出白名单\n#查看当前白名单";
+        }else {
+            Long ownerId = botAccessService.getOwnerId();
+            if(ownerId != null){
+                menu = botAccessService.contactOwnerMessage();
+            }else{
+                menu = "没有查询到主人，请先设置apiKey认主，然后使用白名单功能";
+            }
         }
         String msg = MsgUtils.builder()
                 .text(menu)

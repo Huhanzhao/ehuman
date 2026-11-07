@@ -2,7 +2,7 @@ package com.ehuman.core.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.ehuman.dao.service.TbUserFeatureButtonDoService;
+import com.ehuman.core.service.EffectiveConfigResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,7 +22,7 @@ import static com.ehuman.dao.enums.FeatureTypeEnum.VOICE_PLUGIN;
 @Slf4j
 public class CheckAggregateNode implements NodeAction {
 
-    private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
+    private final EffectiveConfigResolver effectiveConfigResolver;
 
     private static final Pattern CHECK_LINE_PATTERN = Pattern.compile("(记忆编造审核|角色混乱审核|现实互动审核|时间混淆审核)\\s*[:：]\\s*(不通过)\\s*(.*)");
 
@@ -71,7 +71,7 @@ public class CheckAggregateNode implements NodeAction {
         // 开头结尾格式判断，如果符合直接发送
         boolean needFormat = false;
         String generateMessage = state.value("generateMessage",String.class).orElse("");
-        boolean enableVoice = tbUserFeatureButtonDoService.isEnableByUserId(userId, VOICE_PLUGIN);
+        boolean enableVoice = effectiveConfigResolver.isEnableFeature(userId, VOICE_PLUGIN);
         String[] split = generateMessage.trim().split("\n");
 
         List<Predicate<String>> predicates = new ArrayList<>();

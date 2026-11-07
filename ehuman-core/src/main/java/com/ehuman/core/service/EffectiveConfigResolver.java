@@ -3,8 +3,10 @@ package com.ehuman.core.service;
 import com.ehuman.dao.entity.TbChatConfigDo;
 import com.ehuman.dao.entity.TbUserModelConfigDo;
 import com.ehuman.dao.entity.TbUserReferAudioDo;
+import com.ehuman.dao.enums.FeatureTypeEnum;
 import com.ehuman.dao.enums.LlmTypeEnum;
 import com.ehuman.dao.service.TbChatConfigDoService;
+import com.ehuman.dao.service.TbUserFeatureButtonDoService;
 import com.ehuman.dao.service.TbUserModelConfigDoService;
 import com.ehuman.dao.service.TbUserReferAudioDoService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class EffectiveConfigResolver {
     private final TbUserReferAudioDoService tbUserReferAudioDoService;
 
     private final BotAccessService botAccessService;
+
+    private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
 
     public TbUserModelConfigDo getModelConfig(Long userId, LlmTypeEnum llmTypeEnum) {
         TbUserModelConfigDo own = tbUserModelConfigDoService.getByUserIdAndNodeNum(userId, llmTypeEnum);
@@ -94,5 +98,13 @@ public class EffectiveConfigResolver {
                         || e.getLlmTypeEnum().equals(LlmTypeEnum.AUXILIARY))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public boolean isEnableFeature(Long userId, FeatureTypeEnum featureTypeEnum) {
+        if(botAccessService.isOwner(userId)){
+            return tbUserFeatureButtonDoService.isEnableByUserId(userId, featureTypeEnum);
+        }
+        Long ownerId = sharedOwnerId(userId);
+        return ownerId != null && tbUserFeatureButtonDoService.isEnableByUserId(ownerId, featureTypeEnum);
     }
 }

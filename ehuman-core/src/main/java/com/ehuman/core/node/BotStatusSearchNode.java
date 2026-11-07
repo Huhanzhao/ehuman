@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ehuman.core.bean.SystemConfigBean;
+import com.ehuman.core.service.EffectiveConfigResolver;
 import com.ehuman.dao.entity.TbAiChatMemoryDo;
 import com.ehuman.dao.entity.TbBotLifeDetailDo;
 import com.ehuman.dao.entity.TbUserBotStatusDo;
@@ -50,8 +51,8 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     private final TbMessageSummaryVectorDoService tbMessageSummaryVectorDoService;
     private final TbBotPromptDoService tbBotPromptDoService;
     private final TbAiChatMemoryService tbAiChatMemoryService;
-    private final TbUserFeatureButtonDoService tbUserFeatureButtonDoService;
     private final SystemPath systemPath;
+    private final EffectiveConfigResolver effectiveConfigResolver;
 
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
@@ -151,7 +152,8 @@ public class BotStatusSearchNode implements AsyncNodeActionWithConfig {
     }
 
     private String getVoiceMessagePrompt(Long userId) {
-        boolean exists = tbUserFeatureButtonDoService.isEnableByUserId(userId, VOICE_PLUGIN);
+        boolean exists = effectiveConfigResolver.isEnableFeature(userId, VOICE_PLUGIN);
+        log.info("用户{}是否启用语音插件：{}", userId, exists ? "是" : "否");
         return exists ? "| `<voice tone=\"情绪\">内容</voice>` | 语音消息，情绪如撒娇、生气等|" : "只支持以上消息类型";
     }
 

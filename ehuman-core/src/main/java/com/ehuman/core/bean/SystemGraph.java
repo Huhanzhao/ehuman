@@ -13,7 +13,6 @@ import com.ehuman.core.node.system.CollectReferAudioTypeNode;
 import com.ehuman.core.node.system.SwitchNodeApiConfigNode;
 import com.ehuman.core.node.system.SwitchReferAudioNode;
 import com.ehuman.core.node.system.SystemInterruptionNode;
-import com.ehuman.core.service.BeforeLlmCallback;
 import com.ehuman.core.utils.SendMessageUtil;
 import com.ehuman.dao.entity.TbBotPromptDo;
 import com.ehuman.dao.entity.TbUserModelConfigDo;
@@ -30,7 +29,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.awt.image.BandCombineOp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -432,7 +430,7 @@ public class SystemGraph {
                     tbUserModelConfigDoService.save(tbUserModelConfigDo);
                     tbUserFeatureButtonDoService.turnOnOrOffFeature(userId,true, VOICE_PLUGIN);
                     try{
-                        sendMessageUtil.sendChatMsg(userId,"正在校验语音合成功能，请稍等...");
+                        sendMessageUtil.sendSystemMsg(userId,"正在校验语音合成功能，请稍等...");
                         sendMessageUtil.sendVoiceMsg(userId, "<voice tone=\"xxxx\">语音合成成功</voice>");
                     }catch(Exception e){
                         sendMessageUtil.sendSystemMsg(userId,"语音合成失败，请检查apikey是否正确");
